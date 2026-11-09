@@ -103,3 +103,39 @@ No mesmo painel **TESTE**, seção **DADOS DO JOGADOR**:
 | **RESETAR PERFIL** | volta ao perfil novo (toque duas vezes para confirmar) |
 
 Para simular falha do DataStore: no Studio, selecione o **ServerStorage**, adicione o atributo booleano `DEV_SimulateLoadFailure` marcado e aperte Play. O jogador deve ser expulso com a mensagem de falha, sem perder nada. Apague o atributo depois.
+
+## Testar o combate (F2)
+
+Tudo acontece no place **Partida**: rode `rojo serve match.project.json` e conecte o Studio da Partida na porta **34874**. Ao dar Play, a arena de teste cinza é montada pelo código (nada fica salvo no place).
+
+### Controles
+
+| Ação | PC | Controle | Celular |
+|---|---|---|---|
+| Atirar | botão esquerdo | gatilho direito | botão ATIRAR (arrastar o dedo nele também gira a câmera) |
+| Mira / modo alternativo | segurar botão direito | segurar gatilho esquerdo | botão MIRA ou MODO (liga/desliga) |
+| Recarregar | R | X | botão RECARREGAR (e sozinho ao esvaziar) |
+| Trocar arma | 1 / 2 / 3 ou roda do mouse | Y (segurar = corpo a corpo) | 1⇄2 (segurar = escolher 1, 2 ou 3) |
+| Golpe forte (corpo a corpo) | botão direito | gatilho esquerdo | segurar ATIRAR |
+
+Tiro automático e assistência de mira (toque e controle) seguem o perfil (ligados por padrão).
+
+### Painel TESTE › COMBATE
+
+| Botão | O que testa |
+|---|---|
+| **ESCOLHER ARMA** (18 botões) | equipa qualquer arma (primária ou pistola, pelo espaço dela) |
+| **TROCAR DE DUPLA** | passa entre Azul e Laranja (inimigo × parceiro) |
+| **VIDA E ESCUDO CHEIOS** | recupera tudo |
+| **ALVOS: ANDANDO / PARADOS** | liga e desliga o movimento dos alvos que andam |
+| **TESTE: ATIRAR RÁPIDO DEMAIS** | manda 20 tiros de uma vez; o servidor tem que aceitar só 1 |
+
+Ao derrubar um alvo, aparece embaixo do aviso `N KILL` o tempo e o número de tiros (compare com a tabela do GDD 7.2.3, ±10%).
+
+### Na arena
+
+- **Estande** (lado leste): alvos a 10, 20, 40, 60, 80 e 100 studs da linha de tiro, para ver a perda de dano com a distância.
+- **Cobertura fina** (bege): o Moedor atravessa com metade do dano; as outras armas, não.
+- **Parede grande** perto da base Azul: para testar o contorno do parceiro (só aparece com o corpo inteiro escondido).
+- **Dois ou mais jogadores no Studio:** aba **Teste › Clientes e servidores**, escolha 2 (ou mais) jogadores e **Iniciar**. Com 2 jogadores, vocês são inimigos; use TROCAR DE DUPLA para ficar parceiros.
+- **Celular no Studio:** aba **Teste › Dispositivo** (emulador) para ver os botões de toque. O teste de verdade é num celular, com o jogo publicado.

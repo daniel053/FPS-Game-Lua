@@ -10,8 +10,8 @@ local TeamColors = {
 	Order = { "Azul", "Laranja", "Verde", "Roxo", "Amarelo", "Branco", "Rosa", "Ciano" } :: { Types.TeamColorId },
 }
 
-function TeamColors.getColor(id: Types.TeamColorId): Color3
-	return Theme.Team[id]
+function TeamColors.getColor(id: string): Color3
+	return (Theme.Team :: any)[id] or Theme.Color.TextPrimary
 end
 
 return TeamColors

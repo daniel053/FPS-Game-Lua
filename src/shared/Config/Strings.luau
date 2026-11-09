@@ -115,6 +115,33 @@ local Strings = {
 		} :: { [string]: string },
 	},
 
+	-- Combate e HUD provisório (F2; visual final na F7)
+	Combat = {
+		KillSingular = "%d KILL",
+		KillPlural = "%d KILLS",
+		Infinite = "∞",
+		Reloading = "RECARREGANDO",
+		Shield = "ESCUDO",
+		Hp = "VIDA",
+		-- Botões de toque (GDD 13.1)
+		FireButton = "ATIRAR",
+		AimButton = "MIRA",
+		AltButton = "MODO",
+		ReloadButton = "RECARREGAR",
+		SwitchButton = "1⇄2",
+		SlotPrimary = "1",
+		SlotSecondary = "2",
+		SlotMelee = "3",
+		-- Dicas de tecla no PC
+		ReloadKey = "R",
+		AimKey = "BOTÃO DIREITO",
+		DummyName = "ALVO",
+		DummyDistance = "%s · %d studs",
+		DummyMoving = "%s · andando",
+		DummyThinCover = "%s · atrás de cobertura fina",
+		KnockedOut = "Você foi derrubado",
+	},
+
 	-- Painel de teste (só aparece no ambiente DEV_)
 	Dev = {
 		ToggleButton = "TESTE",
@@ -148,6 +175,27 @@ local Strings = {
 		ResetProfile = "RESETAR PERFIL",
 		ResetConfirm = "TOQUE DE NOVO PARA CONFIRMAR",
 		InvalidDetail = "%s (motivo: %s)",
+		-- Seção de combate do painel (F2, só no place Partida)
+		CombatTitle = "COMBATE (ARENA DE TESTE)",
+		CombatInfo = "Dupla: %s · Abates: %d",
+		WeaponsTitle = "ESCOLHER ARMA",
+		SwitchTeam = "TROCAR DE DUPLA",
+		Heal = "VIDA E ESCUDO CHEIOS",
+		DummiesMoving = "ALVOS: ANDANDO",
+		DummiesStill = "ALVOS: PARADOS",
+		ExploitTest = "TESTE: ATIRAR RÁPIDO DEMAIS",
+		KnockReport = "%s derrubado em %.2f s com %d tiros (%s)",
+		CombatResults = {
+			WeaponSet = "Arma equipada.",
+			TeamSet = "Dupla trocada.",
+			Healed = "Vida e escudo cheios.",
+			DummiesToggled = "Alvos atualizados.",
+			ExploitResult = "Teste de cadência:",
+			ExploitDone = "Servidor aceitou %d de %d tiros enviados de uma vez (a cadência permite %d).",
+			NotAlive = "Espere aparecer de novo.",
+			Invalid = "Comando inválido.",
+		} :: { [string]: string },
+
 		DataResults = {
 			CoinsAdded = "Moedas adicionadas.",
 			ProfileReset = "Perfil resetado.",

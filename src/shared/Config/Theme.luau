@@ -61,6 +61,41 @@ local Theme = {
 		Ciano = hex("#2BA8B8"),
 	} :: { [Types.TeamColorId]: Color3 },
 
+	-- Contorno do inimigo (GDD 7.6) e opções para daltônicos (ESTILO 5). Escolha salva em settings.enemyOutlineColor.
+	EnemyOutline = {
+		red = hex("#FF3B4E"),
+		yellow = hex("#FFD23F"),
+		magenta = hex("#FF3BD4"),
+	} :: { [string]: Color3 },
+
+	-- Combate (F2). Sem neon; faíscas em cor neutra (GDD 7.7).
+	Combat = {
+		BodyNeutral = hex("#C9CDD8"), -- corpo do personagem base (cinza claro)
+		BodyDark = hex("#3A4058"), -- detalhes (pernas, luvas)
+		DummyBody = hex("#B7A58A"), -- alvos da arena de teste
+		WeaponBody = hex("#5C6178"),
+		WeaponDark = hex("#3A3F55"),
+		WeaponLight = hex("#8A90A8"),
+		Glove = hex("#2E3247"),
+		Sleeve = hex("#C3C8DA"),
+		MeleeHandle = hex("#8C6A4A"),
+		Tracer = hex("#FFE2A8"),
+		MuzzleFlash = hex("#FFC46B"),
+		HitSpark = hex("#F2F4F8"),
+		Knockdown = hex("#E8E6DF"),
+		DamageNumber = hex("#FFFFFF"),
+		DamageNumberShield = hex("#9FD0FF"),
+		HitMarker = hex("#FFFFFF"),
+		ScopeDark = hex("#0B0F1E"),
+		ScopeReticle = hex("#141A2E"),
+		ArenaFloor = hex("#B9BBC2"),
+		ArenaWall = hex("#8E929E"),
+		ArenaCover = hex("#A3A7B2"),
+		ArenaThin = hex("#C7B79A"), -- coberturas finas (o Moedor atravessa)
+		ArenaMarker = hex("#6F7486"),
+	},
+	ScopeDarkTransparency = 0.05,
+
 	-- Fontes (ESTILO 2.3) [PROPOSTA]
 	Font = {
 		Title = Font.new("rbxasset://fonts/families/Oswald.json", Enum.FontWeight.Bold),

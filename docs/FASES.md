@@ -34,7 +34,7 @@
 |---|---|---|---|
 | F0 | Base do projeto | Projeto organizado, 3 places, configs vazias | ✅ |
 | F1 | Dados do jogador | Perfil salvo com segurança | ✅ |
-| F2 | Combate | Atirar e derrubar com as 18 armas + corpo a corpo | ☐ |
+| F2 | Combate | Atirar e derrubar com as 18 armas + corpo a corpo | 🔶 em teste |
 | F3 | Loop da partida | Partida completa em arenas cinza | ☐ |
 | F4 | Cartas | 4 cartas funcionando | ☐ |
 | ⭐ | **Marco: primeiro jogável** | Teste interno com amigos | ☐ |
@@ -386,8 +386,6 @@ Só seguir para a F5 quando a partida for divertida em blocos cinza.
 | Girar: sorteio ou visualização (GDD 8.9) | parte da F9 |
 | Raridade muda poder? (GDD 8.9) | parte da F9 |
 | Segunda moeda (GDD 18, DADOS 11) | F9, F11 |
-| Moedor e Gêmea na fase Pesadas (GDD 18) | ajuste na F2/F3 (fácil de mudar) |
-| Aviso de abate por rodada ou partida (GDD 18) | detalhe na F2 |
 | Tutorial pode ser pulado? (GDD 18) | F6 |
 | Plantas baixas e tamanhos dos mapas (GDD 15.8) | F10 |
 | Preços em Robux (GDD 10.3) | F11 |

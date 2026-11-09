@@ -2,11 +2,40 @@
 -- Armas (GDD seção 7.2). Os nomes exibidos ficam em Strings.Weapons (por ID).
 -- Números da tabela 7.2.3 [PROPOSTA]: ajustar aqui depois dos testes, nunca no código.
 --
+-- Unidades: distâncias em studs, ângulos em GRAUS, tempos em segundos, cadência em tiros por segundo.
 -- Escopetas: `pellets` = número de bagos, `damage` = dano de CADA bago.
--- `referenceShotsToKill` e `referenceTimeToKill` vêm da tabela do GDD e servem para o teste
--- automático da F2 (tempo para derrubar com tolerância de ±10%). Não são usados no jogo.
+-- `referenceShotsToKill` e `referenceTimeToKill` vêm da tabela do GDD e servem só para o teste
+-- automático (tempo para derrubar com tolerância de ±10%). Não são usados no jogo.
+--
+-- Perda de dano, espalhamento e recuo (GDD 7.2.5) são [PROPOSTA] da F2, para ajustar em teste.
 
 local Types = require(script.Parent.Parent.Types)
+
+-- Perda de dano com a distância: dano cheio até `start`; cai em linha reta até `minMultiplier`
+-- em `finish`; daí em diante fica em `minMultiplier`. Sem tabela = sem perda (Trovão e snipers).
+export type Falloff = { start: number, finish: number, minMultiplier: number }
+
+-- Espalhamento (graus, raio do cone em volta da retícula).
+export type Spread = {
+	hip: number, -- parado, sem mira
+	moving: number, -- somado ao andar ou pular
+	alt: number?, -- substitui `hip` com o modo alternativo ligado (mira aberta, rajada ou bagos concentrados)
+	bloomPerShot: number, -- somado a cada tiro seguido
+	bloomMax: number,
+	bloomRecovery: number, -- graus por segundo de volta a zero
+}
+
+-- Recuo simples e previsível (GDD 7.2.6): sobe `kick` graus por tiro e balança `sway` graus para os
+-- lados, sempre no mesmo padrão. Ao parar de atirar, volta à mira original a `recovery` graus por segundo.
+export type Recoil = { kick: number, sway: number, recovery: number }
+
+-- Rajada do modo alternativo: `count` tiros a `rate` por segundo, depois `cooldown` até a próxima rajada.
+export type Burst = { count: number, rate: number, cooldown: number }
+
+-- Atravessar coberturas finas (Moedor).
+export type Penetration = { maxThickness: number, damageMultiplier: number }
+
+export type TracerStyle = "Normal" | "Subtle"
 
 export type WeaponDef = {
 	id: string,
@@ -19,13 +48,20 @@ export type WeaponDef = {
 	fireRate: number, -- tiros por segundo
 	magazine: number,
 	reloadTime: number,
-	burstCount: number?, -- rajada do modo alternativo
-	spinUpTime: number?, -- metralhadoras: tempo até a cadência máxima
+	burst: Burst?, -- modo alternativo "Burst" ou "ScopeBurst"
+	spinUpTime: number?, -- metralhadoras: segurando o gatilho, o primeiro tiro sai depois deste tempo
 	moveSpeedMultiplier: number?, -- com a arma na mão
 	scopedMoveSpeedMultiplier: number?, -- com a mira aberta
-	hasDamageFalloff: boolean, -- perda de dano com a distância (curvas definidas na F2)
-	penetratesThinCover: boolean?,
-	subtleTracer: boolean?,
+	falloff: Falloff?,
+	range: number, -- alcance máximo do tiro
+	effectiveRange: number?, -- escopetas: tiro automático do celular só até aqui
+	pelletSpread: number?, -- escopetas: cone dos bagos (graus)
+	focusedPelletSpread: number?, -- escopetas com "FocusedPellets": cone com o modo alternativo
+	spread: Spread,
+	recoil: Recoil,
+	scopeFieldOfView: number?, -- campo de visão com a mira aberta
+	penetration: Penetration?,
+	tracer: TracerStyle,
 	autoFire: Types.AutoFireBehavior,
 	referenceShotsToKill: number,
 	referenceTimeToKill: number,
@@ -39,6 +75,7 @@ export type MeleeDef = {
 	heavyDamage: number,
 	heavyInterval: number, -- segundos entre golpes fortes
 	moveSpeedMultiplier: number,
+	touchHeavyHoldSeconds: number, -- celular: segurar ATIRAR por este tempo faz o golpe forte
 }
 
 export type WeaponPhase = {
@@ -47,6 +84,9 @@ export type WeaponPhase = {
 	toRound: number?, -- nil = até o fim da partida
 	primaries: { string },
 }
+
+local DEFAULT_RANGE = 300
+local SHOTGUN_RANGE = 60
 
 -- Ordem = ordem de exibição dentro de cada categoria.
 local Weapons: { WeaponDef } = {
@@ -57,13 +97,17 @@ local Weapons: { WeaponDef } = {
 		slot = "secondary",
 		fireMode = "Semi",
 		altMode = "Burst",
-		burstCount = 3,
+		burst = { count = 3, rate = 12, cooldown = 0.55 },
 		damage = 13,
 		pellets = 1,
 		fireRate = 4,
 		magazine = 12,
 		reloadTime = 1.75,
-		hasDamageFalloff = true,
+		falloff = { start = 20, finish = 50, minMultiplier = 0.7 },
+		range = DEFAULT_RANGE,
+		spread = { hip = 0.6, moving = 1.5, alt = 2.5, bloomPerShot = 0.4, bloomMax = 2.5, bloomRecovery = 6 },
+		recoil = { kick = 0.6, sway = 0.15, recovery = 8 },
+		tracer = "Normal",
 		autoFire = "MaxRateOnTarget",
 		referenceShotsToKill = 12,
 		referenceTimeToKill = 2.8,
@@ -78,7 +122,13 @@ local Weapons: { WeaponDef } = {
 		fireRate = 1.3,
 		magazine = 3,
 		reloadTime = 1.75,
-		hasDamageFalloff = true,
+		falloff = { start = 6, finish = 15, minMultiplier = 0.25 }, -- de longe o dano quase some
+		range = SHOTGUN_RANGE,
+		effectiveRange = 8,
+		pelletSpread = 7,
+		spread = { hip = 0, moving = 1, bloomPerShot = 0, bloomMax = 0, bloomRecovery = 10 },
+		recoil = { kick = 3, sway = 0.3, recovery = 10 },
+		tracer = "Normal",
 		autoFire = "InEffectiveRange",
 		referenceShotsToKill = 3,
 		referenceTimeToKill = 1.5,
@@ -93,7 +143,11 @@ local Weapons: { WeaponDef } = {
 		fireRate = 10,
 		magazine = 20,
 		reloadTime = 1.6,
-		hasDamageFalloff = true,
+		falloff = { start = 15, finish = 40, minMultiplier = 0.6 }, -- fraca de longe
+		range = DEFAULT_RANGE,
+		spread = { hip = 1.2, moving = 1.5, bloomPerShot = 0.3, bloomMax = 3, bloomRecovery = 8 },
+		recoil = { kick = 0.5, sway = 0.2, recovery = 10 },
+		tracer = "Normal",
 		autoFire = "WhileOnTarget",
 		referenceShotsToKill = 17,
 		referenceTimeToKill = 1.6,
@@ -108,7 +162,11 @@ local Weapons: { WeaponDef } = {
 		fireRate = 4.5,
 		magazine = 15,
 		reloadTime = 1.5,
-		hasDamageFalloff = true, -- pouca perda (GDD 7.2.4)
+		falloff = { start = 30, finish = 60, minMultiplier = 0.85 }, -- pouca perda (GDD 7.2.4)
+		range = DEFAULT_RANGE,
+		spread = { hip = 0.4, moving = 1.2, bloomPerShot = 0.35, bloomMax = 2, bloomRecovery = 6 },
+		recoil = { kick = 0.7, sway = 0.15, recovery = 8 },
+		tracer = "Normal",
 		autoFire = "MaxRateOnTarget",
 		referenceShotsToKill = 10,
 		referenceTimeToKill = 2.0,
@@ -123,7 +181,11 @@ local Weapons: { WeaponDef } = {
 		fireRate = 1.6,
 		magazine = 6,
 		reloadTime = 2.25,
-		hasDamageFalloff = true,
+		falloff = { start = 30, finish = 60, minMultiplier = 0.75 },
+		range = DEFAULT_RANGE,
+		spread = { hip = 0.3, moving = 1.5, bloomPerShot = 1.2, bloomMax = 3, bloomRecovery = 5 }, -- recompensa calma
+		recoil = { kick = 3, sway = 0.3, recovery = 8 },
+		tracer = "Normal",
 		autoFire = "MaxRateOnTarget",
 		referenceShotsToKill = 4,
 		referenceTimeToKill = 1.9,
@@ -136,13 +198,18 @@ local Weapons: { WeaponDef } = {
 		slot = "primary",
 		fireMode = "Auto",
 		altMode = "Burst",
-		burstCount = 4,
+		burst = { count = 4, rate = 16, cooldown = 0.4 },
 		damage = 8,
 		pellets = 1,
 		fireRate = 13,
 		magazine = 25,
 		reloadTime = 2.25,
-		hasDamageFalloff = true,
+		falloff = { start = 15, finish = 40, minMultiplier = 0.65 },
+		range = DEFAULT_RANGE,
+		-- espalha muito em movimento contínuo (GDD 7.2.4)
+		spread = { hip = 0.9, moving = 1.0, alt = 0.8, bloomPerShot = 0.35, bloomMax = 5, bloomRecovery = 8 },
+		recoil = { kick = 0.45, sway = 0.25, recovery = 10 },
+		tracer = "Normal",
 		autoFire = "WhileOnTarget",
 		referenceShotsToKill = 19,
 		referenceTimeToKill = 1.4,
@@ -157,7 +224,12 @@ local Weapons: { WeaponDef } = {
 		fireRate = 11,
 		magazine = 30,
 		reloadTime = 2.25,
-		hasDamageFalloff = true,
+		falloff = { start = 20, finish = 50, minMultiplier = 0.75 },
+		range = DEFAULT_RANGE,
+		-- atirar andando é preciso (GDD 7.2.4)
+		spread = { hip = 0.7, moving = 0.3, bloomPerShot = 0.2, bloomMax = 2.5, bloomRecovery = 8 },
+		recoil = { kick = 0.4, sway = 0.15, recovery = 10 },
+		tracer = "Normal",
 		autoFire = "WhileOnTarget",
 		referenceShotsToKill = 17,
 		referenceTimeToKill = 1.45,
@@ -175,7 +247,14 @@ local Weapons: { WeaponDef } = {
 		fireRate = 1.1,
 		magazine = 5,
 		reloadTime = 2.5,
-		hasDamageFalloff = true,
+		falloff = { start = 8, finish = 20, minMultiplier = 0.3 },
+		range = SHOTGUN_RANGE,
+		effectiveRange = 12,
+		pelletSpread = 5,
+		focusedPelletSpread = 2.2, -- alcança um pouco mais longe
+		spread = { hip = 0, moving = 1, bloomPerShot = 0, bloomMax = 0, bloomRecovery = 10 },
+		recoil = { kick = 3.5, sway = 0.4, recovery = 9 },
+		tracer = "Normal",
 		autoFire = "InEffectiveRange",
 		referenceShotsToKill = 3,
 		referenceTimeToKill = 1.8,
@@ -190,7 +269,13 @@ local Weapons: { WeaponDef } = {
 		fireRate = 3,
 		magazine = 7,
 		reloadTime = 2.2,
-		hasDamageFalloff = true,
+		falloff = { start = 8, finish = 18, minMultiplier = 0.3 },
+		range = SHOTGUN_RANGE,
+		effectiveRange = 10,
+		pelletSpread = 5.5,
+		spread = { hip = 0, moving = 1, bloomPerShot = 0, bloomMax = 0, bloomRecovery = 10 },
+		recoil = { kick = 1.8, sway = 0.3, recovery = 10 },
+		tracer = "Normal",
 		autoFire = "InEffectiveRange",
 		referenceShotsToKill = 5,
 		referenceTimeToKill = 1.35,
@@ -203,13 +288,18 @@ local Weapons: { WeaponDef } = {
 		slot = "primary",
 		fireMode = "Auto",
 		altMode = "ScopeBurst",
-		burstCount = 3,
+		burst = { count = 3, rate = 15, cooldown = 0.35 },
 		damage = 10,
 		pellets = 1,
 		fireRate = 9,
 		magazine = 24,
 		reloadTime = 2.5,
-		hasDamageFalloff = true,
+		falloff = { start = 40, finish = 80, minMultiplier = 0.85 },
+		range = DEFAULT_RANGE,
+		spread = { hip = 0.5, moving = 1.2, alt = 0.15, bloomPerShot = 0.25, bloomMax = 2.5, bloomRecovery = 8 },
+		recoil = { kick = 0.45, sway = 0.15, recovery = 10 },
+		scopeFieldOfView = 60,
+		tracer = "Normal",
 		autoFire = "WhileOnTarget",
 		referenceShotsToKill = 15,
 		referenceTimeToKill = 1.6,
@@ -225,7 +315,12 @@ local Weapons: { WeaponDef } = {
 		fireRate = 2.8,
 		magazine = 12,
 		reloadTime = 2.5,
-		hasDamageFalloff = true,
+		falloff = { start = 50, finish = 100, minMultiplier = 0.9 },
+		range = DEFAULT_RANGE,
+		spread = { hip = 0.8, moving = 2, alt = 0.05, bloomPerShot = 0.5, bloomMax = 2, bloomRecovery = 6 },
+		recoil = { kick = 1.4, sway = 0.15, recovery = 8 },
+		scopeFieldOfView = 55,
+		tracer = "Normal",
 		autoFire = "MaxRateOnTarget",
 		referenceShotsToKill = 5,
 		referenceTimeToKill = 1.45,
@@ -244,7 +339,11 @@ local Weapons: { WeaponDef } = {
 		reloadTime = 3.25,
 		spinUpTime = 0.5,
 		moveSpeedMultiplier = 0.85, -- 15% mais lento
-		hasDamageFalloff = true,
+		falloff = { start = 30, finish = 60, minMultiplier = 0.8 },
+		range = DEFAULT_RANGE,
+		spread = { hip = 1.2, moving = 1.5, bloomPerShot = 0.1, bloomMax = 2, bloomRecovery = 6 },
+		recoil = { kick = 0.35, sway = 0.25, recovery = 8 },
+		tracer = "Normal",
 		autoFire = "SpinUpNearTarget",
 		referenceShotsToKill = 17,
 		referenceTimeToKill = 2.0,
@@ -261,8 +360,12 @@ local Weapons: { WeaponDef } = {
 		reloadTime = 5.0,
 		spinUpTime = 1.0,
 		moveSpeedMultiplier = 0.8, -- 20% mais lento
-		penetratesThinCover = true, -- com dano reduzido (valor na F2)
-		hasDamageFalloff = true,
+		falloff = { start = 30, finish = 60, minMultiplier = 0.8 },
+		range = DEFAULT_RANGE,
+		spread = { hip = 1.4, moving = 1.5, bloomPerShot = 0.08, bloomMax = 2.2, bloomRecovery = 6 },
+		recoil = { kick = 0.3, sway = 0.25, recovery = 8 },
+		penetration = { maxThickness = 1.5, damageMultiplier = 0.5 }, -- coberturas finas, dano reduzido
+		tracer = "Normal",
 		autoFire = "SpinUpNearTarget",
 		referenceShotsToKill = 17,
 		referenceTimeToKill = 2.4,
@@ -279,8 +382,11 @@ local Weapons: { WeaponDef } = {
 		fireRate = 9,
 		magazine = 30,
 		reloadTime = 2.5,
-		subtleTracer = true,
-		hasDamageFalloff = true, -- perde um pouco de longe
+		falloff = { start = 30, finish = 60, minMultiplier = 0.85 }, -- perde um pouco de longe
+		range = DEFAULT_RANGE,
+		spread = { hip = 0.25, moving = 1.2, bloomPerShot = 0.15, bloomMax = 1.8, bloomRecovery = 8 },
+		recoil = { kick = 0.35, sway = 0.1, recovery = 10 }, -- pouco recuo
+		tracer = "Subtle", -- difícil saber de onde vem
 		autoFire = "WhileOnTarget",
 		referenceShotsToKill = 14,
 		referenceTimeToKill = 1.45,
@@ -295,7 +401,11 @@ local Weapons: { WeaponDef } = {
 		fireRate = 6.5,
 		magazine = 25,
 		reloadTime = 2.5,
-		hasDamageFalloff = false, -- sem perda de dano com a distância
+		falloff = nil, -- sem perda de dano com a distância
+		range = DEFAULT_RANGE,
+		spread = { hip = 0.25, moving = 1.4, bloomPerShot = 0.3, bloomMax = 3, bloomRecovery = 8 },
+		recoil = { kick = 0.75, sway = 0.25, recovery = 8 }, -- recuo forte
+		tracer = "Normal",
 		autoFire = "WhileOnTarget",
 		referenceShotsToKill = 10,
 		referenceTimeToKill = 1.4,
@@ -313,7 +423,11 @@ local Weapons: { WeaponDef } = {
 		fireRate = 1 / 1.1, -- 1 tiro a cada 1,1 s
 		magazine = 5,
 		reloadTime = 2.5,
-		hasDamageFalloff = true,
+		range = DEFAULT_RANGE,
+		spread = { hip = 4, moving = 3, alt = 0.05, bloomPerShot = 0, bloomMax = 0, bloomRecovery = 10 },
+		recoil = { kick = 3, sway = 0.2, recovery = 8 },
+		scopeFieldOfView = 35,
+		tracer = "Normal",
 		autoFire = "ScopedOnTarget",
 		referenceShotsToKill = 3,
 		referenceTimeToKill = 2.2,
@@ -329,7 +443,11 @@ local Weapons: { WeaponDef } = {
 		fireRate = 1 / 0.4, -- os 2 tiros saem em 0,4 s; depois precisa recarregar
 		magazine = 2,
 		reloadTime = 2.8,
-		hasDamageFalloff = true,
+		range = DEFAULT_RANGE,
+		spread = { hip = 5, moving = 3, alt = 0.1, bloomPerShot = 0, bloomMax = 0, bloomRecovery = 10 },
+		recoil = { kick = 3.5, sway = 0.3, recovery = 8 },
+		scopeFieldOfView = 35,
+		tracer = "Normal",
 		autoFire = "ScopedOnTarget",
 		referenceShotsToKill = 3,
 		referenceTimeToKill = 3.2,
@@ -345,8 +463,12 @@ local Weapons: { WeaponDef } = {
 		fireRate = 1 / 1.6, -- 1 tiro a cada 1,6 s
 		magazine = 5,
 		reloadTime = 3.7,
-		scopedMoveSpeedMultiplier = 0.7, -- mirando, 30% mais lento
-		hasDamageFalloff = true,
+		scopedMoveSpeedMultiplier = 0.7, -- mirando, 30% mais lento [DECIDIDO]
+		range = DEFAULT_RANGE,
+		spread = { hip = 7, moving = 4, alt = 0, bloomPerShot = 0, bloomMax = 0, bloomRecovery = 10 },
+		recoil = { kick = 4, sway = 0.2, recovery = 7 },
+		scopeFieldOfView = 20,
+		tracer = "Normal",
 		autoFire = "ScopedOnTarget",
 		referenceShotsToKill = 2,
 		referenceTimeToKill = 1.6,
@@ -362,6 +484,7 @@ local Melee: MeleeDef = {
 	heavyDamage = 75,
 	heavyInterval = 1.2,
 	moveSpeedMultiplier = 1.1, -- +10%
+	touchHeavyHoldSeconds = 0.35,
 }
 
 -- Pistolas liberadas desde a 1ª rodada (GDD 7.2.2)
@@ -374,7 +497,7 @@ local WeaponConfig = {
 	-- Regra de segurança (GDD 7.2.1) [DECIDIDO]: nenhum tiro único pode passar disto.
 	MaxSingleShotDamage = 135,
 
-	-- Moedor e Gêmea entram na fase Pesadas? [PROPOSTA] (GDD 7.2.2 e pergunta 2 da seção 18)
+	-- Moedor e Gêmea entram na fase Pesadas [DECIDIDO] (GDD 7.2.2).
 	-- false = só Rajada, Trovão e Luneta.
 	HeavyIncludesMoedorAndGemea = true,
 
@@ -411,6 +534,9 @@ local WeaponConfig = {
 
 	-- Munição reserva infinita (GDD 7.2.5)
 	InfiniteReserveAmmo = true,
+
+	-- Tempo para sacar uma arma ao trocar [PROPOSTA]
+	EquipTime = 0.35,
 }
 
 local byId: { [string]: WeaponDef } = {}
@@ -424,6 +550,16 @@ end
 
 function WeaponConfig.isValidId(id: string): boolean
 	return byId[id] ~= nil or id == Melee.id
+end
+
+-- A arma tem mira (zoom)?
+function WeaponConfig.hasScope(def: WeaponDef): boolean
+	return def.altMode == "Scope" or def.altMode == "ScopeBurst"
+end
+
+-- A arma usa rajada no modo alternativo?
+function WeaponConfig.hasBurst(def: WeaponDef): boolean
+	return def.altMode == "Burst" or def.altMode == "ScopeBurst"
 end
 
 function WeaponConfig.getPhaseForRound(round: number): WeaponPhase

@@ -26,7 +26,22 @@ local PlayerDataClient = require(script.Parent.PlayerDataClient)
 
 local DevPanelController = {}
 
+-- Ferramentas entregues a quem adiciona uma seção ao painel (DevPanelController.addSection).
+export type SectionUi = {
+	addTitle: (text: string) -> TextLabel,
+	addLabel: (text: string) -> TextLabel,
+	addButton: (text: string, isPrimary: boolean, onClick: () -> ()) -> TextButton,
+	addCustom: (instance: GuiObject) -> GuiObject,
+	makeButton: (text: string, isPrimary: boolean) -> TextButton,
+	showStatus: (ok: boolean, message: string) -> (),
+}
+export type SectionBuilder = (ui: SectionUi) -> ()
+
+local CLOSE_BUTTON_ORDER = 1e6 -- o botão FECHAR fica sempre por último
+
 local player = Players.LocalPlayer
+local sectionUi: SectionUi? = nil
+local pendingSections: { SectionBuilder } = {}
 
 local panel: Frame
 local statusLabel: TextLabel
@@ -241,6 +256,28 @@ local function build(teleportEvent: RemoteEvent, dataEvent: RemoteEvent)
 		return instance
 	end
 
+	-- Ferramentas para seções extras (ex.: combate, só no place Partida)
+	sectionUi = {
+		addTitle = function(text: string): TextLabel
+			return add(makeLabel(text, Theme.Font.Title, Theme.TextSize.Title, Theme.Color.TextPrimary))
+		end,
+		addLabel = function(text: string): TextLabel
+			return add(makeLabel(text, Theme.Font.Body, Theme.TextSize.Body, Theme.Color.TextSecondary))
+		end,
+		addButton = function(text: string, isPrimary: boolean, onClick: () -> ()): TextButton
+			local button = add(makeButton(text, isPrimary))
+			button.Activated:Connect(onClick)
+			return button
+		end,
+		addCustom = function(instance: GuiObject): GuiObject
+			return add(instance)
+		end,
+		makeButton = makeButton,
+		showStatus = function(ok: boolean, message: string)
+			showStatus(ok, message)
+		end,
+	}
+
 	-- Status no topo: aparece sem precisar rolar
 	statusLabel = makeLabel("", Theme.Font.Body, Theme.TextSize.Body, Theme.Color.TextSecondary)
 	statusLabel.Name = "Status"
@@ -340,8 +377,15 @@ local function build(teleportEvent: RemoteEvent, dataEvent: RemoteEvent)
 		end)
 	end)
 
+	-- Seções extras pedidas antes do painel existir
+	for _, builder in pendingSections do
+		builder(sectionUi :: SectionUi)
+	end
+	table.clear(pendingSections)
+
 	local closeButton = add(makeButton(Strings.Dev.Close, false))
 	closeButton.Name = "Close"
+	closeButton.LayoutOrder = CLOSE_BUTTON_ORDER
 	-- Modal = true libera o mouse da primeira pessoa enquanto o painel está aberto (PC).
 	closeButton.Modal = true
 	closeButton.Activated:Connect(function()
@@ -350,6 +394,19 @@ local function build(teleportEvent: RemoteEvent, dataEvent: RemoteEvent)
 
 	gui.Parent = playerGui
 	toggleGui.Parent = playerGui
+end
+
+-- Adiciona uma seção ao painel (antes do botão FECHAR). Só tem efeito em DEV_.
+function DevPanelController.addSection(builder: SectionBuilder)
+	if not Env.IsDev then
+		return
+	end
+	local ui = sectionUi
+	if ui then
+		builder(ui)
+	else
+		table.insert(pendingSections, builder)
+	end
 end
 
 function DevPanelController.Start()

@@ -14,6 +14,13 @@ export type EventName =
 	| "SettingsUpdateResult" -- servidor -> cliente: (sucesso: boolean, chaveDaMensagem: string, erroDeValidação: string?)
 	| "DevDataCommand" -- cliente -> servidor: (comando: string) — só em DEV_
 	| "DevDataResult" -- servidor -> cliente: (sucesso: boolean, chaveDaMensagem: string, detalhe: string?) — só em DEV_
+	| "WeaponAction" -- cliente -> servidor: (ação, horário, argumento) — ver Combat/CombatTypes
+	| "CombatEvent" -- servidor -> cliente: (tipo, dados) — ver Combat/CombatTypes
+	| "DevCombatCommand" -- cliente -> servidor: (comando: string, argumento: any) — só em DEV_
+	| "DevCombatResult" -- servidor -> cliente: (sucesso: boolean, chaveDaMensagem: string, detalhe: string?) — só em DEV_
+
+-- Eventos sem garantia de entrega (efeitos visuais frequentes; perder um não muda o jogo).
+export type UnreliableEventName = "ShotFx" -- servidor -> clientes: (atirador: Model, arma: string, origem: Vector3, fins: {Vector3})
 
 local FOLDER_NAME = "Remotes"
 local CLIENT_WAIT_TIMEOUT = 15
@@ -37,23 +44,29 @@ local function getFolder(): Instance
 	return folder
 end
 
-function Remotes.event(name: EventName): RemoteEvent
+local function getOrCreate(name: string, className: string): Instance
 	local folder = getFolder()
-
 	if RunService:IsServer() then
 		local existing = folder:FindFirstChild(name)
-		if existing and existing:IsA("RemoteEvent") then
+		if existing and existing:IsA(className) then
 			return existing
 		end
-		local remote = Instance.new("RemoteEvent")
+		local remote = Instance.new(className)
 		remote.Name = name
 		remote.Parent = folder
 		return remote
 	end
-
 	local remote = folder:WaitForChild(name, CLIENT_WAIT_TIMEOUT)
-	assert(remote and remote:IsA("RemoteEvent"), `Remote "{name}" não encontrado`)
+	assert(remote and remote:IsA(className), `Remote "{name}" não encontrado`)
 	return remote
+end
+
+function Remotes.event(name: EventName): RemoteEvent
+	return getOrCreate(name, "RemoteEvent") :: RemoteEvent
+end
+
+function Remotes.unreliable(name: UnreliableEventName): UnreliableRemoteEvent
+	return getOrCreate(name, "UnreliableRemoteEvent") :: UnreliableRemoteEvent
 end
 
 return Remotes

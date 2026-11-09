@@ -133,7 +133,7 @@ Este documento é a fonte da verdade do jogo. Ele é escrito para ser lido por q
 
 ### 3.3 Cor da equipe `[DECIDIDO]`
 
-- Cada dupla tem uma cor na partida, aplicada em uma parte do personagem que nenhuma skin pode esconder (ex.: faixa no braço, mochila, capacete). O ponto exato de aplicação: `[ABERTO]`.
+- Cada dupla tem uma cor na partida, aplicada em partes do personagem que nenhuma skin pode esconder: **uma faixa em cada braço e o capacete** `[DECIDIDO]`. A faixa do braço também aparece na manga da visão em primeira pessoa.
 
 | Time | Hex de referência |
 |---|---|
@@ -375,7 +375,7 @@ Objetivo: jogadores muito bons não estragarem a experiência de quem está come
 
 - Da 4ª rodada em diante, **só** as primárias da fase Pesadas podem ser escolhidas. `[DECIDIDO]`
 - O Tambor (revólver pesado) só fica disponível a partir da 3ª rodada. `[PROPOSTA]`
-- Alocação de Moedor e Gêmea na fase Pesadas: `[PROPOSTA]`.
+- Moedor e Gêmea entram na fase Pesadas, junto com Rajada, Trovão e Luneta. `[DECIDIDO]`
 
 #### 7.2.3 Tabela de armas `[PROPOSTA]`
 
@@ -491,6 +491,7 @@ Toda arma precisa ser igualmente jogável com toque, mouse e controle.
 - Tiro instantâneo (hitscan) com rastro visual.
 - O cliente mostra o tiro na hora; o servidor valida e aplica o dano.
 - Marcador de acerto na retícula e som diferente quando o escudo quebra.
+- **Sem fogo amigo:** o tiro e o golpe não machucam o parceiro; o tiro passa por ele. `[DECIDIDO]`
 
 ### 7.4 Movimento `[PROPOSTA]`
 
@@ -499,7 +500,8 @@ Toda arma precisa ser igualmente jogável com toque, mouse e controle.
 | Velocidade | 16 studs/s |
 | Correr | não existe |
 | Agachar | não existe |
-| Velocidade mirando com Longo alcance | 60% |
+| Pular | existe, pulo padrão do Roblox (altura em config) `[DECIDIDO]` |
+| Velocidade mirando | só a **Luneta** deixa mais lento: 70% com a mira aberta `[DECIDIDO]`; as outras armas não mudam a velocidade ao mirar |
 
 ### 7.5 Retícula e sensibilidade
 
@@ -525,7 +527,7 @@ Notas de implementação:
 - **Sem sangue.** Acerto mostra faíscas/estilhaço cartoon na cor neutra e o número de dano. Personagem derrubado some em um efeito de poeira/estrelinhas, sem corpo no chão.
 - **Som de tiro:** agradável e macio, nada estridente ou realista demais. Cada arma com som próprio.
 - **Abate:**
-  - Aviso na **parte de baixo da tela, centralizado**: `1 KILL`, `2 KILLS`, … contando os abates do jogador **na rodada**. `[PROPOSTA]` (confirmar se conta por rodada ou por partida)
+  - Aviso na **parte de baixo da tela, centralizado**: `1 KILL`, `2 KILLS`, … contando os abates do jogador **na partida inteira** (não zera entre rodadas). `[DECIDIDO]`
   - Som de **"crack"**: estalo curto, oco e macio. A ser revisado com o dono do projeto antes da versão final.
 - Todos os sons são **originais** (não usar sons de outros jogos).
 
@@ -1020,8 +1022,8 @@ Ordem resumida: F0 Base → F1 Dados do jogador → F2 Combate → F3 Loop da pa
 ## 18. Perguntas em aberto
 
 1. Nome do jogo.
-2. Moedor (metralhadora pesada) e Gêmea (sniper de dois tiros) entram na fase Pesadas, ou só Rajada, Trovão e Luneta como no pedido original?
-3. Aviso de abate conta por rodada ou por partida?
+2. ~~Moedor e Gêmea na fase Pesadas?~~ Respondida: entram (seção 7.2.2).
+3. ~~Aviso de abate por rodada ou por partida?~~ Respondida: pela partida (seção 7.7).
 4. O tutorial pode ser pulado?
 5. Girar cartas: sorteio de carta nova (A) ou só girar a carta em 3D para ver (B)? (seção 8.9)
 6. Raridade da carta muda o poder dela ou só a dificuldade de conseguir?
@@ -1029,7 +1031,7 @@ Ordem resumida: F0 Base → F1 Dados do jogador → F2 Combate → F3 Loop da pa
 8. Quais mapas são maiores e quais menores?
 8. Ferramentas de ADM além do elo visual.
 9. Câmeras cinematográficas (cerimônia de campeão) também em primeira pessoa?
-10. Onde fica a cor da equipe no personagem.
+10. ~~Onde fica a cor da equipe no personagem?~~ Respondida: faixa nos dois braços + capacete (seção 3.3).
 11. Final melhor de 3: sim ou não?
 12. Preços em Robux e passe VIP.
 13. Plantas baixas dos 4 mapas e paletas.
@@ -1089,3 +1091,28 @@ Detalhes de implementação decididos durante o desenvolvimento (não são regra
 | **Comandos de teste** no painel TESTE (só `DEV_`): +100 moedas, sensibilidade +0,5 e "config inválida" (pelo remote real de configurações), ver perfil (JSON completo no Output do servidor) e resetar perfil (pede segundo toque). Atributo `DEV_SimulateLoadFailure = true` no `ServerStorage` faz a carga falhar. | FASES F1 e teste "falha simulada" de DADOS 10. |
 | **Testes automáticos** em `src/tests` (sincronizado em `ServerStorage.Tests`): `require(game.ServerStorage.Tests.Runner).run()` no Studio. | Lógica pura testável sem servidor. |
 | Botão **TESTE** numa `ScreenGui` própria com `ScreenInsets = CoreUISafeInsets`, para ficar abaixo da barra do Roblox (menu, chat) em qualquer aparelho. O painel em si continua centralizado. | Na F0 o botão ficava por baixo do menu do Roblox. Regra para toda interface: elementos no topo da tela usam `CoreUISafeInsets`. |
+
+### F2 · Combate
+
+| Decisão | Por quê |
+|---|---|
+| **Uma só máquina de estados das armas** (`Shared/Combat/WeaponState`) roda no cliente (resposta na hora) e no servidor (autoridade): munição, cadência, recarga, rajada, aquecimento e tempo de sacar (`WeaponConfig.EquipTime`). | Cliente e servidor nunca discordam da regra; os testes usam o mesmo código. |
+| **Validação do tiro:** o cliente manda o horário do tiro em tempo do servidor (`GetServerTimeNow`). O servidor só aceita horários até 0,5 s no passado e 0,1 s no futuro, sempre em ordem, e roda a cadência com esses horários. Também confere: origem perto da cabeça, alvo inimigo e vivo, distância ≤ alcance, ponto de acerto perto da hitbox (folga de 6 studs pelo atraso da rede) e linha de visão contra o mapa. Números em `CombatConfig.Validation`. | Cadência exata mesmo com a rede oscilando, sem deixar o cliente atirar mais rápido (teste: 20 tiros de uma vez → 1 aceito). |
+| **O cliente decide em quem acertou e o servidor confere** (sem rebobinar posições no servidor). | Simples e responsivo; a folga cobre o atraso. Rebobinar fica para depois, se o teste mostrar necessidade. |
+| **Hitbox:** um cilindro invisível em pé (`Hitbox`, raio 1,1 × altura 5,2) preso ao personagem. Grupos de colisão: o corpo (`CharacterBody`) não para tiros; os tiros (`ShotRay`) só acertam o mapa e as hitboxes; a visão (`SightRay`) só o mapa. | GDD 3.2: cápsula única, sem cabeça. O Roblox não tem cápsula; o servidor usa a conta da cápsula com folga. |
+| **Personagem base:** blocos padrão do Roblox via `HumanoidDescription` (cinza, pernas escuras), sem avatar, acessórios nem roupa. `CharacterAutoLoads` desligado; o servidor cria e recria o personagem. Derrubado: o modelo some na hora (poeira nos clientes) e volta em 3 s na arena de teste. | GDD 3.2 e 7.7. |
+| **Vida e escudo** ficam no servidor (`Combatants`); o cliente lê os atributos `Hp`, `Shield`, `Alive` e `TeamId` do modelo. A vida do `Humanoid` não é usada (cair no vazio conta como derrubado sem atacante). Proteção de 3 s ao aparecer. | Servidor é a autoridade (CLAUDE.md). |
+| **Metralhadoras:** segurando o gatilho, o primeiro tiro sai depois do tempo de aquecimento (0,5 s / 1 s); soltar esfria. | É o modelo que bate com o tempo para derrubar da tabela 7.2.3. |
+| **Gêmea:** cada toque no gatilho é um tiro (intervalo mínimo 0,4 s); com 2 no pente, recarrega em seguida. | Bate com os 3,2 s da tabela. |
+| **Modo alternativo:** no PC e no controle, segurar (botão direito / gatilho esquerdo); no celular, o botão MIRA/MODO liga e desliga. Rajadas continuam sozinhas depois de começar. | Mesmo comportamento nos três controles, sem segurar dois botões no toque. |
+| **Sensibilidade:** `AimCamera` (comum aos 3 places) roda logo depois da câmera do Roblox e multiplica o giro do quadro pela sensibilidade do perfil do controle em uso (× multiplicador da mira aberta). Recuo, assistência de mira e "arrastar no botão ATIRAR" entram como rotações extras. Campo de visão 80°. | Funciona igual para toque, mouse e controle, sem trocar a câmera do Roblox (a trava em primeira pessoa da F0 continua). |
+| **Recuo:** sobe e balança sempre no mesmo padrão; ao parar de atirar, volta à mira original. **Espalhamento** cresce a cada tiro seguido e ao andar/pular. Valores por arma em `WeaponConfig`. | GDD 7.2.6: recuo simples e previsível. |
+| **Assistência de mira** (toque e controle, se ligada no perfil): freia a mira perto do inimigo (×0,6) e puxa 4°/s só enquanto o jogador se mexe. **Tiro automático** (toque, se ligado no perfil) conforme o tipo de arma do GDD 7.2.6. | GDD 7.2.6 e 13.1. |
+| **Moedor atravessa** uma cobertura de até 1,5 stud de espessura, com 50% do dano. | "Dano reduzido" do GDD 7.2.4. |
+| **Contornos:** `Highlight` com profundidade "Occluded" no inimigo (só o que aparece) e "AlwaysOnTop" no parceiro, ligado só quando os 6 pontos do corpo estão escondidos (checagem a cada 0,1 s). Nomes em cima da cabeça só para o parceiro. | GDD 7.6. |
+| **Arma em primeira pessoa:** modelo de blocos só no cliente, preso à câmera, com as posições do guia por categoria (`CombatConfig.ViewModel`). No celular, 10% menor e mais baixa. Some com a mira de sniper aberta (luneta redonda no HUD). | Guia da arma em primeira pessoa. Modelos finais na F10. |
+| **Sons provisórios** da biblioteca que vem com o Roblox (`rbxasset://sounds`), com tom diferente por arma. | Originais (não são de outro jogo); os finais são da F10. |
+| **Arena de teste** montada por código ao iniciar o servidor (`TestArenaService`, nada salvo no place): bases das duas duplas, coberturas cheias e de meia altura, cobertura fina, parede para o contorno do parceiro, estande com alvos a 10–100 studs e alvos que andam. Desligada na F3 (`CombatConfig.TestArena.Enabled`). | FASES F2. |
+| **Duplas de teste:** quem entra vai para Azul ou Laranja (a que tiver menos gente); o painel TESTE troca. A formação de verdade é da F3. | Dá para testar inimigo e parceiro com 2 a 4 jogadores. |
+| **Painel TESTE › COMBATE** (só `DEV_`, só na Partida): escolher qualquer uma das 18 armas, trocar de dupla, vida cheia, alvos andando/parados e o teste de exploit de cadência. Ao derrubar, o HUD mostra o tempo e os tiros (medidos pelos horários dos tiros). | Critérios de aceite da F2. |
+| `TextUtil.upper` converte letras acentuadas. | O `string.upper` do Luau deixava "BASTãO". |
