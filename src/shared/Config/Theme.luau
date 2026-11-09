@@ -96,6 +96,25 @@ local Theme = {
 	},
 	ScopeDarkTransparency = 0.05,
 
+	-- Partida (F3): mundo cinza, zona e destaques do HUD. Sem neon (ESTILO 2.6).
+	Match = {
+		MiranteFloor = hex("#C9CCD4"),
+		MiranteEdge = hex("#9AA0AE"),
+		IslandFloor = hex("#B9BBC2"),
+		IslandRail = hex("#8E929E"),
+		IslandCover = hex("#A3A7B2"),
+		IslandWall = hex("#8E929E"),
+		IslandRoof = hex("#7C8191"),
+		IslandRamp = hex("#ADB1BC"),
+		IslandUnderside = hex("#6F7486"),
+		IslandLabel = hex("#4A5068"),
+		Zone = hex("#8B5CF6"), -- parede da zona: roxo do acento, bem transparente
+		Virada = hex("#F5B700"), -- selo e avisos da Rodada da Virada
+		Final = hex("#A970FF"),
+		LifeLost = hex("#5A6280"),
+	},
+	ZoneTransparency = 0.82,
+
 	-- Fontes (ESTILO 2.3) [PROPOSTA]
 	Font = {
 		Title = Font.new("rbxasset://fonts/families/Oswald.json", Enum.FontWeight.Bold),

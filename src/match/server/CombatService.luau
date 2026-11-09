@@ -9,6 +9,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
+local CharacterConfig = require(Shared.Config.CharacterConfig)
 local CombatConfig = require(Shared.Config.CombatConfig)
 local CombatNames = require(Shared.Combat.CombatNames)
 local CombatTypes = require(Shared.Combat.CombatTypes)
@@ -51,6 +52,7 @@ local shotFx: UnreliableRemoteEvent
 
 local players: { [Player]: PlayerCombat } = {}
 local exploitWatches: { [Player]: ExploitWatch } = {}
+local activityCallbacks: { (player: Player) -> () } = {}
 
 local sightParams = RaycastParams.new()
 sightParams.CollisionGroup = CombatNames.Groups.SightRay
@@ -123,6 +125,22 @@ function CombatService.setLoadout(player: Player, primary: string?, secondary: s
 	players[player] = pc
 	sendLoadout(player, pc)
 	updateWalkSpeed(player, pc)
+end
+
+-- Sem armas (mirante, preparação): o servidor recusa qualquer ação e o cliente esconde a arma.
+function CombatService.disarm(player: Player)
+	players[player] = nil
+	combatEvent:FireClient(player, "Disarm", nil)
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		humanoid.WalkSpeed = CharacterConfig.Movement.WalkSpeed
+	end
+end
+
+-- Chamado a cada pedido de arma aceito para análise (atividade do jogador, GDD 4.9 AFK).
+function CombatService.onActivity(callback: (player: Player) -> ())
+	table.insert(activityCallbacks, callback)
 end
 
 function CombatService.getLoadout(player: Player): Loadout?
@@ -278,7 +296,7 @@ local function validateHit(
 	if target == nil or target == shooter or not target.alive then
 		return nil, 0
 	end
-	if not Combatants.canDamage(shooter.teamId, target) then
+	if not Combatants.canDamage(shooter, target) then
 		return nil, 0
 	end
 	local distance = (hit.position - origin).Magnitude
@@ -393,7 +411,7 @@ local function onMelee(player: Player, pc: PlayerCombat, shooter: Combatants.Com
 		return -- golpe no ar
 	end
 	local target = Combatants.fromHitbox(part :: Instance)
-	if target == nil or target == shooter or not target.alive or not Combatants.canDamage(shooter.teamId, target) then
+	if target == nil or target == shooter or not target.alive or not Combatants.canDamage(shooter, target) then
 		return
 	end
 	local head = headPosition(shooter.model)
@@ -427,6 +445,9 @@ local function onAction(player: Player, action: unknown, t: unknown, arg: unknow
 	end
 	local at = t :: number
 	pc.lastActionT = at
+	for _, callback in activityCallbacks do
+		callback(player)
+	end
 
 	if action == "Fire" then
 		onFire(player, pc, shooter, at, arg)
@@ -477,8 +498,12 @@ end
 function CombatService.Start()
 	actionEvent.OnServerEvent:Connect(onAction)
 
-	-- Ao aparecer: armas novas com munição cheia (mantém as escolhidas).
+	-- Arena de teste (F2): ao aparecer, armas novas com munição cheia (mantém as escolhidas).
+	-- Na partida (F3) quem dá e tira as armas é o MatchService, a cada rodada.
 	CharacterService.onSpawned(function(player: Player, _character: Model)
+		if not CombatConfig.TestArena.Enabled then
+			return
+		end
 		local previous = players[player]
 		local loadout = if previous then previous.loadout else defaultLoadout()
 		local pc = buildCombat(loadout)

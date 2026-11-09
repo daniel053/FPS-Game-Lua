@@ -18,9 +18,16 @@ export type EventName =
 	| "CombatEvent" -- servidor -> cliente: (tipo, dados) — ver Combat/CombatTypes
 	| "DevCombatCommand" -- cliente -> servidor: (comando: string, argumento: any) — só em DEV_
 	| "DevCombatResult" -- servidor -> cliente: (sucesso: boolean, chaveDaMensagem: string, detalhe: string?) — só em DEV_
+	| "MatchState" -- servidor -> clientes: (foto: Match/MatchTypes.Snapshot)
+	| "MatchEvent" -- servidor -> cliente: (tipo, dados) — ver Match/MatchTypes
+	| "MatchRequest" -- cliente -> servidor: (tipo, argumento) — ver Match/MatchTypes
+	| "DevMatchCommand" -- cliente -> servidor: (comando: string, argumento: any) — só em DEV_
+	| "DevMatchResult" -- servidor -> cliente: (sucesso: boolean, chaveDaMensagem: string, detalhe: string?) — só em DEV_
 
 -- Eventos sem garantia de entrega (efeitos visuais frequentes; perder um não muda o jogo).
-export type UnreliableEventName = "ShotFx" -- servidor -> clientes: (atirador: Model, arma: string, origem: Vector3, fins: {Vector3})
+export type UnreliableEventName =
+	"ShotFx" -- servidor -> clientes: (atirador: Model, arma: string, origem: Vector3, fins: {Vector3})
+	| "LookSync" -- cliente -> servidor: (direção do olhar: Vector3), para o parceiro espectar
 
 local FOLDER_NAME = "Remotes"
 local CLIENT_WAIT_TIMEOUT = 15

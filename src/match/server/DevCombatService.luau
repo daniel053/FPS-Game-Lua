@@ -51,6 +51,10 @@ local function onCommand(player: Player, command: unknown, arg: unknown)
 		local ok = CombatService.devSetWeapon(player, arg)
 		reply(player, ok, if ok then "WeaponSet" else "NotAlive", Strings.Weapons[arg])
 	elseif command == "SwitchTeam" then
+		if not TestArenaService.isEnabled() then
+			reply(player, false, "TestArenaOnly") -- na partida, as duplas são do MatchService
+			return
+		end
 		local teamId = TeamService.cycle(player)
 		reply(player, true, "TeamSet", Strings.Teams[teamId])
 	elseif command == "Heal" then

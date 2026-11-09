@@ -9,12 +9,28 @@ local MatchConfig = {
 
 	-- Máquina de estados (GDD 4.1)
 	ReceivingPlayersTimeout = 20, -- RECEBENDO_JOGADORES, até 20 s
-	ArenaTeleportTime = 3, -- TELEPORTE
+	ArenaTeleportTime = 3, -- TELEPORTE (confrontos na tela, depois todos vão para as ilhas)
 	PrepTimeFirstRound = 15, -- PREPARACAO na 1ª rodada (inclui escolha de carta) [PROPOSTA]
 	PrepTimeOtherRounds = 10, -- PREPARACAO nas demais [PROPOSTA]
 	CombatMaxTime = 90, -- COMBATE, até 90 s
 	RoundEndTime = 5, -- FIM_RODADA (placar)
 	ChampionCeremonyTime = 15, -- CAMPEAO
+	EndScreenTime = 20, -- TELA_FINAL: escolhas da seção 4.8, depois todos voltam ao lobby
+	-- Duelo que acabou antes dos outros: a dupla volta ao mirante depois deste tempo
+	DuelEndToMiranteDelay = 3,
+
+	-- Começo da partida (sem fila até a F5): quem estiver no servidor.
+	-- Começa ReceivingPlayersTimeout segundos depois do primeiro jogador, se houver o mínimo.
+	Start = {
+		MinPlayers = 4, -- igual ao mínimo flexível da fila (QueueConfig.FlexibleMinPlayers)
+		DevMinPlayers = 2, -- ambiente DEV_: dá para testar com 2 clientes (ou 1 + jogadores de teste)
+		MaxPlayers = 16, -- QueueConfig.MaxPlayers
+	},
+
+	-- Jogador sem par (número ímpar) joga 1v2, sem bônus (GDD 4.2) [DECIDIDO].
+	-- Quem fica sozinho: o de maior elo entre os que sobraram sem par [PROPOSTA].
+	SoloPlayerBonus = false,
+	OddPlayerSolo = "HighestElo",
 
 	-- Zona e tempo esgotado (GDD 4.4) [PROPOSTA]
 	Zone = {
@@ -22,6 +38,8 @@ local MatchConfig = {
 		CloseDuration = 30, -- fecha até o centro em 30 s
 		DamagePerSecond = 10,
 		IgnoresShield = true,
+		FinalRadius = 8, -- raio no fim do fechamento (studs)
+		StartMargin = 6, -- o círculo começa cobrindo a ilha inteira + esta folga
 	},
 	-- Aos 90 s com as duas duplas vivas: vence quem tiver mais HP + escudo somados; empate exato = ninguém perde vida.
 	TimeoutTieBreak = "HpPlusShield",
@@ -37,27 +55,41 @@ local MatchConfig = {
 	Pairing = {
 		AvoidRepeatOpponent = true,
 		ByePriorityMoreLives = true, -- folga gira; prioridade para quem tem mais vidas
-		AvoidSameMapTwiceInArena = true,
+		AvoidSameMapTwiceInArena = true, -- a dupla não joga na mesma ilha duas rodadas seguidas (se der)
+		Attempts = 60, -- sorteios testados para achar a combinação com menos repetições
 	},
 
-	-- Fim da partida (GDD 4.7) [PROPOSTA] — final melhor de 3 ainda em aberto (GDD 18, item 11)
+	-- Fim da partida (GDD 4.7) [PROPOSTA]. Com 2 duplas vivas começa a final: as vidas param de
+	-- contar e vence quem ganhar WinsNeeded rodadas [DECIDIDO pelo dono do projeto na F3].
 	Final = {
 		Enabled = true,
 		BestOf = 3,
+		WinsNeeded = 2,
 	},
 	TargetDurationMinutes = { Min = 8, Max = 12 },
-
-	-- Jogador sem par joga 1v2, sem bônus (GDD 4.2) [DECIDIDO]
-	SoloPlayerBonus = false,
 
 	-- Casos especiais (GDD 4.9)
 	Afk = {
 		WarnAfter = 30,
 		SendToLobbyAfter = 60,
+		MoveThreshold = 1, -- studs andados que contam como atividade
+		LookThreshold = 0.02, -- mudança na direção do olhar que conta como atividade
 	},
+
+	-- Cair da ilha volta para a base e perde o escudo (MapConfig.General) [PROPOSTA]
+	FallOutDepth = 25, -- studs abaixo do chão da ilha (ou do mirante)
+
+	-- Espectar o parceiro: o cliente manda para onde olha (o servidor repassa num atributo)
+	LookSyncPerSecond = 15,
 
 	-- Ult liberada a partir desta rodada (GDD 8.5) [DECIDIDO] — repetida em CardConfig por clareza
 	UltUnlockRound = 4,
+
+	-- Ferramentas de teste (só DEV_)
+	Dev = {
+		MaxBots = 15, -- jogadores de teste (alvos parados) para montar partidas de 4 a 16
+		BotDuelSeconds = 6, -- duelo só entre jogadores de teste: resultado sorteado depois deste tempo
+	},
 }
 
 return MatchConfig

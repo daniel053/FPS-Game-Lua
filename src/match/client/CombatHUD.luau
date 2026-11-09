@@ -20,6 +20,7 @@ local CombatConfig = require(Shared.Config.CombatConfig)
 local CombatNames = require(Shared.Combat.CombatNames)
 local CombatTypes = require(Shared.Combat.CombatTypes)
 local Env = require(Shared.Env)
+local MatchTypes = require(Shared.Match.MatchTypes)
 local PlayerData = require(Shared.Types.PlayerData)
 local Remotes = require(Shared.Remotes)
 local Strings = require(Shared.Config.Strings)
@@ -51,6 +52,7 @@ local hpText: TextLabel
 local ammoText: TextLabel
 local weaponText: TextLabel
 local ammoBlock: Frame
+local healthBlock: Frame
 local slotHints: Frame
 local slotLabels: { [string]: TextLabel } = {}
 local slotRows: { [string]: Frame } = {}
@@ -111,6 +113,7 @@ end
 
 local function buildHealth()
 	local block = frame("Health", gui)
+	healthBlock = block
 	block.AnchorPoint = Vector2.new(0, 1)
 	block.Position = UDim2.new(0, MARGIN, 1, -MARGIN)
 	block.Size = UDim2.fromOffset(BAR_WIDTH + 70, 2 * BAR_HEIGHT + 30)
@@ -403,11 +406,18 @@ end
 local function update()
 	local character = player.Character
 	local alive = character ~= nil and character:GetAttribute(ATTR.Alive) == true
-	knockedText.Visible = character == nil
+	-- Fora do combate (mirante) não há vida, munição nem retícula; derrubado só conta numa ilha.
+	local inCombat = character ~= nil and character:GetAttribute(ATTR.Hp) ~= nil
+	local location = player:GetAttribute(MatchTypes.Attr.Location)
+	local onIsland = typeof(location) == "string" and location ~= MatchTypes.MiranteLocation
+	knockedText.Visible = character == nil and (onIsland or CombatConfig.TestArena.Enabled)
+	healthBlock.Visible = inCombat
+	ammoBlock.Visible = WeaponController.getLoadout() ~= nil
+	slotHints.Visible = ammoBlock.Visible and InputDevice.get() ~= "Touch"
 	crosshair.Visible = alive and not WeaponController.isScopedSniper()
 	scopeOverlay.Visible = alive and WeaponController.isScopedSniper()
 
-	if character then
+	if character and inCombat then
 		local hp = (character:GetAttribute(ATTR.Hp) :: number?) or HEALTH.MaxHp
 		local shield = (character:GetAttribute(ATTR.Shield) :: number?) or HEALTH.MaxShield
 		hpFill.Size = UDim2.fromScale(math.clamp(hp / HEALTH.MaxHp, 0, 1), 1)

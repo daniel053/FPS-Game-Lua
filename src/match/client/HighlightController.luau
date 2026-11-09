@@ -13,6 +13,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage.Shared
 local CombatConfig = require(Shared.Config.CombatConfig)
 local CombatNames = require(Shared.Combat.CombatNames)
+local MatchTypes = require(Shared.Match.MatchTypes)
 local TeamColors = require(Shared.Config.TeamColors)
 local Theme = require(Shared.Config.Theme)
 local Types = require(Shared.Types)
@@ -101,7 +102,10 @@ local function refresh(entry: Tracked)
 	local model = entry.model
 	local highlight = entry.highlight
 	local alive = model:GetAttribute(ATTR.Alive) == true
-	if model == player.Character or not alive then
+	-- Partida (F3): só quem está na mesma ilha. No mirante (sem ilha) ninguém tem contorno.
+	local mine = player.Character and player.Character:GetAttribute(MatchTypes.Attr.Island)
+	local sameIsland = model:GetAttribute(MatchTypes.Attr.Island) == mine
+	if model == player.Character or not alive or not sameIsland then
 		highlight.Enabled = false
 		if entry.nameTag then
 			entry.nameTag.Enabled = false
@@ -151,6 +155,12 @@ local function track(instance: Instance)
 	table.insert(
 		entry.connections,
 		model:GetAttributeChangedSignal(ATTR.Alive):Connect(function()
+			refresh(entry)
+		end)
+	)
+	table.insert(
+		entry.connections,
+		model:GetAttributeChangedSignal(MatchTypes.Attr.Island):Connect(function()
 			refresh(entry)
 		end)
 	)
@@ -226,9 +236,13 @@ function HighlightController.Start()
 		track(instance)
 	end
 	player:GetAttributeChangedSignal(ATTR.TeamId):Connect(refreshAll)
-	player.CharacterAdded:Connect(function()
+	player.CharacterAdded:Connect(function(character: Model)
 		task.defer(refreshAll)
+		character:GetAttributeChangedSignal(MatchTypes.Attr.Island):Connect(refreshAll)
 	end)
+	if player.Character then
+		player.Character:GetAttributeChangedSignal(MatchTypes.Attr.Island):Connect(refreshAll)
+	end
 	PlayerDataClient.onChanged(refreshAll)
 
 	task.spawn(function()

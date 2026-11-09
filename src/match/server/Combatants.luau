@@ -10,8 +10,10 @@ local Shared = ReplicatedStorage.Shared
 local CombatConfig = require(Shared.Config.CombatConfig)
 local CombatNames = require(Shared.Combat.CombatNames)
 local HealthMath = require(Shared.Combat.HealthMath)
+local MatchTypes = require(Shared.Match.MatchTypes)
 
 local ATTR = CombatNames.Attr
+local ISLAND_ATTR = MatchTypes.Attr.Island
 
 export type Combatant = {
 	model: Model,
@@ -19,6 +21,7 @@ export type Combatant = {
 	hitbox: BasePart,
 	health: HealthMath.Health,
 	teamId: string,
+	island: number?, -- ilha da partida (F3): só acerta e é acertado por quem está na mesma
 	displayName: string,
 	alive: boolean,
 	lastDamageAt: number,
@@ -47,11 +50,13 @@ local function publish(c: Combatant)
 	c.model:SetAttribute(ATTR.Alive, c.alive)
 	c.model:SetAttribute(ATTR.TeamId, c.teamId)
 	c.model:SetAttribute(ATTR.DisplayName, c.displayName)
+	c.model:SetAttribute(ISLAND_ATTR, c.island)
 end
 
 export type RegisterOptions = {
 	player: Player?,
 	teamId: string,
+	island: number?,
 	displayName: string,
 	protectSeconds: number?,
 }
@@ -64,6 +69,7 @@ function Combatants.register(model: Model, hitbox: BasePart, options: RegisterOp
 		hitbox = hitbox,
 		health = HealthMath.full(),
 		teamId = options.teamId,
+		island = options.island,
 		displayName = options.displayName,
 		alive = true,
 		lastDamageAt = -math.huge,
@@ -86,6 +92,10 @@ function Combatants.unregister(model: Model)
 	byModel[model] = nil
 	byHitbox[c.hitbox] = nil
 	CollectionService:RemoveTag(model, CombatNames.CombatantTag)
+	-- Sem registro = fora do combate (mirante): o cliente para de atirar e esconde a vida.
+	for _, name in { ATTR.Hp, ATTR.Shield, ATTR.Alive, ISLAND_ATTR } do
+		model:SetAttribute(name, nil)
+	end
 end
 
 function Combatants.get(model: Model): Combatant?
@@ -107,12 +117,15 @@ function Combatants.getByPlayer(player: Player): Combatant?
 	return byModel[character]
 end
 
--- `a` pode machucar `b`? (sem fogo amigo, GDD/CombatConfig)
-function Combatants.canDamage(attackerTeam: string, target: Combatant): boolean
+-- `attacker` pode machucar `target`? Só na mesma ilha (F3) e sem fogo amigo (CombatConfig).
+function Combatants.canDamage(attacker: Combatant, target: Combatant): boolean
+	if attacker.island ~= target.island then
+		return false
+	end
 	if CombatConfig.FriendlyFire then
 		return true
 	end
-	return attackerTeam ~= target.teamId
+	return attacker.teamId ~= target.teamId
 end
 
 function Combatants.setTeam(c: Combatant, teamId: string)
@@ -153,6 +166,30 @@ function Combatants.applyDamage(target: Combatant, amount: number, source: Damag
 		publish(target)
 	end
 	return result
+end
+
+-- Dano da zona (GDD 4.4): ignora o escudo, vai direto na vida.
+function Combatants.applyZoneDamage(target: Combatant, amount: number)
+	if not target.alive or amount ~= amount or amount <= 0 then
+		return
+	end
+	target.health.hp = math.max(0, target.health.hp - amount)
+	if target.health.hp > 0 then
+		publish(target)
+		return
+	end
+	target.alive = false
+	publish(target)
+	for _, callback in knockedCallbacks do
+		task.spawn(callback, target, nil, { seconds = 0, shots = 0 })
+	end
+end
+
+-- Caiu da ilha (MapConfig.General.FallOutLosesShield): perde o escudo.
+function Combatants.clearShield(target: Combatant)
+	target.health.shield = 0
+	target.lastDamageAt = os.clock()
+	publish(target)
 end
 
 -- Derrubar sem atacante (caiu para fora do mapa, saiu do jogo, etc.)

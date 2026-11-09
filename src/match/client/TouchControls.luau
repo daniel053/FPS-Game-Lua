@@ -81,7 +81,8 @@ local function applyLayout()
 end
 
 local function refresh()
-	gui.Enabled = InputDevice.get() == "Touch" and player.Character ~= nil
+	-- Sem armas (mirante, preparação) os botões de combate somem.
+	gui.Enabled = InputDevice.get() == "Touch" and player.Character ~= nil and WeaponController.getLoadout() ~= nil
 	local state = WeaponController.getCurrentGun()
 	local altMode = if state then state.def.altMode else nil
 	aimButton.Visible = altMode ~= nil

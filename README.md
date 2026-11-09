@@ -104,9 +104,45 @@ No mesmo painel **TESTE**, seção **DADOS DO JOGADOR**:
 
 Para simular falha do DataStore: no Studio, selecione o **ServerStorage**, adicione o atributo booleano `DEV_SimulateLoadFailure` marcado e aperte Play. O jogador deve ser expulso com a mensagem de falha, sem perder nada. Apague o atributo depois.
 
+## Testar a partida (F3)
+
+No place **Partida** (porta **34874**). Ao dar Play, o servidor monta o **mirante** (losango no alto) e as **4 ilhas cinza** em volta e abaixo, e roda a partida sozinho. A arena de teste da F2 fica desligada (`CombatConfig.TestArena.Enabled = true` volta a ela).
+
+> Conecte o Rojo **uma vez só** no Studio da Partida. Se o Studio estiver conectado duas vezes, cada arquivo novo aparece duplicado (e a partida roda em dobro).
+
+### Como começar
+
+- A partida começa **20 s** depois do primeiro jogador, com pelo menos **2** (em teste; 4 no jogo real), ou na hora pelo botão **COMEÇAR AGORA**.
+- **Vários clientes:** aba **Teste › Clientes e servidores**, escolha o número de jogadores e **Iniciar**.
+- **Jogadores de teste:** no painel TESTE › PARTIDA, antes de começar, **+1 / +3 / +7 JOGADORES DE TESTE**. Eles são alvos parados com a cor da dupla. Duelo só entre jogadores de teste é sorteado depois de 6 s. Assim dá para montar partidas de 4 a 16 com um cliente só (ex.: você + 3 = 4; você + 6 = 7; você + 7 = 8; você + 15 = 16).
+
+### Painel TESTE › PARTIDA
+
+| Botão | O que faz |
+|---|---|
+| **COMEÇAR AGORA** | começa sem esperar os 20 s |
+| **PULAR RODADA** | encerra a etapa atual; no combate, decide como tempo esgotado (mais HP + escudo vence) |
+| **FORÇAR VIRADA** | a próxima rodada é a Virada (se ainda não aconteceu e não é a final) |
+| **TIRAR 1 VIDA DE…** (um botão por dupla) | entre rodadas tira na hora; no meio da rodada, no fim dela |
+| **+N JOGADORES DE TESTE / TIRAR** | só antes de começar |
+| **RECOMEÇAR PARTIDA** | encerra sem resultado e volta a esperar jogadores |
+
+### Roteiro dos critérios de aceite
+
+1. **Partida completa com 4, 7, 8 e 16 jogadores:** monte cada número (clientes + jogadores de teste) e jogue até a campeã. Use PULAR RODADA para acelerar. Confira: duplas formadas, o placar no mirante, eliminações, a final melhor de 3 (vidas param de contar), a cerimônia e a tela final. No Studio, a tela final avisa que o teleporte não funciona e a partida recomeça.
+2. **Armas por rodada:** rodadas 1 e 2 só pistolas (sem Tambor); 3ª armas médias + pistola (com Tambor); 4ª em diante armas pesadas. Teste também REPETIR ÚLTIMA, CONFIRMAR, os atalhos 1–8 e Enter no PC, e deixar o tempo acabar sem escolher.
+3. **Virada:** use TIRAR 1 VIDA até uma dupla ficar com 1 vida. A rodada seguinte mostra RODADA DA VIRADA e o selo VIRADA; quem vencer ganha +1 vida (até 5). Depois disso ela não volta.
+4. **Jogador ímpar:** com 7 (ou 3), um jogador fica sozinho, com 5 vidas, sem bônus.
+5. **Folga:** com número ímpar de duplas (ex.: 6 jogadores = 3 duplas), uma fica de folga no mirante; a folga gira e só repete depois de todas.
+6. **Mirante:** quem está de folga (ou eliminado) anda até as bordas e vê os duelos de cima: o telhado do galpão fica transparente e o nome da ilha aparece. Não dá para atirar nem cair do mirante. Quem joga numa ilha não vê os espectadores.
+7. **Espectar o parceiro:** caia antes do parceiro; a câmera vai para a cabeça dele, em primeira pessoa.
+8. **Casos especiais:** feche um cliente no meio (o parceiro segue sozinho); fique 30 s parado no combate (aviso) e 60 s (sai da partida).
+
+Os testes automáticos (`require(game.ServerStorage.Tests.Runner).run()`) simulam 50 partidas para cada número de jogadores (4, 7, 8 e 16) e conferem Virada, folga, vidas, final e armas por rodada.
+
 ## Testar o combate (F2)
 
-Tudo acontece no place **Partida**: rode `rojo serve match.project.json` e conecte o Studio da Partida na porta **34874**. Ao dar Play, a arena de teste cinza é montada pelo código (nada fica salvo no place).
+Para testar só o combate, ligue a arena de teste (`CombatConfig.TestArena.Enabled = true`). No place **Partida**: rode `rojo serve match.project.json` e conecte o Studio da Partida na porta **34874**. Ao dar Play, a arena de teste cinza é montada pelo código (nada fica salvo no place).
 
 ### Controles
 

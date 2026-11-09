@@ -30,6 +30,7 @@ export type MeleePayload = {
 -- Servidor -> cliente, remote "CombatEvent": (tipo, dados)
 export type CombatEventName =
 	"Loadout" -- LoadoutData: armas do jogador e a equipada
+	| "Disarm" -- nil: sem armas (mirante, preparação)
 	| "Sync" -- SyncData: corrige munição/recarga depois de um pedido recusado
 	| "Hit" -- HitData: confirmação de acerto para quem atirou (número de dano, marcador)
 	| "Damaged" -- DamagedData: quem levou dano (direção)

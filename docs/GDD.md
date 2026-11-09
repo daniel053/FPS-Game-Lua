@@ -175,6 +175,7 @@ Ordem de prioridade: `[PROPOSTA]`
 2. **Amigos no Roblox** que caíram na mesma partida.
 3. **Solo com solo**, pareando por elo parecido.
 4. **Jogador sem par** (número ímpar de jogadores, ex.: 7): **joga sozinho, 1v2**. Sem bot e sem nenhum bônus de escudo, vida ou dano. Conta como uma dupla de uma pessoa só, com 5 vidas como qualquer outra. `[DECIDIDO]`
+   - Quem fica sem par: o de **maior elo** entre os que sobraram sem dupla (é quem melhor aguenta o 1v2). `[PROPOSTA]` (F3, `MatchConfig.OddPlayerSolo`)
 
 ### 4.3 Rodada (duelo 2v2)
 
@@ -197,6 +198,7 @@ Ordem de prioridade: `[PROPOSTA]`
 - Toda dupla que **vencer** nessa rodada ganha **+1 vida**, teto 5. Quem perde, perde 1 vida normalmente.
 - Aviso grande na tela, música e cor diferentes.
 - Depois dela, a regra não volta naquela partida.
+- Na final (seção 4.7) as vidas não contam, então não existe Virada nela: se a primeira dupla com 1 vida aparecer na mesma rodada em que sobram 2 duplas, a partida vai direto para a final. `[DECIDIDO]` (consequência da regra da final, F3)
 
 ### 4.6 Sorteio de confrontos `[PROPOSTA]`
 
@@ -204,11 +206,16 @@ Ordem de prioridade: `[PROPOSTA]`
 - **Número ímpar de duplas:** uma dupla fica de folga. A folga gira, e tem prioridade quem tem **mais** vidas.
 - A dupla de folga não ganha nem perde vida e assiste do mirante.
 - Cada arena recebe um mapa sorteado entre os 4, sem repetir o mesmo mapa duas rodadas seguidas na mesma arena.
+  - Como cada ilha em volta do mirante é um mapa fixo, na prática o sorteio é **da ilha de cada duelo**: cada duelo vai para uma ilha diferente e a dupla não joga na mesma ilha duas rodadas seguidas, quando possível. `[PROPOSTA]` (F3)
+- "A folga gira" quer dizer: nenhuma dupla repete a folga antes de todas as duplas vivas terem tido a sua; ao recomeçar o ciclo, quem teve a última folga não repete logo em seguida. `[PROPOSTA]` (F3)
 
 ### 4.7 Fim da partida
 
 - Dupla com 0 vidas é eliminada (ver 4.8).
-- Quando sobram 2 duplas: final melhor de 3 numa arena só, com todos assistindo. `[PROPOSTA]`
+- Quando sobram 2 duplas: final melhor de 3 numa arena só, com todos assistindo. `[DECIDIDO]` (F3)
+  - Na final **as vidas param de contar**: vence quem ganhar 2 rodadas primeiro, não importa quantas vidas tem. Empate (tempo esgotado com HP + escudo iguais) não dá ponto a ninguém.
+  - Com 4 jogadores (2 duplas desde o começo), a partida inteira é a final.
+  - A final pode ser desligada em `MatchConfig.Final.Enabled` (aí as vidas continuam contando até sobrar uma dupla).
 - Duração alvo de uma partida: 8 a 12 minutos. `[PROPOSTA]`
 
 ### 4.8 Equipe eliminada e continuidade da dupla `[DECIDIDO]`
@@ -299,7 +306,7 @@ Aparece no começo de **toda rodada**, com o jogador já **dentro do mapa**, con
 - Ao atingir 7, a fila espera mais **15 s** para completar até **16 jogadores**, e então teleporta o grupo. `[PROPOSTA]`
 - **Flexibilidade com poucos jogadores:** se a fila não chegar a 7 em **60 s**, a partida começa com quem houver, a partir de **4 jogadores**. `[PROPOSTA]`
 - A fila é **compartilhada entre todos os servidores de lobby** (não só o servidor onde o jogador está), para juntar gente mais rápido.
-- Pergunta em aberto: 7 jogadores formam 3 duplas e deixam 1 sem par (ver 4.2). `[ABERTO]`
+- 7 jogadores formam 3 duplas e 1 jogador sem par, que joga sozinho (1v2), sem bônus, como na seção 4.2. `[DECIDIDO]`
 
 ### 6.3 Separação por nível `[PROPOSTA]`
 
@@ -1032,7 +1039,7 @@ Ordem resumida: F0 Base → F1 Dados do jogador → F2 Combate → F3 Loop da pa
 8. Ferramentas de ADM além do elo visual.
 9. Câmeras cinematográficas (cerimônia de campeão) também em primeira pessoa?
 10. ~~Onde fica a cor da equipe no personagem?~~ Respondida: faixa nos dois braços + capacete (seção 3.3).
-11. Final melhor de 3: sim ou não?
+11. ~~Final melhor de 3: sim ou não?~~ Respondida: sim, e na final as vidas param de contar (seção 4.7).
 12. Preços em Robux e passe VIP.
 13. Plantas baixas dos 4 mapas e paletas.
 14. Temas das primeiras skins.
@@ -1116,3 +1123,28 @@ Detalhes de implementação decididos durante o desenvolvimento (não são regra
 | **Duplas de teste:** quem entra vai para Azul ou Laranja (a que tiver menos gente); o painel TESTE troca. A formação de verdade é da F3. | Dá para testar inimigo e parceiro com 2 a 4 jogadores. |
 | **Painel TESTE › COMBATE** (só `DEV_`, só na Partida): escolher qualquer uma das 18 armas, trocar de dupla, vida cheia, alvos andando/parados e o teste de exploit de cadência. Ao derrubar, o HUD mostra o tempo e os tiros (medidos pelos horários dos tiros). | Critérios de aceite da F2. |
 | `TextUtil.upper` converte letras acentuadas. | O `string.upper` do Luau deixava "BASTãO". |
+
+### F3 · Loop da partida
+
+| Decisão | Por quê |
+|---|---|
+| **Regras puras separadas** em `Shared/Match/MatchRules` (duplas, folga, confrontos, ilhas, vidas, Virada, final, campeã) e `Shared/Match/LoadoutRules` (armas por rodada). O `MatchService` cuida do tempo, dos personagens e da rede. | Os testes simulam partidas inteiras (4, 7, 8 e 16 jogadores, 50 sementes cada) sem servidor. |
+| **Máquina de estados** no `MatchService`: `Receiving → Forming → [Draw → Prep → Combat → RoundEnd]… → Champion → EndScreen`. `Draw` junta SORTEIO_CONFRONTOS e TELEPORTE (3 s com os confrontos na tela; depois todos vão para as ilhas). RECOMPENSAS E ELO fica vazio até a F9. | GDD 4.1. Nomes curtos no código; o painel de teste mostra os nomes em português. |
+| **Começo sem fila (até a F5):** entram os jogadores do servidor. A partida começa 20 s depois do primeiro jogador, com o mínimo de `MatchConfig.Start.MinPlayers` (4; 2 em `DEV_`), ou na hora com 16. Quem chega no meio assiste do mirante e entra na próxima. | FASES F3: "quem estiver no servidor". |
+| **2 jogadores (só em teste):** se a formação daria uma dupla só, cada um vira uma dupla de uma pessoa. | Dá para testar a partida com 2 clientes. Em produção o mínimo é 4. |
+| **Amigos no Roblox** (`IsFriendsWithAsync`) são conferidos em paralelo, até 5 s no total. Duplas fixas vindas do lobby entram pelo `TeleportData` na F5 (a função já aceita). | GDD 4.2. |
+| **Mundo cinza montado por código** (`MatchWorld`, nada salvo no place): mirante em losango a 70 studs de altura, plano, com barreira invisível nas 4 bordas; cada borda fica de frente para uma ilha. As 4 ilhas (140 × 100) ficam nas diagonais, abaixo, com o mesmo desenho simétrico: bases nas pontas, galpão coberto no centro, rotas laterais, plataformas de 2º nível, cobertura fina e mureta. Medidas em `MapConfig.Gray`. | FASES F3 e ESTILO T4. Os mapas de verdade (F10) são construídos no Studio. |
+| **Mesma ilha:** o combatente tem o atributo `Island`; o servidor só aceita dano entre combatentes da mesma ilha, e o cliente só mira e contorna quem está na mesma ilha. No mirante ninguém é combatente (sem vida, sem armas, sem contorno). | "Quem está no mirante não interfere" e uma ilha não atira na outra. |
+| **Preparação:** o jogador nasce na base congelado (`HumanoidRootPart` ancorado: não anda, mas olha em volta) e sem armas; as armas só chegam no começo do combate. | GDD 4.10: congelado na base. Nada a validar durante a preparação. |
+| **Armas sem escolha a tempo:** escolha atual → escolha da rodada anterior → última salva no perfil para a fase (`loadout.lastPrimaryByPhase`, `lastSecondary`) → primeira da lista. O perfil é atualizado no começo de cada combate e serve para **Repetir última**. | GDD 4.10 e DADOS 3.1. |
+| **Zona:** círculo por ilha, centrado no meio da ilha, que começa cobrindo a ilha inteira e fecha até 8 studs de raio entre 60 s e 90 s. Fora dele, 10 de dano por segundo direto na vida. No cliente, um cilindro roxo bem transparente (sem neon). | GDD 4.4. Valores em `MatchConfig.Zone`. |
+| **Cair da ilha:** abaixo de 25 studs do chão, volta para a sua base e perde o escudo; no mirante, volta para o mirante. | `MapConfig.General.FallOutReturnsToBase` / `FallOutLosesShield`. |
+| **Espectar o parceiro:** cada cliente manda para onde olha (`LookSync`, sem garantia de entrega, até 15 por segundo); o servidor confere e guarda no atributo `LookDir` do personagem. Quem caiu põe a câmera na cabeça do parceiro, olhando para essa direção, e esconde o corpo dele só na própria tela. | GDD 4.3, sempre em primeira pessoa (GDD 3.1). |
+| **Mirante:** no cliente, telhados com a tag `MiranteRoof` ficam 85% transparentes e os nomes das ilhas aparecem só para quem está no mirante; quem joga numa ilha não vê os espectadores do mirante. | GDD 6.5. |
+| **Duelo que acaba antes:** a dupla volta ao mirante 3 s depois, para assistir os outros. | Ninguém fica parado numa ilha vazia. |
+| **Saída e ausência (GDD 4.9):** quem sai deixa o parceiro sozinho; sem ninguém da dupla, ela é eliminada no fim da rodada. Ausência conta só no combate (andar, olhar ou usar arma zera): aviso aos 30 s, volta ao lobby aos 60 s (no Studio, onde não há teleporte, o jogador é desconectado com a mensagem). | Regras do GDD 4.9. |
+| **Volta ao lobby** (`LobbyReturn`): salva e libera o perfil e teleporta com `TeleportData = { from, reason, partyWith }`; `partyWith` é o parceiro quando os dois responderam "sim" a "seguir juntos". No Studio não teleporta: avisa e, no fim, a partida recomeça no mesmo servidor. | GDD 4.8 e DADOS 5.3. A fila da F5 lê `partyWith`. |
+| **Mensagens:** `MatchState` (foto completa da partida a cada mudança, para todos), `MatchEvent` (preparação, avisos, telas de saída, para um jogador), `MatchRequest` (pedidos do cliente: escolha de armas, confirmar, assistir, nova partida, resposta do parceiro; até 20 por segundo, tudo validado). | Servidor é a autoridade; o cliente só mostra. |
+| **Telas provisórias** (HUD da partida, modal de preparação, telas de eliminação e fim) com `Theme` e `Strings`, modal sobre o jogo (nunca fundo preto), mouse livre no PC enquanto abertas, atalhos 1–8 e Enter no modal, primeiro cartão selecionado no controle. | Visual final na F7. |
+| **Painel TESTE › PARTIDA** (só `DEV_`): começar agora, pular rodada (no combate decide pelo tempo esgotado), tirar 1 vida de uma dupla (entre rodadas na hora; no meio da rodada, no fim dela), forçar Virada, jogadores de teste (alvos parados; duelo só entre eles é sorteado depois de 6 s) e recomeçar a partida. | Comandos de teste da FASES F3; com jogadores de teste dá para montar partidas de 4 a 16 com um cliente só. |
+| A arena de teste da F2 continua no código: `CombatConfig.TestArena.Enabled = true` volta a ela (sem partida). | Para testar só o combate. |

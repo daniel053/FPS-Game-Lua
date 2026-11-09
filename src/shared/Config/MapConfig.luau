@@ -55,7 +55,35 @@ local MapConfig = {
 		InvisibleEdgeBarrier = true, -- [DECIDIDO]
 		RoofsTransparentForSpectators = true, -- [PROPOSTA]
 		ArenaPlayersSeeSpectators = false, -- [PROPOSTA]
+		RoofTransparencyForSpectators = 0.85, -- 1 = invisível
+	},
+
+	-- Mundo cinza da F3 (montado por código; os mapas finais da F10 são construídos no Studio).
+	-- Mirante em forma de losango (um quadrado girado 45°): cada lado fica de frente para uma ilha
+	-- (borda noroeste -> ilha noroeste, etc.). As ilhas ficam em volta e abaixo [PROPOSTA].
+	Gray = {
+		IslandFloorY = 0, -- topo do chão das ilhas
+		IslandSize = Vector2.new(140, 100), -- largura (eixo X, base a base) × profundidade
+		IslandThickness = 4,
+		IslandEdgeRail = 3, -- mureta em volta da ilha (meia altura)
+		-- Centro de cada ilha (X, Z) por posição
+		IslandCenters = {
+			NorthWest = Vector2.new(-130, -105),
+			NorthEast = Vector2.new(130, -105),
+			SouthWest = Vector2.new(-130, 105),
+			SouthEast = Vector2.new(130, 105),
+		} :: { [IslandPosition]: Vector2 },
+		BaseInset = 10, -- distância da base até a borda da ilha (eixo X)
+		BaseSpawnSpread = 4, -- distância entre os dois pontos de nascer da base
+		MiranteFloorY = 70, -- topo do chão do mirante
+		MiranteHalfDiagonal = 75, -- do centro até cada ponta do losango
+		MiranteThickness = 4,
+		MiranteBarrierHeight = 14, -- barreira invisível nas bordas
 	},
 }
+
+function MapConfig.islandCount(): number
+	return #MapConfig.Maps
+end
 
 return MapConfig

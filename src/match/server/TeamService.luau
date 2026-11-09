@@ -1,7 +1,8 @@
 --!strict
--- Duplas de TESTE da F2: quem entra vai para a dupla com menos gente entre as duas primeiras cores
--- (2 jogadores = inimigos; 3 ou 4 = 2v1 / 2v2). A formação de duplas de verdade é da F3 (GDD 4.2).
--- O atributo TeamId fica no Player e no modelo do combatente.
+-- Dupla (cor da equipe) de cada jogador. O atributo TeamId fica no Player e no modelo do combatente.
+--   Partida (F3): o MatchService forma as duplas (GDD 4.2) e chama TeamService.set.
+--   Arena de teste (F2): quem entra vai para a dupla com menos gente entre as duas primeiras cores
+--   (assignBalanced) e o painel TESTE troca (cycle).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -12,7 +13,7 @@ local TeamColors = require(Shared.Config.TeamColors)
 
 local TEST_TEAMS: { string } = { TeamColors.Order[1], TeamColors.Order[2] }
 
-type ChangedCallback = (player: Player, teamId: string) -> ()
+type ChangedCallback = (player: Player, teamId: string?) -> ()
 
 local TeamService = {}
 
@@ -29,36 +30,40 @@ local function countIn(teamId: string): number
 	return count
 end
 
-local function set(player: Player, teamId: string)
-	teams[player] = teamId
+function TeamService.set(player: Player, teamId: string?)
+	if teamId then
+		teams[player] = teamId
+	else
+		teams[player] = nil
+	end
 	player:SetAttribute(CombatNames.Attr.TeamId, teamId)
 	for _, callback in changedCallbacks do
 		task.spawn(callback, player, teamId)
 	end
 end
 
-function TeamService.get(player: Player): string
-	local teamId = teams[player]
-	if teamId then
-		return teamId
-	end
-	-- Ainda sem dupla: escolhe a que tem menos gente.
+function TeamService.get(player: Player): string?
+	return teams[player]
+end
+
+-- Arena de teste: a dupla de teste com menos gente.
+function TeamService.assignBalanced(player: Player): string
 	local best = TEST_TEAMS[1]
 	for _, id in TEST_TEAMS do
 		if countIn(id) < countIn(best) then
 			best = id
 		end
 	end
-	set(player, best)
+	TeamService.set(player, best)
 	return best
 end
 
--- Painel de teste: passa para a próxima dupla de teste.
+-- Painel de teste (arena de teste): passa para a próxima dupla de teste.
 function TeamService.cycle(player: Player): string
-	local current = TeamService.get(player)
+	local current = TeamService.get(player) or TeamService.assignBalanced(player)
 	local index = table.find(TEST_TEAMS, current) or 0
 	local nextId = TEST_TEAMS[index % #TEST_TEAMS + 1]
-	set(player, nextId)
+	TeamService.set(player, nextId)
 	return nextId
 end
 

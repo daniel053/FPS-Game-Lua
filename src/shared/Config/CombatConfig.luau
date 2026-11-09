@@ -130,9 +130,10 @@ local CombatConfig = {
 		ReloadDipAngle = 25,
 	},
 
-	-- Arena de teste cinza da F2 (substituída pelas ilhas na F3)
+	-- Arena de teste cinza da F2. Desligada na F3: o servidor monta o mirante e as 4 ilhas e roda a
+	-- partida (MatchService). true = volta a arena de teste, sem partida (para testar só o combate).
 	TestArena = {
-		Enabled = true,
+		Enabled = false,
 		RespawnSeconds = 3,
 		DummyRespawnSeconds = 2,
 		DummyStrafeDistance = 8, -- alvos que andam de um lado para o outro

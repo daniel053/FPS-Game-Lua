@@ -19,6 +19,7 @@ local AudioConfig = require(Shared.Config.AudioConfig)
 local CombatConfig = require(Shared.Config.CombatConfig)
 local CombatNames = require(Shared.Combat.CombatNames)
 local CombatTypes = require(Shared.Combat.CombatTypes)
+local MatchTypes = require(Shared.Match.MatchTypes)
 local Remotes = require(Shared.Remotes)
 local WeaponConfig = require(Shared.Config.WeaponConfig)
 local WeaponMath = require(Shared.Combat.WeaponMath)
@@ -154,6 +155,11 @@ local function enemyFromHitbox(part: Instance): Model?
 		return nil
 	end
 	if target:GetAttribute(ATTR.Alive) ~= true then
+		return nil
+	end
+	-- Só quem está na mesma ilha (F3); o servidor confere de novo.
+	local mine = player.Character and player.Character:GetAttribute(MatchTypes.Attr.Island)
+	if target:GetAttribute(MatchTypes.Attr.Island) ~= mine then
 		return nil
 	end
 	if not CombatConfig.FriendlyFire and target:GetAttribute(ATTR.TeamId) == myTeam() then
@@ -712,6 +718,19 @@ local function onLoadout(data: CombatTypes.LoadoutData)
 	notifyChanged()
 end
 
+-- Sem armas (mirante, preparação): nada na mão e nenhum pedido sai.
+local function onDisarm()
+	loadout = nil
+	guns = {}
+	equipped = "secondary"
+	triggerHeld = false
+	altHeld = false
+	spinSent = false
+	ViewModel.clear()
+	applyScope(nil)
+	notifyChanged()
+end
+
 local function onSync(data: CombatTypes.SyncData)
 	local state = guns[data.slot]
 	if state then
@@ -769,6 +788,8 @@ function WeaponController.Start()
 	Remotes.event("CombatEvent").OnClientEvent:Connect(function(kind: string, data: any)
 		if kind == "Loadout" then
 			onLoadout(data :: CombatTypes.LoadoutData)
+		elseif kind == "Disarm" then
+			onDisarm()
 		elseif kind == "Sync" then
 			onSync(data :: CombatTypes.SyncData)
 		end

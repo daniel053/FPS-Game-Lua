@@ -6,6 +6,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
+local CombatConfig = require(Shared.Config.CombatConfig)
 local CombatNames = require(Shared.Combat.CombatNames)
 local Env = require(Shared.Env)
 local Remotes = require(Shared.Remotes)
@@ -45,15 +46,20 @@ function DevCombatPanel.Start()
 		player:GetAttributeChangedSignal(CombatNames.Attr.TeamId):Connect(refreshInfo)
 		player:GetAttributeChangedSignal(CombatNames.Attr.Kills):Connect(refreshInfo)
 
-		ui.addButton(Strings.Dev.SwitchTeam, false, function()
-			command:FireServer("SwitchTeam")
-		end)
+		local testArena = CombatConfig.TestArena.Enabled
+		if testArena then
+			ui.addButton(Strings.Dev.SwitchTeam, false, function()
+				command:FireServer("SwitchTeam")
+			end)
+		end
 		ui.addButton(Strings.Dev.Heal, false, function()
 			command:FireServer("Heal")
 		end)
-		ui.addButton(Strings.Dev.DummiesMoving .. " / " .. Strings.Dev.DummiesStill, false, function()
-			command:FireServer("ToggleDummies")
-		end)
+		if testArena then
+			ui.addButton(Strings.Dev.DummiesMoving .. " / " .. Strings.Dev.DummiesStill, false, function()
+				command:FireServer("ToggleDummies")
+			end)
+		end
 		ui.addButton(Strings.Dev.ExploitTest, false, function()
 			command:FireServer("ExploitStart", EXPLOIT_SHOTS)
 			WeaponController.devRapidFire(EXPLOIT_SHOTS)
