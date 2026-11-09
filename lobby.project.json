@@ -1,0 +1,34 @@
+{
+	"name": "Lobby",
+	"servePort": 34872,
+	"tree": {
+		"$className": "DataModel",
+		"ReplicatedStorage": {
+			"$className": "ReplicatedStorage",
+			"$ignoreUnknownInstances": true,
+			"Shared": { "$path": "src/shared" },
+			"Packages": { "$path": { "optional": "Packages" } }
+		},
+		"ServerScriptService": {
+			"$className": "ServerScriptService",
+			"$ignoreUnknownInstances": true,
+			"Common": { "$path": "src/common/server" },
+			"Place": { "$path": "src/lobby/server" }
+		},
+		"StarterPlayer": {
+			"$className": "StarterPlayer",
+			"$ignoreUnknownInstances": true,
+			"$properties": {
+				"CameraMode": "LockFirstPerson",
+				"CameraMinZoomDistance": 0.5,
+				"CameraMaxZoomDistance": 0.5
+			},
+			"StarterPlayerScripts": {
+				"$className": "StarterPlayerScripts",
+				"$ignoreUnknownInstances": true,
+				"Common": { "$path": "src/common/client" },
+				"Place": { "$path": "src/lobby/client" }
+			}
+		}
+	}
+}

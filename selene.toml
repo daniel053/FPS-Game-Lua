@@ -1,0 +1,5 @@
+std = "roblox"
+
+[lints]
+# Tabelas de config usam nomes em PascalCase de propósito.
+shadowing = "warn"

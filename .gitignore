@@ -1,0 +1,19 @@
+# Pacotes baixados pelo Wally (recriados com `wally install`)
+/Packages/
+/ServerPackages/
+/DevPackages/
+
+# Gerados pelas ferramentas
+sourcemap.json
+/tools/globalTypes.d.luau
+
+# Backups de place: guardar FORA do repositório
+*.rbxl
+*.rbxlx
+*.rbxl.lock
+*.rbxlx.lock
+
+# Sistema
+Thumbs.db
+desktop.ini
+.DS_Store
