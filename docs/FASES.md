@@ -34,7 +34,7 @@
 |---|---|---|---|
 | F0 | Base do projeto | Projeto organizado, 3 places, configs vazias | ✅ |
 | F1 | Dados do jogador | Perfil salvo com segurança | ✅ |
-| F2 | Combate | Atirar e derrubar com as 18 armas + corpo a corpo | 🔶 em teste |
+| F2 | Combate | Atirar e derrubar com as 18 armas + corpo a corpo | ✅ |
 | F3 | Loop da partida | Partida completa em arenas cinza | ☐ |
 | F4 | Cartas | 4 cartas funcionando | ☐ |
 | ⭐ | **Marco: primeiro jogável** | Teste interno com amigos | ☐ |
