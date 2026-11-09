@@ -13,6 +13,8 @@ local Remotes = require(Shared.Remotes)
 local DevConfig = require(Shared.Config.DevConfig)
 local Types = require(Shared.Types)
 
+local DataService = require(script.Parent.DataService)
+
 local DevTeleportService = {}
 
 local requestEvent: RemoteEvent
@@ -23,12 +25,26 @@ local function reply(player: Player, ok: boolean, messageKey: string)
 	resultEvent:FireClient(player, ok, messageKey)
 end
 
+-- Antes de sair do servidor, o perfil é salvo e a trava liberada (DADOS-JOGADOR 5.3).
+-- Se algo falhar, o perfil é reaberto aqui e o erro sobe para quem chamou.
 local function teleport(player: Player, target: Types.PlaceName, placeId: number)
-	if target == "Match" then
-		local accessCode = TeleportService:ReserveServerAsync(placeId)
-		TeleportService:TeleportToPrivateServer(placeId, accessCode, { player })
-	else
-		TeleportService:TeleportAsync(placeId, { player })
+	local accessCode = if target == "Match" then TeleportService:ReserveServerAsync(placeId) else nil
+
+	if not DataService.releaseForTeleportAsync(player) then
+		DataService.reopenAfterFailedTeleport(player)
+		error("não foi possível salvar o perfil antes do teleporte")
+	end
+
+	local ok, err = pcall(function()
+		if accessCode then
+			TeleportService:TeleportToPrivateServer(placeId, accessCode, { player })
+		else
+			TeleportService:TeleportAsync(placeId, { player })
+		end
+	end)
+	if not ok then
+		DataService.reopenAfterFailedTeleport(player)
+		error(err)
 	end
 end
 
@@ -93,6 +109,7 @@ function DevTeleportService.Start()
 
 	TeleportService.TeleportInitFailed:Connect(function(player: Player, result: Enum.TeleportResult, message: string)
 		warn(`[DevTeleport] TeleportInitFailed {player.UserId}: {result.Name} {message}`)
+		DataService.reopenAfterFailedTeleport(player)
 		reply(player, false, "Failed")
 	end)
 

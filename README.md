@@ -9,6 +9,8 @@ Tiro em primeira pessoa no Roblox, duelos 2v2 em formato de torneio. Os document
 | `src/shared/` | Código usado por servidor e cliente nos 3 places: `Config/` (números, `Theme`, `Strings`), `Types`, `Remotes`, `Env` |
 | `src/common/` | Código que roda igual nos 3 places (`server/` e `client/`) |
 | `src/lobby/`, `src/tutorial/`, `src/match/` | Código de cada place |
+| `src/tests/` | Testes automáticos da lógica (rodam no Studio) |
+| `vendor/ProfileStore/` | Biblioteca de perfis com trava de sessão (cópia oficial, ver `ORIGEM.md`) |
 | `lobby.project.json`, `tutorial.project.json`, `match.project.json` | Um projeto do Rojo para cada place |
 | `rokit.toml` | Versões das ferramentas (Rojo, Wally, Selene, StyLua, luau-lsp) |
 | `scripts/check.ps1` | Confere formatação, boas práticas e tipos |
@@ -16,6 +18,7 @@ Tiro em primeira pessoa no Roblox, duelos 2v2 em formato de torneio. Os document
 **O Rojo nunca mexe no Workspace** (mapas), na Lighting nem no Terrain. Ele só sincroniza:
 - `ReplicatedStorage.Shared` e `ReplicatedStorage.Packages`
 - `ServerScriptService.Common` e `ServerScriptService.Place`
+- `ServerStorage.Vendor` (ProfileStore) e `ServerStorage.Tests`
 - `StarterPlayer.StarterPlayerScripts.Common` e `.Place`
 - as propriedades de câmera do `StarterPlayer` (primeira pessoa travada)
 
@@ -53,6 +56,24 @@ Para corrigir a formatação automaticamente:
 powershell -ExecutionPolicy Bypass -File scripts/check.ps1 -Fix
 ```
 
+## Testes automáticos
+
+Com o Rojo conectado, na barra de comandos do Studio (Visualizar › Barra de comandos):
+
+```lua
+require(game.ServerStorage.Tests.Runner).run()
+```
+
+O resultado aparece no Output (✓ passou, ✗ falhou).
+
+No modo de edição o Studio guarda os módulos já carregados: depois de mudar o código, rode de novo com um Play (barra de comandos no lado do servidor) ou reabra o place, senão o resultado é o da versão antiga.
+
+## Salvar dados no Studio
+
+Para o Studio salvar perfis de verdade (em `DEV_PlayerProfile_v1`): **Configurações do jogo › Segurança › Permitir acesso do Studio aos serviços de API**. Sem isso, o Output avisa que nada será salvo.
+
+> Mudou um arquivo `*.project.json`? Pare o `rojo serve` (Ctrl+C), rode de novo e clique em **Connect** no Studio. O Rojo não recarrega o arquivo de projeto sozinho.
+
 ## Ambiente de teste (`DEV_`)
 
 `src/shared/Env.luau` decide o ambiente:
@@ -68,3 +89,17 @@ powershell -ExecutionPolicy Bypass -File scripts/check.ps1 -Fix
 | Controle | direcional para **cima** |
 
 O teleporte **não funciona dentro do Studio**, só no jogo publicado (pode ser privado). Os IDs dos places ficam em `PlaceConfig.luau`.
+
+### Painel de dados do jogador (F1)
+
+No mesmo painel **TESTE**, seção **DADOS DO JOGADOR**:
+
+| Botão | O que testa |
+|---|---|
+| **+100 MOEDAS** | dar moedas pelo servidor; o número na tela atualiza sozinho (cópia do cliente) |
+| **SENSIBILIDADE +0,5** | pedido de configuração válido; deve continuar igual depois de sair e voltar |
+| **ENVIAR CONFIG INVÁLIDA** | o servidor tem que recusar e nada muda |
+| **VER PERFIL** | resumo na tela e o perfil completo no Output do servidor |
+| **RESETAR PERFIL** | volta ao perfil novo (toque duas vezes para confirmar) |
+
+Para simular falha do DataStore: no Studio, selecione o **ServerStorage**, adicione o atributo booleano `DEV_SimulateLoadFailure` marcado e aperte Play. O jogador deve ser expulso com a mensagem de falha, sem perder nada. Apague o atributo depois.

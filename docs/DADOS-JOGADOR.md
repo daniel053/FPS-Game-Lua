@@ -301,7 +301,10 @@ O cliente nunca envia o perfil inteiro. Ele envia **pedidos** ("equipar skin X n
 - Dados da partida (quem é dupla de quem, faixa de nível) vão pelo `MatchHandoff` no MemoryStore, **não** pelos dados de teleporte enviados pelo cliente, que podem ser adulterados.
 
 ### 5.4 Biblioteca
-Usar uma biblioteca madura de perfis com trava de sessão (ex.: ProfileStore, via Wally) em vez de escrever do zero. `[PROPOSTA]`
+Usar uma biblioteca madura de perfis com trava de sessão em vez de escrever do zero. `[DECIDIDO]`
+
+- Biblioteca: **ProfileStore** oficial (loleris), copiada sem alterações em `vendor/ProfileStore/` com o commit fixado em `ORIGEM.md`. O Wally não tem o pacote oficial, só cópias de terceiros.
+- O jogo só usa a biblioteca pelo `src/common/server/Data/ProfileStoreAdapter.luau`.
 
 ---
 
@@ -319,7 +322,7 @@ Nunca dar item de Robux antes de salvar. Nunca responder "concedido" sem ter sal
 
 ## 7. Migrações
 
-- Arquivo `src/server/Data/Migrations.luau` com uma função por versão: `[1] = function(profile) ... return profile end` leva da versão 1 para a 2, e assim por diante.
+- Arquivo `src/common/server/Data/Migrations.luau` com uma função por versão: `[1] = function(profile) ... return profile end` leva da versão 1 para a 2, e assim por diante.
 - Ao carregar, aplicar em sequência até a versão atual.
 - Toda migração é **testada** com um perfil de exemplo da versão anterior (seção 10).
 - Exemplos de quando migrar: renomear campo, mudar o formato de um campo, separar um campo em dois. Adicionar um campo novo com padrão **não** precisa de migração (o passo 5.1.4 completa).

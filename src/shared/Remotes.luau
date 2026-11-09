@@ -9,6 +9,11 @@ local RunService = game:GetService("RunService")
 export type EventName =
 	"DevTeleportRequest" -- cliente -> servidor: (destino: PlaceName) — só em DEV_
 	| "DevTeleportResult" -- servidor -> cliente: (sucesso: boolean, chaveDaMensagem: string) — só em DEV_
+	| "ProfileSnapshot" -- servidor -> cliente: (perfil: PlayerData.Profile) — cópia somente leitura, a cada mudança
+	| "SettingsUpdateRequest" -- cliente -> servidor: (pedido: campos de Settings que mudaram)
+	| "SettingsUpdateResult" -- servidor -> cliente: (sucesso: boolean, chaveDaMensagem: string, erroDeValidação: string?)
+	| "DevDataCommand" -- cliente -> servidor: (comando: string) — só em DEV_
+	| "DevDataResult" -- servidor -> cliente: (sucesso: boolean, chaveDaMensagem: string, detalhe: string?) — só em DEV_
 
 local FOLDER_NAME = "Remotes"
 local CLIENT_WAIT_TIMEOUT = 15

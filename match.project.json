@@ -15,6 +15,15 @@
 			"Common": { "$path": "src/common/server" },
 			"Place": { "$path": "src/match/server" }
 		},
+		"ServerStorage": {
+			"$className": "ServerStorage",
+			"$ignoreUnknownInstances": true,
+			"Vendor": {
+				"$className": "Folder",
+				"ProfileStore": { "$path": "vendor/ProfileStore/ProfileStore.luau" }
+			},
+			"Tests": { "$path": "src/tests" }
+		},
 		"StarterPlayer": {
 			"$className": "StarterPlayer",
 			"$ignoreUnknownInstances": true,

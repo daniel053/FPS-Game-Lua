@@ -101,6 +101,20 @@ local Strings = {
 		Ciano = "Ciano",
 	},
 
+	-- Dados do jogador (DADOS-JOGADOR seção 5)
+	Data = {
+		-- Mensagens de expulsão (o Roblox mostra numa janela)
+		LoadFailed = "Não foi possível carregar seu progresso agora. Seu progresso está seguro: entre de novo em alguns instantes.",
+		SessionEnded = "Seu progresso foi aberto em outro servidor. Entre de novo para continuar.",
+		-- Resposta a pedidos de configuração
+		SettingsResults = {
+			Ok = "Configurações salvas.",
+			NotLoaded = "Seu perfil ainda está carregando.",
+			RateLimited = "Muitas mudanças seguidas. Espere um pouco.",
+			Invalid = "Valor inválido. Nada foi alterado.",
+		} :: { [string]: string },
+	},
+
 	-- Painel de teste (só aparece no ambiente DEV_)
 	Dev = {
 		ToggleButton = "TESTE",
@@ -119,6 +133,27 @@ local Strings = {
 			Cooldown = "Espere alguns segundos e tente de novo.",
 			Invalid = "Pedido inválido.",
 			Failed = "O teleporte falhou. Tente de novo.",
+		} :: { [string]: string },
+
+		-- Seção de dados do painel (F1)
+		DataTitle = "DADOS DO JOGADOR",
+		DataLoading = "Perfil carregando…",
+		DataSummary = "Moedas: %d · Tutorial: %s\nSensibilidade: toque %.1f · mouse %.1f · controle %.1f",
+		TutorialDone = "feito",
+		TutorialPending = "pendente",
+		AddCoins = "+%d MOEDAS",
+		SensitivityUp = "SENSIBILIDADE +%.1f",
+		SendInvalid = "ENVIAR CONFIG INVÁLIDA",
+		ShowProfile = "VER PERFIL",
+		ResetProfile = "RESETAR PERFIL",
+		ResetConfirm = "TOQUE DE NOVO PARA CONFIRMAR",
+		InvalidDetail = "%s (motivo: %s)",
+		DataResults = {
+			CoinsAdded = "Moedas adicionadas.",
+			ProfileReset = "Perfil resetado.",
+			ProfileShown = "Perfil completo no Output do servidor.",
+			NotLoaded = "O perfil ainda não carregou.",
+			Invalid = "Comando inválido.",
 		} :: { [string]: string },
 	},
 }

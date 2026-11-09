@@ -29,7 +29,7 @@ foreach ($place in @("lobby", "tutorial", "match")) {
 	Write-Host "-- $place"
 	rojo sourcemap "$place.project.json" --output sourcemap.json
 	luau-lsp analyze --sourcemap=sourcemap.json --definitions=$defs --base-luaurc=.luaurc `
-		src/shared src/common "src/$place"
+		src/shared src/common src/tests "src/$place"
 	if ($LASTEXITCODE -ne 0) { $failed = $true }
 }
 

@@ -19,4 +19,18 @@ local ShopCatalog = {
 	Skins = {} :: { SkinDef },
 }
 
+-- Busca por ID. O índice é montado na primeira busca (o catálogo não muda durante o jogo).
+local byId: { [string]: SkinDef }? = nil
+
+function ShopCatalog.getSkin(id: string): SkinDef?
+	if byId == nil then
+		local index: { [string]: SkinDef } = {}
+		for _, skin in ShopCatalog.Skins do
+			index[skin.id] = skin
+		end
+		byId = index
+	end
+	return (byId :: { [string]: SkinDef })[id]
+end
+
 return ShopCatalog
