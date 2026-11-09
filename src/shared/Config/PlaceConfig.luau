@@ -19,8 +19,8 @@ local PlaceConfig = {
 		GameId = 10775571935,
 		Places = {
 			Lobby = 90852897401461, -- place inicial da experiência
-			Tutorial = 0, -- preencher depois de criar o place no Studio
-			Match = 0, -- preencher depois de criar o place no Studio
+			Tutorial = 107478207961575, -- place "Tutorial"
+			Match = 99891312073609, -- place "Partida"
 		},
 	} :: Universe,
 
