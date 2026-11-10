@@ -15,6 +15,7 @@ local Strings = require(Shared.Config.Strings)
 local TextUtil = require(Shared.TextUtil)
 local Theme = require(Shared.Config.Theme)
 local Types = require(Shared.Types)
+local TextScale = require(Shared.Ui.TextScale)
 local Ui = require(Shared.Ui.Ui)
 
 local InputDevice = require(script.Parent.Parent.InputDevice)
@@ -102,6 +103,32 @@ local function tweenColor(obj: GuiObject, color: Color3)
 	TweenService:Create(obj, TweenInfo.new(ANIM.TabSwitchTime), { BackgroundColor3 = color }):Play()
 end
 
+-- Texto que não cabe numa linha encolhe (até o tamanho de rótulo) em vez de quebrar (botões estreitos
+-- em celular pequeno). Volta ao tamanho normal quando o espaço aumenta.
+function Widgets.fitText(label: TextLabel)
+	label.TextWrapped = false
+	label:SetAttribute(TextScale.SelfSizedAttr, true) -- o tamanho do texto das configurações vem daqui
+	local base = label.TextSize
+	local adjusting = false
+	local function fit()
+		if adjusting then
+			return
+		end
+		adjusting = true
+		label.TextSize = math.floor(base * TextScale.get() + 0.5)
+		task.defer(function()
+			while not label.TextFits and label.TextSize > Theme.TextSize.Label do
+				label.TextSize -= 1
+			end
+			adjusting = false
+		end)
+	end
+	label:GetPropertyChangedSignal("AbsoluteSize"):Connect(fit)
+	label:GetPropertyChangedSignal("Text"):Connect(fit)
+	TextScale.onChanged(fit)
+	fit()
+end
+
 -- Botões ------------------------------------------------------------------------------------------
 
 export type ButtonKind = "primary" | "secondary"
@@ -152,12 +179,12 @@ function Widgets.button(parent: Instance, text: string, kind: ButtonKind, option
 		root
 	)
 	label.Size = UDim2.fromScale(1, 1)
-	label.TextWrapped = true
 	label.ZIndex = 2
 	local pad = Instance.new("UIPadding")
 	pad.PaddingLeft = UDim.new(0, 10)
 	pad.PaddingRight = UDim.new(0, 10)
 	pad.Parent = label
+	Widgets.fitText(label)
 
 	local chip: TextLabel? = nil
 	if opts.pc or opts.pad then
@@ -658,14 +685,15 @@ export type StatBars = { root: Frame, set: (values: { number }?) -> () }
 function Widgets.statBars(parent: Instance, names: { string }, segments: number): StatBars
 	local root = Ui.frame("Stats", parent)
 	root.Size = UDim2.new(1, 0, 0, 24)
-	Ui.list(root, Enum.FillDirection.Horizontal, 18)
+	Ui.list(root, Enum.FillDirection.Horizontal, 0)
 	local rows: { { Frame } } = {}
 	for i, name in names do
+		-- Cada atributo ocupa uma fatia igual da largura (cabe em celular pequeno)
 		local holder = Ui.frame("Stat", root)
 		holder.LayoutOrder = i
-		holder.Size = UDim2.fromOffset(72 + segments * 18, 24)
+		holder.Size = UDim2.fromScale(1 / #names, 1)
 		local text = Ui.label("Name", Theme.Font.BodyStrong, Theme.TextSize.Label, Theme.Color.TextSecondary, holder)
-		text.Size = UDim2.fromOffset(70, 24)
+		text.Size = UDim2.fromOffset(64, 24)
 		text.TextXAlignment = Enum.TextXAlignment.Left
 		text.Text = name
 		local list = {}
@@ -673,8 +701,8 @@ function Widgets.statBars(parent: Instance, names: { string }, segments: number)
 			local seg = Ui.frame("Seg", holder)
 			seg.BackgroundTransparency = 0
 			seg.BackgroundColor3 = Theme.Color.PanelRaised
-			seg.Position = UDim2.fromOffset(72 + (s - 1) * 18, 6)
-			seg.Size = UDim2.fromOffset(14, 12)
+			seg.Position = UDim2.fromOffset(64 + (s - 1) * 16, 6)
+			seg.Size = UDim2.fromOffset(12, 12)
 			Ui.corner(seg, 2)
 			table.insert(list, seg)
 		end

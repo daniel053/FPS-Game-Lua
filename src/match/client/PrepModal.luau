@@ -1,17 +1,18 @@
 --!strict
--- Modal de preparação, versão SIMPLES (GDD 4.10 e ESTILO T2; visual final na F7).
---   * Modal sobre o jogo: o mapa continua visível atrás (fundo escurecido, nunca preto opaco).
---   * Etapas no topo: CARTA (na 1ª preparação do jogador; travada depois, com a carta escolhida),
+-- Modal de preparação (GDD 4.10 e ESTILO T2, visual final da F7).
+--   * Modal sobre o jogo: o mapa continua visível atrás (bg.overlay), nunca fundo preto opaco.
+--   * Cabeçalho "RODADA 3 · ARMAS MÉDIAS" e o tempo.
+--   * Etapas como abas: CARTA (na 1ª preparação do jogador; travada depois, com a carta escolhida),
 --     PRIMÁRIA (a partir da 3ª rodada) e SECUNDÁRIA.
---   * Etapa CARTA (F4): as cartas básicas que o jogador tem, lado a lado, com a tecla e o que faz;
---     a ult ao lado com cadeado ("Libera na 4ª rodada"). Sem escolha = partida sem carta básica.
+--   * Etapa CARTA: as cartas básicas que o jogador tem, lado a lado, com a tecla e o que faz; a ult
+--     ao lado com cadeado ("Libera na 4ª rodada"). Sem escolha = partida sem carta básica.
 --     Raridade das cartas iniciais ainda [ABERTO] (GDD 8.9): borda na cor da carta, sem moldura.
---   * Armas da fase agrupadas por categoria, cada arma uma vez só; a escolhida com borda do acento;
---     barras de dano, cadência e alcance da escolhida.
---   * Rodapé: carta, escolha do parceiro em tempo real, REPETIR ÚLTIMA e CONFIRMAR.
---   * Celular: ~90% × 80% da tela, categorias com rolagem horizontal, cartões de 64 px ou mais.
---   * PC: categorias lado a lado, atalhos 1 a 8 escolhem a arma e Enter confirma.
---   * Controle: o primeiro cartão já vem selecionado.
+--   * Armas da fase agrupadas por categoria, cada arma UMA vez só (cartão com a arma em 3D pequena e
+--     o nome); a escolhida com borda do acento e brilho discreto; barras de dano, cadência e alcance.
+--   * Rodapé: carta escolhida, escolha do parceiro em tempo real, REPETIR ÚLTIMA e CONFIRMAR.
+--   * Celular: ~92% × 86% da tela, uma aba por categoria (GDD 4.10), cartões de 64 px ou mais.
+--   * PC: categorias lado a lado; atalhos 1 a 8 escolhem e Enter confirma (chips visíveis).
+--   * Controle: o primeiro cartão já vem selecionado; X confirma.
 -- Toda escolha vai para o servidor na hora (o parceiro vê); o servidor valida tudo.
 
 local GuiService = game:GetService("GuiService")
@@ -26,19 +27,23 @@ local MatchTypes = require(Shared.Match.MatchTypes)
 local Strings = require(Shared.Config.Strings)
 local TextUtil = require(Shared.TextUtil)
 local Theme = require(Shared.Config.Theme)
+local Ui = require(Shared.Ui.Ui)
 local WeaponConfig = require(Shared.Config.WeaponConfig)
 
 local InputDevice = require(script.Parent.Parent.Common.InputDevice)
 local PlayerDataClient = require(script.Parent.Parent.Common.PlayerDataClient)
+local WeaponPreview = require(script.Parent.Parent.Common.Ui.WeaponPreview)
+local Widgets = require(script.Parent.Parent.Common.Ui.Widgets)
 local MatchClient = require(script.Parent.MatchClient)
-local MatchUi = require(Shared.Ui.ProvisionalUi)
 
 local S = Strings.Match
 local CARD_WIDTH = 116
-local CARD_HEIGHT = 64
+local CARD_HEIGHT = 84
 local ABILITY_WIDTH = 170
-local ABILITY_HEIGHT = 128
+local ABILITY_HEIGHT = 116
 local SEGMENTS = 5
+local STATS_HEIGHT = 30
+local FOOTER_HEIGHT = 52
 local CATEGORY_ORDER = { "Pistol", "SMG", "Shotgun", "LightRifle", "Rifle", "Sniper", "MachineGun" }
 local NUMBER_KEYS = {
 	Enum.KeyCode.One,
@@ -61,15 +66,17 @@ local overlay: Frame
 local panel: Frame
 local headerText: TextLabel
 local timerText: TextLabel
-local stepBar: Frame
-local stepButtons: { [string]: TextButton } = {}
+local steps: Widgets.Tabs
+local categoryTabs: Widgets.Tabs? = nil
+local categoryHolder: Frame
 local grid: ScrollingFrame
-local statsText: { TextLabel } = {}
-local statBars: { { Frame } } = {}
+local statsHolder: Frame
+local placeGrid: () -> ()
+local stats: Widgets.StatBars
 local partnerText: TextLabel
 local cardText: TextLabel
-local repeatButton: TextButton
-local confirmButton: TextButton
+local repeatButton: Widgets.Button
+local confirmButton: Widgets.Button
 local waitingText: TextLabel
 
 local data: MatchTypes.PrepData? = nil
@@ -78,9 +85,13 @@ local chosen: { primary: string?, secondary: string? } = {}
 local chosenCard: string? = nil
 local confirmed = false
 local visibleIds: { string } = {}
+local cards: { [string]: Widgets.ItemCard } = {}
+local touchCategory: string? = nil
+local tabsKey = ""
+local syncingTabs = false
 
 -- Atributos (0 a 1) para as barras da arma escolhida.
-local function stats(def: WeaponConfig.WeaponDef): { number }
+local function weaponStats(def: WeaponConfig.WeaponDef): { number }
 	local damage = math.clamp(def.damage * def.pellets / WeaponConfig.MaxSingleShotDamage, 0.05, 1)
 	local rate = math.clamp(def.fireRate / 13, 0.05, 1)
 	local reach = if def.falloff then def.falloff.finish else def.range
@@ -96,20 +107,33 @@ local function selectedId(): string?
 	elseif step == "secondary" then
 		return chosen.secondary
 	end
-	return nil
+	return chosenCard
 end
 
 local function refreshStats()
-	local id = selectedId()
+	local id = if step ~= "card" then selectedId() else nil
 	local def = if id then WeaponConfig.get(id) else nil
-	for i, segments in statBars do
-		local value = if def then stats(def)[i] else 0
-		local filled = math.max(if def then 1 else 0, math.round(value * SEGMENTS))
-		for s, segment in segments do
-			segment.BackgroundColor3 = if s <= filled then Theme.Color.Accent else Theme.Color.PanelRaised
-		end
-		statsText[i].Visible = def ~= nil
+	stats.set(if def then weaponStats(def) else nil)
+end
+
+local function refreshSelection()
+	local id = selectedId()
+	for cardId, card in cards do
+		card.setSelected(cardId == id)
 	end
+	refreshStats()
+end
+
+local function stepLabel(name: Step): string
+	local current = data
+	local base = if name == "card" then S.StepCard elseif name == "primary" then S.StepPrimary else S.StepSecondary
+	if name == "card" and current and not current.cardStep then
+		return Strings.CardHud.Locked .. base -- travada: a carta vale a partida inteira
+	end
+	local done = (name == "primary" and chosen.primary ~= nil)
+		or (name == "secondary" and chosen.secondary ~= nil)
+		or (name == "card" and chosenCard ~= nil)
+	return if done then base .. " " .. Strings.Ui.Check else base
 end
 
 local function refreshSteps()
@@ -117,24 +141,13 @@ local function refreshSteps()
 	if current == nil then
 		return
 	end
-	local hasPrimary = #current.primaries > 0
-	stepButtons.card.Visible = true
-	stepButtons.primary.Visible = hasPrimary
-	for name, button in stepButtons do
-		local active = name == step
-		button.BackgroundColor3 = if active then Theme.Color.Accent else Theme.Color.PanelRaised
-		local done = (name == "primary" and chosen.primary ~= nil)
-			or (name == "secondary" and chosen.secondary ~= nil)
-			or (name == "card" and chosenCard ~= nil)
-		local base = if name == "card" then S.StepCard elseif name == "primary" then S.StepPrimary else S.StepSecondary
-		if name == "card" and not current.cardStep then
-			base = Strings.CardHud.Locked .. base -- travada: a carta vale a partida inteira
-		end
-		button.Text = if done then base .. " ✓" else base
-		button.TextColor3 = if name == "card" and not current.cardStep
-			then Theme.Color.TextSecondary
-			else Theme.Color.TextPrimary
+	steps.setVisible("primary", #current.primaries > 0)
+	for _, name in { "card", "primary", "secondary" } do
+		steps.setLabel(name, stepLabel(name :: Step))
 	end
+	syncingTabs = true
+	steps.select(step)
+	syncingTabs = false
 end
 
 local function sendChoice()
@@ -174,138 +187,187 @@ local function choose(id: string)
 	end
 	if step == "card" then
 		chooseCard(id)
+		refreshSelection()
 		step = nextWeaponStep() -- escolheu a carta: passa para as armas
 		PrepModal.rebuildGrid()
 		return
 	end
 	if step == "primary" then
 		chosen.primary = id
+		sendChoice()
 		-- Escolheu a primária: passa para a pistola
 		step = "secondary"
-	elseif step == "secondary" then
-		chosen.secondary = id
+		PrepModal.rebuildGrid()
+		return
 	end
+	chosen.secondary = id
 	sendChoice()
-	PrepModal.rebuildGrid()
+	refreshSelection()
+	refreshSteps()
 end
 
-local function makeCard(id: string, order: number, index: number, parent: Instance): TextButton
-	local button = Instance.new("TextButton")
-	button.Name = id
-	button.LayoutOrder = order
-	button.Size = UDim2.fromOffset(CARD_WIDTH, CARD_HEIGHT)
-	button.BackgroundColor3 = Theme.Color.PanelRaised
-	button.AutoButtonColor = true
-	button.FontFace = Theme.Font.Title
-	button.TextSize = Theme.TextSize.Body
-	button.TextColor3 = Theme.Color.TextPrimary
-	button.Text = TextUtil.upper(Strings.Weapons[id] or id)
-	button.TextWrapped = true
-	MatchUi.corner(button)
-	local selected = selectedId() == id
-	MatchUi.stroke(button, if selected then Theme.Color.Accent else Theme.Color.PanelBorder, if selected then 3 else 1)
-	if InputDevice.get() == "KeyboardMouse" and index <= #NUMBER_KEYS then
-		local chip = MatchUi.keyChip(tostring(index), button)
+-- Cartão de arma: a arma em 3D pequena e o nome (ESTILO T2: cada arma uma vez só).
+local function weaponCard(id: string, order: number, index: number, parent: Instance): Widgets.ItemCard
+	local card = Widgets.itemCard(parent, Strings.Weapons[id] or id, UDim2.fromOffset(CARD_WIDTH, CARD_HEIGHT), order)
+	card.root.Name = id
+	WeaponPreview.new(card.content, false).set(id)
+	if index <= #NUMBER_KEYS then
+		local chip = Widgets.keyChip(card.root, tostring(index), nil)
 		chip.Position = UDim2.fromOffset(4, 4)
+		chip.ZIndex = 4
 	end
-	button.Activated:Connect(function()
+	card.root.Activated:Connect(function()
 		choose(id)
 	end)
-	button.Parent = parent
-	return button
+	cards[id] = card
+	return card
+end
+
+local function categoryOf(id: string): string
+	local def = WeaponConfig.get(id)
+	return if def then def.category else "Pistol"
+end
+
+local function clearGrid()
+	Ui.clear(grid)
+	table.clear(visibleIds)
+	table.clear(cards)
+end
+
+-- Abas de categoria (só no celular): uma por categoria presente na etapa.
+local function rebuildCategoryTabs(categories: { string })
+	local touch = InputDevice.get() == "Touch"
+	local key = (if touch then "T:" else "") .. table.concat(categories, ",")
+	if key == tabsKey and categoryTabs then
+		return
+	end
+	tabsKey = key
+	if categoryTabs then
+		categoryTabs.root:Destroy()
+		categoryTabs = nil
+	end
+	categoryHolder.Visible = touch and #categories > 1
+	if not categoryHolder.Visible then
+		return
+	end
+	local items = {}
+	for _, category in categories do
+		table.insert(items, { id = category, label = Strings.WeaponCategories[category] or category })
+	end
+	local tabs = Widgets.tabs(categoryHolder, items, function(id: string)
+		if touchCategory ~= id then
+			touchCategory = id
+			PrepModal.rebuildGrid()
+		end
+	end, Theme.Touch.MinTarget - 6)
+	categoryTabs = tabs
+	tabs.select(touchCategory or categories[1])
 end
 
 function PrepModal.rebuildGrid()
-	for _, child in grid:GetChildren() do
-		if child:IsA("GuiObject") then
-			child:Destroy()
-		end
-	end
-	table.clear(visibleIds)
+	clearGrid()
 	refreshSteps()
-	refreshStats()
 	local current = data
 	if current == nil then
 		return
 	end
-
+	statsHolder.Visible = step ~= "card" -- barras só fazem sentido para armas
+	placeGrid()
 	if step == "card" then
+		categoryHolder.Visible = false
+		tabsKey = ""
 		PrepModal.buildCardStep(current)
+		refreshSelection()
 		return
 	end
 
 	local ids: { string } = if step == "primary" then current.primaries else current.secondaries
 	local byCategory: { [string]: { string } } = {}
+	local present: { string } = {}
 	for _, id in ids do
-		local def = WeaponConfig.get(id)
-		if def then
-			local list = byCategory[def.category] or {}
-			byCategory[def.category] = list
-			table.insert(list, id)
-		end
-	end
-	local order = 0
-	local firstButton: TextButton? = nil
-	for categoryIndex, category in CATEGORY_ORDER do
+		local category = categoryOf(id)
 		local list = byCategory[category]
 		if list == nil then
-			continue
+			list = {}
+			byCategory[category] = list
 		end
-		local column = MatchUi.frame(category, grid)
-		column.LayoutOrder = categoryIndex
-		column.Size = UDim2.fromOffset(CARD_WIDTH, 0)
-		column.AutomaticSize = Enum.AutomaticSize.Y
-		MatchUi.list(column, Enum.FillDirection.Vertical, 6)
-		local title =
-			MatchUi.label("Title", Theme.Font.BodyStrong, Theme.TextSize.Label, Theme.Color.TextSecondary, column)
-		title.Size = UDim2.new(1, 0, 0, 16)
-		title.TextXAlignment = Enum.TextXAlignment.Left
-		title.Text = TextUtil.upper(Strings.WeaponCategories[category] or category)
-		for _, id in list do
-			order += 1
-			table.insert(visibleIds, id)
-			local button = makeCard(id, order + 1, #visibleIds, column)
-			firstButton = firstButton or button
+		table.insert(list, id)
+	end
+	for _, category in CATEGORY_ORDER do
+		if byCategory[category] then
+			table.insert(present, category)
 		end
 	end
+
+	local touch = InputDevice.get() == "Touch"
+	if touch then
+		-- A aba começa na categoria da arma escolhida
+		local selected = selectedId()
+		if touchCategory == nil or byCategory[touchCategory] == nil then
+			touchCategory = if selected then categoryOf(selected) else present[1]
+		end
+	end
+	rebuildCategoryTabs(present)
+
+	local order = 0
+	local firstButton: TextButton? = nil
+	for categoryIndex, category in present do
+		if touch and #present > 1 and category ~= touchCategory then
+			continue
+		end
+		local column = Ui.frame(category, grid)
+		column.LayoutOrder = categoryIndex
+		column.Size = UDim2.fromOffset(CARD_WIDTH, 0)
+		column.AutomaticSize = Enum.AutomaticSize.XY
+		Ui.list(column, Enum.FillDirection.Vertical, Theme.Space.Small)
+		local title = Widgets.sectionTitle(column, Strings.WeaponCategories[category] or category)
+		title.TextSize = Theme.TextSize.Label
+		local holder = Ui.frame("Cards", column)
+		holder.LayoutOrder = 1
+		holder.Size = UDim2.fromOffset(0, 0)
+		holder.AutomaticSize = Enum.AutomaticSize.XY
+		-- Celular (uma categoria por aba) ou uma categoria só: cartões em linha; PC: uma coluna por categoria
+		local inRow = touch or #present == 1
+		Ui.list(holder, if inRow then Enum.FillDirection.Horizontal else Enum.FillDirection.Vertical, Theme.Space.Small)
+		for _, id in byCategory[category] do
+			order += 1
+			table.insert(visibleIds, id)
+			local card = weaponCard(id, order, #visibleIds, holder)
+			firstButton = firstButton or card.root
+		end
+	end
+	refreshSelection()
 	if InputDevice.get() == "Gamepad" and firstButton and gui.Enabled then
 		GuiService.SelectedObject = firstButton
 	end
 end
 
 -- Cartão de uma carta (escolha, travada ou a ult com cadeado).
-local function makeAbilityCard(
-	id: string,
-	order: number,
-	index: number?,
-	selected: boolean,
-	note: string?,
-	parent: Instance
-): TextButton
+local function abilityCard(id: string, order: number, index: number?, note: string?, parent: Instance)
 	local def = CardConfig.get(id)
 	local locked = index == nil
-	local color = if locked and not selected then Theme.Cards.Locked else (Theme.Cards[id] or Theme.Color.Accent)
-	local button = Instance.new("TextButton")
-	button.Name = id
-	button.LayoutOrder = order
-	button.Size = UDim2.fromOffset(ABILITY_WIDTH, ABILITY_HEIGHT)
-	button.BackgroundColor3 = Theme.Color.PanelRaised
-	button.AutoButtonColor = not locked
-	button.Text = ""
-	button.Selectable = not locked
-	MatchUi.corner(button)
-	MatchUi.stroke(button, if selected then Theme.Color.Accent else color, if selected then 3 else 2)
-	MatchUi.padding(button, 8)
+	local color = if locked
+			and chosenCard ~= id
+			and note == nil
+		then Theme.Cards.Locked
+		else (Theme.Cards[id] or Theme.Color.Accent)
+	local card = Widgets.itemCard(parent, "", UDim2.fromOffset(ABILITY_WIDTH, ABILITY_HEIGHT), order)
+	card.root.Name = id
+	card.root.Selectable = not locked
+	card.setBorder(color, 2)
+	card.title.Visible = false
+	local content = card.content
+	content.Size = UDim2.new(1, -12, 1, -12)
 
-	local title = MatchUi.label("Name", Theme.Font.Title, Theme.TextSize.PrimaryButton, color, button)
+	local title = Ui.label("Name", Theme.Font.Title, Theme.TextSize.PrimaryButton, color, content)
 	title.Size = UDim2.new(1, -28, 0, 22)
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.Text = TextUtil.upper((Strings.Cards[id] or { name = id }).name)
 	-- A tecla é parte da carta (fixa, GDD 8.3): sempre aparece
-	local keyChip = MatchUi.keyChip(if def then def.key else "?", button)
-	keyChip.AnchorPoint = Vector2.new(1, 0)
-	keyChip.Position = UDim2.fromScale(1, 0)
-	local body = MatchUi.label("Body", Theme.Font.Body, Theme.TextSize.Label, Theme.Color.TextSecondary, button)
+	local key = Ui.keyChip(if def then def.key else "?", content)
+	key.AnchorPoint = Vector2.new(1, 0)
+	key.Position = UDim2.fromScale(1, 0)
+	local body = Ui.label("Body", Theme.Font.Body, Theme.TextSize.Label, Theme.Color.TextSecondary, content)
 	body.Position = UDim2.fromOffset(0, 26)
 	body.Size = UDim2.new(1, 0, 1, -26 - 18)
 	body.TextWrapped = true
@@ -313,39 +375,42 @@ local function makeAbilityCard(
 	body.TextYAlignment = Enum.TextYAlignment.Top
 	body.Text = (Strings.Cards[id] or { description = "" }).description
 	if note then
-		local noteText =
-			MatchUi.label("Note", Theme.Font.BodyStrong, Theme.TextSize.Label, Theme.Color.TextPrimary, button)
+		local noteText = Ui.label("Note", Theme.Font.BodyStrong, Theme.TextSize.Label, Theme.Color.TextPrimary, content)
 		noteText.AnchorPoint = Vector2.new(0, 1)
 		noteText.Position = UDim2.fromScale(0, 1)
 		noteText.Size = UDim2.new(1, 0, 0, 16)
 		noteText.TextXAlignment = Enum.TextXAlignment.Left
 		noteText.Text = note
 	end
-	if index and InputDevice.get() == "KeyboardMouse" and index <= #NUMBER_KEYS then
-		local chip = MatchUi.keyChip(tostring(index), button)
+	if index and index <= #NUMBER_KEYS then
+		local chip = Widgets.keyChip(content, tostring(index), nil)
 		chip.AnchorPoint = Vector2.new(1, 1)
 		chip.Position = UDim2.fromScale(1, 1)
 	end
 	if not locked then
-		button.Activated:Connect(function()
+		card.root.Activated:Connect(function()
 			choose(id)
 		end)
+		cards[id] = card
+	elseif chosenCard == id then
+		card.setSelected(true)
 	end
-	button.Parent = parent
-	return button
+	return card
 end
 
 -- Etapa CARTA: escolher (1ª preparação) ou ver a carta travada; a ult ao lado.
 function PrepModal.buildCardStep(current: MatchTypes.PrepData)
-	local column = MatchUi.frame("CardStep", grid)
-	column.Size = UDim2.fromOffset(4 * (ABILITY_WIDTH + 12), ABILITY_HEIGHT + 30)
-	local hint = MatchUi.label("Hint", Theme.Font.BodyStrong, Theme.TextSize.Body, Theme.Color.TextSecondary, column)
-	hint.Size = UDim2.new(1, 0, 0, 20)
+	local column = Ui.frame("CardStep", grid)
+	column.Size = UDim2.fromOffset(4 * (ABILITY_WIDTH + 12), ABILITY_HEIGHT + 34)
+	local hint = Ui.label("Hint", Theme.Font.BodyStrong, Theme.TextSize.Label, Theme.Color.TextSecondary, column)
+	hint.Size = UDim2.fromOffset(3 * (ABILITY_WIDTH + 12), 30)
 	hint.TextXAlignment = Enum.TextXAlignment.Left
-	local cards = MatchUi.frame("Cards", column)
-	cards.Position = UDim2.fromOffset(0, 28)
-	cards.Size = UDim2.new(1, 0, 0, ABILITY_HEIGHT)
-	MatchUi.list(cards, Enum.FillDirection.Horizontal, 12)
+	hint.TextYAlignment = Enum.TextYAlignment.Top
+	hint.TextWrapped = true
+	local row = Ui.frame("Cards", column)
+	row.Position = UDim2.fromOffset(4, 34)
+	row.Size = UDim2.new(1, 0, 0, ABILITY_HEIGHT)
+	Ui.list(row, Enum.FillDirection.Horizontal, 12)
 
 	local firstButton: TextButton? = nil
 	if current.cardStep then
@@ -355,21 +420,24 @@ function PrepModal.buildCardStep(current: MatchTypes.PrepData)
 			hint.Text = S.CardChooseHint
 			for i, id in current.cardOptions do
 				table.insert(visibleIds, id)
-				local button = makeAbilityCard(id, i, #visibleIds, chosenCard == id, nil, cards)
-				firstButton = firstButton or button
+				local card = abilityCard(id, i, #visibleIds, nil, row)
+				firstButton = firstButton or card.root
 			end
 		end
 	else
 		hint.Text = if chosenCard then S.CardLockedHint else S.CardNotChosen
 		if chosenCard then
-			makeAbilityCard(chosenCard, 1, nil, true, nil, cards)
+			abilityCard(chosenCard, 1, nil, nil, row)
 		end
 	end
 	if current.ult then
 		local note = if current.ultUnlocked
 			then S.UltReady
 			else Strings.CardHud.Locked .. string.format(S.UltLocked, CardConfig.UltUnlockRound)
-		makeAbilityCard(current.ult, 10, nil, current.ultUnlocked, note, cards)
+		local ult = abilityCard(current.ult, 10, nil, note, row)
+		if not current.ultUnlocked then
+			ult.setBorder(Theme.Cards.Locked, 2)
+		end
 	end
 	if InputDevice.get() == "Gamepad" and firstButton and gui.Enabled then
 		GuiService.SelectedObject = firstButton
@@ -458,6 +526,7 @@ local function open(prep: MatchTypes.PrepData)
 	confirmed = false
 	chosen = { primary = prep.primary, secondary = prep.secondary }
 	chosenCard = prep.card
+	touchCategory = nil
 	-- 1ª preparação com cartas: começa pela carta (ESTILO T2: Carta → Primária → Secundária)
 	if prep.cardStep and #prep.cardOptions > 0 then
 		step = "card"
@@ -473,145 +542,143 @@ local function open(prep: MatchTypes.PrepData)
 	panel.Visible = true
 	waitingText.Visible = false
 
-	-- Celular: ocupa quase a tela; PC: tamanho fixo confortável
+	-- Celular: ocupa quase a tela; PC: tamanho confortável
 	local touch = InputDevice.get() == "Touch"
-	panel.Size = if touch then UDim2.fromScale(0.92, 0.82) else UDim2.fromScale(0.7, 0.7)
+	panel.Size = if touch then UDim2.fromScale(0.92, 0.86) else UDim2.fromScale(0.72, 0.74)
+	Widgets.popIn(panel)
 	PrepModal.rebuildGrid()
 end
 
 local function build()
-	gui = MatchUi.screen("PrepModal", 20, Enum.ScreenInsets.DeviceSafeInsets)
+	gui = Ui.screen("PrepModal", 20, Enum.ScreenInsets.CoreUISafeInsets)
 	gui.Enabled = false
 
-	overlay = MatchUi.frame("Overlay", gui)
-	overlay.Size = UDim2.fromScale(1, 1)
+	overlay = Ui.frame("Overlay", gui)
+	overlay.Size = UDim2.new(1, 0, 1, 200)
+	overlay.Position = UDim2.fromOffset(0, -100)
 	overlay.BackgroundColor3 = Theme.Color.Overlay
 	overlay.BackgroundTransparency = Theme.Transparency.Overlay
 
-	panel = MatchUi.panel("Panel", gui)
+	local content: Frame
+	panel, content = Ui.panel("Panel", gui, Theme.Space.PanelPadding)
 	panel.AnchorPoint = Vector2.new(0.5, 0.5)
 	panel.Position = UDim2.fromScale(0.5, 0.5)
-	panel.Size = UDim2.fromScale(0.7, 0.7)
-	local sizeLimit = Instance.new("UISizeConstraint")
-	sizeLimit.MaxSize = Vector2.new(1000, 560)
-	sizeLimit.MinSize = Vector2.new(320, 260)
-	sizeLimit.Parent = panel
-	MatchUi.padding(panel, 14)
+	panel.Size = UDim2.fromScale(0.72, 0.74)
+	Ui.sizeLimit(panel, Vector2.new(340, 300), Vector2.new(1040, 600))
 
 	-- Cabeçalho
-	headerText = MatchUi.label("Header", Theme.Font.Title, Theme.TextSize.Title, Theme.Color.TextPrimary, panel)
+	headerText = Ui.label("Header", Theme.Font.Title, Theme.TextSize.Title, Theme.Color.TextPrimary, content)
 	headerText.Size = UDim2.new(1, -90, 0, 28)
 	headerText.TextXAlignment = Enum.TextXAlignment.Left
-	timerText = MatchUi.label("Timer", Theme.Font.Number, Theme.TextSize.Title, Theme.Color.TextPrimary, panel)
+	headerText.TextTruncate = Enum.TextTruncate.AtEnd
+	timerText = Ui.label("Timer", Theme.Font.Number, Theme.TextSize.Title, Theme.Color.TextPrimary, content)
 	timerText.AnchorPoint = Vector2.new(1, 0)
 	timerText.Position = UDim2.fromScale(1, 0)
 	timerText.Size = UDim2.fromOffset(80, 28)
 	timerText.TextXAlignment = Enum.TextXAlignment.Right
 
-	-- Etapas
-	stepBar = MatchUi.frame("Steps", panel)
-	stepBar.Position = UDim2.fromOffset(0, 34)
-	stepBar.Size = UDim2.new(1, 0, 0, Theme.Touch.MinTarget)
-	MatchUi.list(stepBar, Enum.FillDirection.Horizontal, 8)
-	for i, name: Step in { "card", "primary", "secondary" } :: { Step } do
-		local button = MatchUi.button(name, "", false, stepBar)
-		button.LayoutOrder = i
-		button.Size = UDim2.fromOffset(140, Theme.Touch.MinTarget)
-		button.TextSize = Theme.TextSize.Body
-		button.Activated:Connect(function()
-			if confirmed then
-				return
-			end
-			step = name
-			PrepModal.rebuildGrid()
-		end)
-		stepButtons[name] = button
-	end
-
-	-- Grade de armas (rolagem horizontal quando não cabe)
-	grid = Instance.new("ScrollingFrame")
-	grid.Name = "Grid"
-	grid.BackgroundTransparency = 1
-	grid.BorderSizePixel = 0
-	grid.Position = UDim2.fromOffset(0, 34 + Theme.Touch.MinTarget + 10)
-	grid.Size = UDim2.new(1, 0, 1, -(34 + Theme.Touch.MinTarget + 10) - 150)
-	grid.CanvasSize = UDim2.new()
-	grid.AutomaticCanvasSize = Enum.AutomaticSize.XY
-	grid.ScrollingDirection = Enum.ScrollingDirection.XY
-	grid.ScrollBarThickness = 6
-	grid.ScrollBarImageColor3 = Theme.Color.TextSecondary
-	grid.Parent = panel
-	MatchUi.list(grid, Enum.FillDirection.Horizontal, 12)
-
-	-- Barras de atributos da escolhida
-	local statsFrame = MatchUi.frame("Stats", panel)
-	statsFrame.AnchorPoint = Vector2.new(0, 1)
-	statsFrame.Position = UDim2.new(0, 0, 1, -116)
-	statsFrame.Size = UDim2.new(1, 0, 0, 24)
-	MatchUi.list(statsFrame, Enum.FillDirection.Horizontal, 18)
-	for i, name in { S.StatDamage, S.StatFireRate, S.StatRange } do
-		local holder = MatchUi.frame("Stat", statsFrame)
-		holder.LayoutOrder = i
-		holder.Size = UDim2.fromOffset(170, 24)
-		local text =
-			MatchUi.label("Name", Theme.Font.BodyStrong, Theme.TextSize.Label, Theme.Color.TextSecondary, holder)
-		text.Size = UDim2.fromOffset(70, 24)
-		text.TextXAlignment = Enum.TextXAlignment.Left
-		text.Text = name
-		statsText[i] = text
-		local segments = {}
-		for s = 1, SEGMENTS do
-			local seg = MatchUi.frame("Seg", holder)
-			seg.BackgroundTransparency = 0
-			seg.BackgroundColor3 = Theme.Color.PanelRaised
-			seg.Position = UDim2.fromOffset(72 + (s - 1) * 18, 6)
-			seg.Size = UDim2.fromOffset(14, 12)
-			MatchUi.corner(seg, 2)
-			table.insert(segments, seg)
+	-- Etapas (abas)
+	local stepHolder = Ui.frame("Steps", content)
+	stepHolder.Position = UDim2.fromOffset(0, 34)
+	stepHolder.Size = UDim2.new(1, 0, 0, Theme.Touch.MinTarget + 6)
+	steps = Widgets.tabs(stepHolder, {
+		{ id = "card", label = S.StepCard },
+		{ id = "primary", label = S.StepPrimary },
+		{ id = "secondary", label = S.StepSecondary },
+	}, function(id: string)
+		if syncingTabs or confirmed or data == nil then
+			return
 		end
-		statBars[i] = segments
-	end
+		step = id :: Step
+		touchCategory = nil
+		PrepModal.rebuildGrid()
+	end)
 
-	-- Rodapé
-	local divider = MatchUi.frame("Divider", panel)
+	-- Abas de categoria (celular)
+	local gridTop = 34 + Theme.Touch.MinTarget + 12
+	categoryHolder = Ui.frame("Categories", content)
+	categoryHolder.Position = UDim2.fromOffset(0, gridTop)
+	categoryHolder.Size = UDim2.new(1, 0, 0, Theme.Touch.MinTarget)
+	categoryHolder.Visible = false
+
+	-- Grade (rolagem quando não cabe)
+	grid = Ui.scroll("Grid", Enum.ScrollingDirection.XY, content)
+	grid.Size = UDim2.new(1, 0, 1, -gridTop - FOOTER_HEIGHT - STATS_HEIGHT - 10)
+	grid.Position = UDim2.fromOffset(0, gridTop)
+	local layout = Ui.list(grid, Enum.FillDirection.Horizontal, 14)
+	layout.VerticalAlignment = Enum.VerticalAlignment.Top
+	local gridPad = Instance.new("UIPadding")
+	gridPad.PaddingTop = UDim.new(0, 6)
+	gridPad.PaddingLeft = UDim.new(0, 6)
+	gridPad.Parent = grid
+	placeGrid = function()
+		local offset = if categoryHolder.Visible then Theme.Touch.MinTarget + 6 else 0
+		local bottom = FOOTER_HEIGHT + 10 + (if statsHolder and statsHolder.Visible then STATS_HEIGHT else 0)
+		grid.Position = UDim2.fromOffset(0, gridTop + offset)
+		grid.Size = UDim2.new(1, 0, 1, -(gridTop + offset) - bottom)
+	end
+	categoryHolder:GetPropertyChangedSignal("Visible"):Connect(placeGrid)
+
+	-- Barras de atributos da escolhida (sem segunda imagem da arma), logo acima do rodapé
+	statsHolder = Ui.frame("StatsHolder", content)
+	statsHolder.AnchorPoint = Vector2.new(0, 1)
+	statsHolder.Position = UDim2.new(0, 0, 1, -FOOTER_HEIGHT - 6)
+	statsHolder.Size = UDim2.new(1, 0, 0, STATS_HEIGHT)
+	stats = Widgets.statBars(statsHolder, { S.StatDamage, S.StatFireRate, S.StatRange }, SEGMENTS)
+	stats.root.Position = UDim2.fromOffset(0, 2)
+	local divider = Ui.frame("Divider", statsHolder)
 	divider.AnchorPoint = Vector2.new(0, 1)
-	divider.Position = UDim2.new(0, 0, 1, -84)
+	divider.Position = UDim2.fromScale(0, 1)
 	divider.Size = UDim2.new(1, 0, 0, 1)
 	divider.BackgroundTransparency = 0
 	divider.BackgroundColor3 = Theme.Color.PanelBorder
 
-	cardText = MatchUi.label("Card", Theme.Font.BodyStrong, Theme.TextSize.Body, Theme.Color.TextPrimary, panel)
-	cardText.AnchorPoint = Vector2.new(0, 1)
-	cardText.Position = UDim2.new(0, 0, 1, -58)
-	cardText.Size = UDim2.new(0.5, 0, 0, 20)
-	cardText.TextXAlignment = Enum.TextXAlignment.Left
-	partnerText = MatchUi.label("Partner", Theme.Font.BodyStrong, Theme.TextSize.Body, Theme.Color.TextSecondary, panel)
-	partnerText.AnchorPoint = Vector2.new(1, 1)
-	partnerText.Position = UDim2.new(1, 0, 1, -58)
-	partnerText.Size = UDim2.new(0.5, 0, 0, 20)
-	partnerText.TextXAlignment = Enum.TextXAlignment.Right
-	partnerText.TextTruncate = Enum.TextTruncate.AtEnd
+	-- Rodapé: carta e parceiro à esquerda, REPETIR ÚLTIMA e CONFIRMAR à direita
+	local footer = Ui.frame("Footer", content)
+	footer.AnchorPoint = Vector2.new(0, 1)
+	footer.Position = UDim2.fromScale(0, 1)
+	footer.Size = UDim2.new(1, 0, 0, FOOTER_HEIGHT)
 
-	confirmButton = MatchUi.button("Confirm", S.Confirm .. " ›", true, panel)
-	confirmButton.AnchorPoint = Vector2.new(1, 1)
-	confirmButton.Position = UDim2.fromScale(1, 1)
-	confirmButton.Size = UDim2.fromOffset(180, 48)
-	-- Modal = true libera o mouse da primeira pessoa enquanto o modal está aberto (PC).
-	confirmButton.Modal = true
-	confirmButton.Activated:Connect(confirm)
-	repeatButton = MatchUi.button("Repeat", S.RepeatLast, false, panel)
-	repeatButton.AnchorPoint = Vector2.new(1, 1)
-	repeatButton.Position = UDim2.new(1, -192, 1, 0)
-	repeatButton.Size = UDim2.fromOffset(180, 48)
-	repeatButton.Activated:Connect(repeatLast)
+	cardText = Ui.label("Card", Theme.Font.BodyStrong, Theme.TextSize.Body, Theme.Color.TextPrimary, footer)
+	cardText.Position = UDim2.fromOffset(0, 4)
+	cardText.Size = UDim2.new(0.42, 0, 0, 20)
+	cardText.TextXAlignment = Enum.TextXAlignment.Left
+	cardText.TextTruncate = Enum.TextTruncate.AtEnd
+	partnerText = Ui.label("Partner", Theme.Font.BodyStrong, Theme.TextSize.Label, Theme.Color.TextSecondary, footer)
+	partnerText.Position = UDim2.fromOffset(0, 26)
+	partnerText.Size = UDim2.new(0.42, 0, 0, 24)
+	partnerText.TextXAlignment = Enum.TextXAlignment.Left
+	partnerText.TextYAlignment = Enum.TextYAlignment.Top
+	partnerText.TextWrapped = true
+
+	local buttons = Ui.frame("Buttons", footer)
+	buttons.AnchorPoint = Vector2.new(1, 1)
+	buttons.Position = UDim2.fromScale(1, 1)
+	buttons.Size = UDim2.new(0.58, 0, 0, FOOTER_HEIGHT - 4)
+	local buttonList = Ui.list(buttons, Enum.FillDirection.Horizontal, Theme.Space.Medium)
+	buttonList.HorizontalAlignment = Enum.HorizontalAlignment.Right
+	repeatButton = Widgets.button(buttons, S.RepeatLast, "secondary", {
+		size = UDim2.new(0.42, -6, 1, 0),
+		textSize = Theme.TextSize.Body,
+		order = 1,
+		modal = true, -- libera o mouse da primeira pessoa enquanto o modal está aberto (PC)
+	})
+	repeatButton.onClick(repeatLast)
+	confirmButton = Widgets.button(buttons, S.Confirm, "primary", {
+		size = UDim2.new(0.58, -6, 1, 0),
+		order = 2,
+		pc = Strings.Tutorial.ContinueKey,
+		pad = "X",
+	})
+	confirmButton.onClick(confirm)
 
 	-- Depois de confirmar: "Aguardando início · N s" no centro
-	waitingText = MatchUi.label("Waiting", Theme.Font.Title, Theme.TextSize.Title, Theme.Color.TextPrimary, gui)
+	waitingText = Ui.label("Waiting", Theme.Font.Title, Theme.TextSize.Title, Theme.Color.TextPrimary, gui)
 	waitingText.AnchorPoint = Vector2.new(0.5, 0.5)
 	waitingText.Position = UDim2.fromScale(0.5, 0.42)
 	waitingText.Size = UDim2.new(0.9, 0, 0, 32)
 	waitingText.Visible = false
-	MatchUi.outlineText(waitingText)
+	Ui.outlineText(waitingText)
 
 	gui.Parent = player:WaitForChild("PlayerGui")
 end
@@ -639,12 +706,20 @@ function PrepModal.Start()
 	end)
 	InputDevice.onChanged(function()
 		if data and not confirmed then
+			tabsKey = ""
 			PrepModal.rebuildGrid()
 		end
 	end)
 
 	UserInputService.InputBegan:Connect(function(input: InputObject, processed: boolean)
-		if processed or data == nil or confirmed then
+		if data == nil or confirmed then
+			return
+		end
+		if input.KeyCode == Enum.KeyCode.ButtonX then
+			confirm()
+			return
+		end
+		if processed then
 			return
 		end
 		if input.KeyCode == Enum.KeyCode.Return or input.KeyCode == Enum.KeyCode.KeypadEnter then

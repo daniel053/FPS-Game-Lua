@@ -9,12 +9,16 @@ type TextObject = TextLabel | TextButton | TextBox
 local TextScale = {}
 
 local scale = 1
+local listeners: { (number) -> () } = {}
+-- Textos com este atributo cuidam do próprio tamanho (Widgets.fitText) e são ignorados aqui.
+local SELF_SIZED = "SelfSizedText"
+TextScale.SelfSizedAttr = SELF_SIZED
 local base: { [TextObject]: number } = setmetatable({} :: any, { __mode = "k" })
 local shown: { [TextObject]: number } = setmetatable({} :: any, { __mode = "k" })
 
 local function apply(obj: TextObject)
 	local size = base[obj]
-	if size == nil then
+	if size == nil or obj:GetAttribute(SELF_SIZED) then
 		return
 	end
 	local scaled = math.floor(size * scale + 0.5)
@@ -34,7 +38,7 @@ local function watch(instance: Instance)
 	base[obj] = obj.TextSize
 	obj:GetPropertyChangedSignal("TextSize"):Connect(function()
 		-- Mudança feita por apply (os sinais podem chegar depois): ignora
-		if obj.TextSize == shown[obj] then
+		if obj.TextSize == shown[obj] or obj:GetAttribute(SELF_SIZED) then
 			return
 		end
 		base[obj] = obj.TextSize
@@ -55,6 +59,13 @@ function TextScale.setScale(value: number)
 	for obj in base do
 		apply(obj)
 	end
+	for _, callback in listeners do
+		task.spawn(callback, value)
+	end
+end
+
+function TextScale.onChanged(callback: (number) -> ())
+	table.insert(listeners, callback)
 end
 
 -- Acompanha todos os textos de uma tela (atuais e futuros).
