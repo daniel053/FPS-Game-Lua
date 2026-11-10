@@ -36,7 +36,7 @@
 | F1 | Dados do jogador | Perfil salvo com segurança | ✅ |
 | F2 | Combate | Atirar e derrubar com as 18 armas + corpo a corpo | ✅ |
 | F3 | Loop da partida | Partida completa em arenas cinza | ✅ |
-| F4 | Cartas | 4 cartas funcionando | ☐ |
+| F4 | Cartas | 4 cartas funcionando | 🔶 em teste |
 | ⭐ | **Marco: primeiro jogável** | Teste interno com amigos | ☐ |
 | F5 | Lobby e fila | Entrar na fila e cair na partida com amigos | ☐ |
 | F6 | Tutorial | Primeira entrada guiada | ☐ |

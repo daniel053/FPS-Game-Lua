@@ -52,6 +52,8 @@ local shotFx: UnreliableRemoteEvent
 
 local players: { [Player]: PlayerCombat } = {}
 local exploitWatches: { [Player]: ExploitWatch } = {}
+-- Lentidão de carta (Tremor, GDD 8.4): multiplicador da velocidade e até quando (os.clock)
+local slows: { [Player]: { multiplier: number, untilClock: number } } = {}
 local activityCallbacks: { (player: Player) -> () } = {}
 
 local sightParams = RaycastParams.new()
@@ -104,19 +106,53 @@ local function sendSync(player: Player, slot: string, state: WeaponState.State)
 	combatEvent:FireClient(player, "Sync", data)
 end
 
+local function slowMultiplier(player: Player): number
+	local slow = slows[player]
+	if slow == nil then
+		return 1
+	end
+	if os.clock() >= slow.untilClock then
+		slows[player] = nil
+		return 1
+	end
+	return slow.multiplier
+end
+
 local function updateWalkSpeed(player: Player, pc: PlayerCombat)
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	if humanoid == nil then
 		return
 	end
+	local multiplier = slowMultiplier(player)
 	if pc.equipped == "melee" then
-		humanoid.WalkSpeed = WeaponMath.walkSpeed(nil, false, true)
+		humanoid.WalkSpeed = WeaponMath.walkSpeed(nil, false, true) * multiplier
 		return
 	end
 	local state = pc.guns[pc.equipped]
 	local scoped = state ~= nil and state.alt and WeaponConfig.hasScope(state.def)
-	humanoid.WalkSpeed = WeaponMath.walkSpeed(if state then state.def else nil, scoped, false)
+	humanoid.WalkSpeed = WeaponMath.walkSpeed(if state then state.def else nil, scoped, false) * multiplier
+end
+
+-- Deixa o jogador mais lento por `seconds` (ex.: Tremor: 50% = percent 0.5). Só no combate.
+function CombatService.applySlow(player: Player, percent: number, seconds: number)
+	local pc = players[player]
+	if pc == nil then
+		return
+	end
+	local untilClock = os.clock() + seconds
+	slows[player] = { multiplier = math.clamp(1 - percent, 0, 1), untilClock = untilClock }
+	updateWalkSpeed(player, pc)
+	task.delay(seconds + 0.05, function()
+		local slow = slows[player]
+		local current = players[player]
+		if slow and slow.untilClock == untilClock then
+			slows[player] = nil
+		end
+		if current then
+			updateWalkSpeed(player, current)
+		end
+	end)
 end
 
 -- Troca as armas do jogador (F3: fases por rodada; F2: painel de teste). Munição cheia.
@@ -130,6 +166,7 @@ end
 -- Sem armas (mirante, preparação): o servidor recusa qualquer ação e o cliente esconde a arma.
 function CombatService.disarm(player: Player)
 	players[player] = nil
+	slows[player] = nil
 	combatEvent:FireClient(player, "Disarm", nil)
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
@@ -536,6 +573,7 @@ function CombatService.Start()
 	Players.PlayerRemoving:Connect(function(player: Player)
 		players[player] = nil
 		exploitWatches[player] = nil
+		slows[player] = nil
 	end)
 end
 

@@ -23,6 +23,9 @@ export type EventName =
 	| "MatchRequest" -- cliente -> servidor: (tipo, argumento) — ver Match/MatchTypes
 	| "DevMatchCommand" -- cliente -> servidor: (comando: string, argumento: any) — só em DEV_
 	| "DevMatchResult" -- servidor -> cliente: (sucesso: boolean, chaveDaMensagem: string, detalhe: string?) — só em DEV_
+	| "CardAction" -- cliente -> servidor: (ação, tecla, horário, direção?) — ver Cards/CardTypes
+	| "CardEvent" -- servidor -> cliente: (tipo, dados) — ver Cards/CardTypes
+	| "CardFx" -- servidor -> clientes: (tipo, dados) — efeitos visuais das cartas
 
 -- Eventos sem garantia de entrega (efeitos visuais frequentes; perder um não muda o jogo).
 export type UnreliableEventName =

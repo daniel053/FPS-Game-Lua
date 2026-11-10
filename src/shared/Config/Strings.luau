@@ -53,17 +53,45 @@ local Strings = {
 
 	-- Cartas, por ID (GDD 8.4)
 	Cards = {
-		card_nuvem = { name = "Nuvem", description = "Arremessa uma nuvem que bloqueia a visão." },
-		card_impulso = { name = "Impulso", description = "Lança você bem alto para cima." },
+		card_nuvem = {
+			name = "Nuvem",
+			description = "Arremessa uma nuvem que bloqueia a visão por 7 s. 2 por rodada.",
+		},
+		card_impulso = {
+			name = "Impulso",
+			description = "Lança você bem alto para cima. Recarga de 20 s.",
+		},
 		card_tremor = {
 			name = "Tremor",
-			description = "Onda no chão que deixa os inimigos lentos e com a mira tremida.",
+			description = "Onda no chão à frente: inimigos atingidos ficam lentos e com a mira tremida por 2 s. Recarga de 25 s.",
 		},
 		card_renascer = {
 			name = "Renascer",
-			description = "Deixa uma marca: se cair em 8 s, volta a ela com vida cheia.",
+			description = "Deixa uma marca: se cair em 8 s, volta a ela com vida e escudo cheios. Passando os 8 s, volta mantendo a vida.",
 		},
 	} :: { [string]: { name: string, description: string } },
+
+	-- Cartas no HUD da partida (F4; visual final na F7)
+	CardHud = {
+		Charges = "×%d",
+		Recharge = "%d",
+		Locked = "🔒 ",
+		UltLockedShort = "%dª",
+		PanelTitle = "HABILIDADES",
+		PanelHint = "Habilidades",
+		PanelKey = "B",
+		PanelLine = "%s · tecla %s",
+		PanelRecharge = "Recarga: %d s",
+		PanelNoRecharge = "Cargas por rodada: %d",
+		PanelUltLocked = "Libera na %dª rodada",
+		PanelEmpty = "Você não tem cartas nesta partida.",
+		PanelClose = "FECHAR",
+		RenascerActive = "RENASCER · %d s",
+		RenascerRevived = "VOCÊ RENASCEU!",
+		Tremored = "ATINGIDO PELO TREMOR",
+		GamepadBasic = "LB",
+		GamepadUlt = "RB",
+	},
 
 	Rarities = {
 		Comum = "Comum",
@@ -190,9 +218,16 @@ local Strings = {
 		StepCard = "CARTA",
 		StepPrimary = "PRIMÁRIA",
 		StepSecondary = "SECUNDÁRIA",
-		CardPlaceholder = "As cartas chegam em breve.",
+		CardNone = "Você ainda não tem cartas. Elas são entregues no tutorial.",
+		CardChooseHint = "Escolha 1 carta para a partida inteira. Sem escolha, você joga sem carta.",
+		CardLockedHint = "A carta vale a partida inteira.",
+		CardNotChosen = "Sem carta nesta partida",
 		UltLocked = "Libera na %dª rodada",
-		YourCard = "Sua carta: —",
+		UltReady = "Liberada nesta rodada",
+		UltAuto = "Vem sozinha",
+		YourCard = "Sua carta: %s",
+		YourCardNone = "Sua carta: —",
+		CardWithKey = "%s · %s",
 		PartnerChoosing = "Parceiro (%s): escolhendo…",
 		PartnerChoice = "Parceiro (%s): %s",
 		PartnerConfirmed = "%s ✓",
@@ -244,7 +279,7 @@ local Strings = {
 		-- Seção de dados do painel (F1)
 		DataTitle = "DADOS DO JOGADOR",
 		DataLoading = "Perfil carregando…",
-		DataSummary = "Moedas: %d · Tutorial: %s\nSensibilidade: toque %.1f · mouse %.1f · controle %.1f",
+		DataSummary = "Moedas: %d · Tutorial: %s · Cartas: %d\nSensibilidade: toque %.1f · mouse %.1f · controle %.1f",
 		TutorialDone = "feito",
 		TutorialPending = "pendente",
 		AddCoins = "+%d MOEDAS",
@@ -288,6 +323,13 @@ local Strings = {
 		ClearBots = "TIRAR JOGADORES DE TESTE",
 		RestartMatch = "RECOMEÇAR PARTIDA",
 		BotName = "Teste %d",
+		-- Cartas (F4)
+		CardsTitle = "CARTAS (TESTE)",
+		RefillCards = "CARGAS CHEIAS",
+		HurtSelf = "LEVAR %d DE DANO",
+		CardSpamTest = "TESTE: CARTA 10× DE UMA VEZ",
+		CardNotChosenTest = "TESTE: CARTA QUE NÃO ESCOLHI",
+		CardExploitDetail = "Servidor aceitou %d de %d pedidos (recusou %d).",
 		MatchPhases = {
 			Receiving = "Recebendo jogadores",
 			Forming = "Formando duplas",
@@ -309,12 +351,21 @@ local Strings = {
 			BotsAdded = "Jogadores de teste adicionados.",
 			BotsCleared = "Jogadores de teste removidos.",
 			Restarted = "Partida recomeçando.",
+			CardsRefilled = "Cargas cheias.",
+			SelfHurt = "Dano aplicado em você.",
+			NotInCombat = "Só no combate, vivo.",
+			NoCards = "Só no combate, com carta.",
+			CardExploitDone = "Teste de carta:",
 			WrongPhase = "Não dá nesta etapa da partida.",
 			Invalid = "Comando inválido.",
 		} :: { [string]: string },
 
+		GrantCards = "DAR AS 4 CARTAS",
+		ClearCards = "TIRAR AS CARTAS",
 		DataResults = {
 			CoinsAdded = "Moedas adicionadas.",
+			CardsGranted = "Você tem as 4 cartas (Nuvem, Impulso, Tremor, Renascer).",
+			CardsCleared = "Cartas removidas.",
 			ProfileReset = "Perfil resetado.",
 			ProfileShown = "Perfil completo no Output do servidor.",
 			NotLoaded = "O perfil ainda não carregou.",

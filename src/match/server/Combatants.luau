@@ -43,6 +43,9 @@ local Combatants = {}
 local byModel: { [Model]: Combatant } = {}
 local byHitbox: { [BasePart]: Combatant } = {}
 local knockedCallbacks: { KnockedCallback } = {}
+-- Antes de derrubar: se o guarda devolver true, o combatente NÃO cai (ex.: ult Renascer, GDD 8.4).
+-- O guarda é quem decide o que acontece (vida cheia, voltar à marca).
+local knockGuard: ((target: Combatant) -> boolean)? = nil
 
 local function publish(c: Combatant)
 	c.model:SetAttribute(ATTR.Hp, math.ceil(c.health.hp))
@@ -137,6 +140,24 @@ function Combatants.onKnocked(callback: KnockedCallback)
 	table.insert(knockedCallbacks, callback)
 end
 
+function Combatants.setKnockGuard(guard: ((target: Combatant) -> boolean)?)
+	knockGuard = guard
+end
+
+-- Ia cair: o guarda salva? (vale para dano de arma e da zona; não para sair do mapa ou do jogo)
+local function guarded(target: Combatant): boolean
+	local guard = knockGuard
+	if guard == nil then
+		return false
+	end
+	local ok, saved = pcall(guard, target)
+	if not ok then
+		warn(`[Combate] Erro no guarda de queda: {saved}`)
+		return false
+	end
+	return saved == true
+end
+
 -- Aplica dano. Devolve nil se não pôde (já derrubado ou protegido ao aparecer).
 function Combatants.applyDamage(target: Combatant, amount: number, source: DamageSource?): HealthMath.DamageResult?
 	if not target.alive or os.clock() < target.protectedUntil then
@@ -154,6 +175,17 @@ function Combatants.applyDamage(target: Combatant, amount: number, source: Damag
 	end
 	target.hitsTaken += 1
 	target.lastDamageAt = now
+	if result.knocked and guarded(target) then
+		target.firstHitAt = nil
+		publish(target)
+		return {
+			dealt = result.dealt,
+			toShield = result.toShield,
+			toHp = result.toHp,
+			shieldBroken = result.shieldBroken,
+			knocked = false,
+		}
+	end
 	if result.knocked then
 		target.alive = false
 		publish(target)
@@ -175,6 +207,10 @@ function Combatants.applyZoneDamage(target: Combatant, amount: number)
 	end
 	target.health.hp = math.max(0, target.health.hp - amount)
 	if target.health.hp > 0 then
+		publish(target)
+		return
+	end
+	if guarded(target) then
 		publish(target)
 		return
 	end
@@ -203,6 +239,11 @@ function Combatants.knockWithoutSource(target: Combatant)
 	for _, callback in knockedCallbacks do
 		task.spawn(callback, target, nil, { seconds = 0, shots = 0 })
 	end
+end
+
+-- Atualiza os atributos depois que outro sistema mexeu na vida (ex.: Renascer).
+function Combatants.publish(target: Combatant)
+	publish(target)
 end
 
 -- Vida e escudo cheios (alvos que voltam, comando de teste).

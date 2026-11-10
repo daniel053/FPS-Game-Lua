@@ -29,6 +29,7 @@ local AimCamera = require(script.Parent.Parent.Common.AimCamera)
 local InputDevice = require(script.Parent.Parent.Common.InputDevice)
 local PlayerDataClient = require(script.Parent.Parent.Common.PlayerDataClient)
 local CombatEffects = require(script.Parent.CombatEffects)
+local Smoke = require(script.Parent.Smoke)
 local ViewModel = require(script.Parent.ViewModel)
 
 type Slot = CombatTypes.Slot
@@ -222,7 +223,8 @@ local function targetUnderCrosshair(range: number): (Model?, number)
 	end
 	local origin = camera.CFrame.Position
 	local hit, position = castShot(origin, camera.CFrame.LookVector * range, nil)
-	if hit then
+	-- Atrás da Nuvem o jogador não vê o inimigo: o tiro automático também não (F4)
+	if hit and not Smoke.blocks(origin, position) then
 		return enemyFromHitbox(hit), (position - origin).Magnitude
 	end
 	return nil, 0
@@ -257,7 +259,11 @@ local function nearestEnemyInCone(coneDegrees: number, maxDistance: number): (Ba
 			continue
 		end
 		local angle = math.acos(math.clamp(dot, -1, 1))
-		if angle < bestAngle and workspace:Raycast(origin, toTarget, sightParams) == nil then
+		if
+			angle < bestAngle
+			and workspace:Raycast(origin, toTarget, sightParams) == nil
+			and not Smoke.blocks(origin, hitbox.Position)
+		then
 			best = hitbox
 			bestAngle = angle
 		end

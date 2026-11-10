@@ -4,7 +4,8 @@
 --     não aparece através de paredes;
 --   * parceiro: contorno na cor da equipe SÓ quando o corpo inteiro está escondido. A cada 0,1 s,
 --     raios da câmera até cabeça, tronco, mãos e pés: todos bloqueados = mostra; algum livre = esconde;
---   * parceiro visível: sem contorno, com o nome sobre a cabeça.
+--   * parceiro visível: sem contorno, com o nome sobre a cabeça;
+--   * inimigo atrás ou dentro de uma Nuvem (F4): sem contorno.
 
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
@@ -20,6 +21,7 @@ local Types = require(Shared.Types)
 
 local PlayerDataClient = require(script.Parent.Parent.Common.PlayerDataClient)
 local CombatEffects = require(script.Parent.CombatEffects)
+local Smoke = require(script.Parent.Smoke)
 
 local ATTR = CombatNames.Attr
 
@@ -38,6 +40,7 @@ type Tracked = {
 	highlight: Highlight,
 	nameTag: BillboardGui?,
 	connections: { RBXScriptConnection },
+	enemy: boolean, -- contorno de inimigo ligado (some atrás da Nuvem, F4)
 }
 
 local HighlightController = {}
@@ -105,6 +108,7 @@ local function refresh(entry: Tracked)
 	-- Partida (F3): só quem está na mesma ilha. No mirante (sem ilha) ninguém tem contorno.
 	local mine = player.Character and player.Character:GetAttribute(MatchTypes.Attr.Island)
 	local sameIsland = model:GetAttribute(MatchTypes.Attr.Island) == mine
+	entry.enemy = false
 	if model == player.Character or not alive or not sameIsland then
 		highlight.Enabled = false
 		if entry.nameTag then
@@ -127,6 +131,7 @@ local function refresh(entry: Tracked)
 		highlight.DepthMode = Enum.HighlightDepthMode.Occluded -- só desenha o que está visível
 		highlight.OutlineColor = enemyColor()
 		highlight.Enabled = true
+		entry.enemy = true
 		if entry.nameTag then
 			entry.nameTag.Enabled = false
 		end
@@ -144,7 +149,7 @@ local function track(instance: Instance)
 	highlight.Enabled = false
 	highlight.Adornee = model
 	highlight.Parent = CombatEffects.getFolder()
-	local entry: Tracked = { model = model, highlight = highlight, nameTag = nil, connections = {} }
+	local entry: Tracked = { model = model, highlight = highlight, nameTag = nil, connections = {}, enemy = false }
 	tracked[model] = entry
 	table.insert(
 		entry.connections,
@@ -219,6 +224,11 @@ local function checkPartners()
 	for model, entry in tracked do
 		if model ~= player.Character and model:GetAttribute(ATTR.Alive) == true and isPartner(model) then
 			entry.highlight.Enabled = fullyHidden(model, origin)
+		elseif entry.enemy then
+			-- Inimigo atrás (ou dentro) de uma Nuvem: sem contorno (a nuvem bloqueia a visão)
+			local hitbox = model:FindFirstChild(CombatNames.HitboxName)
+			local target = if hitbox and hitbox:IsA("BasePart") then hitbox.Position else model:GetPivot().Position
+			entry.highlight.Enabled = not Smoke.blocks(origin, target)
 		end
 	end
 end

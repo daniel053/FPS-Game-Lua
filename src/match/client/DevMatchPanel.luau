@@ -2,10 +2,12 @@
 -- Seção PARTIDA do painel TESTE (só DEV_, só no place Partida, FASES F3):
 --   começar agora, pular rodada, tirar 1 vida de uma dupla, forçar Virada, jogadores de teste
 --   (para montar partidas de 4 a 16 com poucos clientes) e recomeçar a partida.
+-- Cartas (F4): cargas cheias e os testes de exploit (carta 10× de uma vez; carta que não escolheu).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
+local DevConfig = require(Shared.Config.DevConfig)
 local Env = require(Shared.Env)
 local MatchTypes = require(Shared.Match.MatchTypes)
 local Remotes = require(Shared.Remotes)
@@ -15,6 +17,7 @@ local TextUtil = require(Shared.TextUtil)
 local Theme = require(Shared.Config.Theme)
 
 local DevPanelController = require(script.Parent.Parent.Common.DevPanelController)
+local CardController = require(script.Parent.CardController)
 local MatchClient = require(script.Parent.MatchClient)
 
 local PHASE_NAMES = Strings.Dev.MatchPhases
@@ -69,6 +72,42 @@ function DevMatchPanel.Start()
 		end)
 		ui.addButton(Strings.Dev.RestartMatch, false, function()
 			command:FireServer("Restart")
+		end)
+
+		-- Cartas (F4). As 4 cartas se ganham na seção DADOS DO JOGADOR (DAR AS 4 CARTAS).
+		ui.addTitle(Strings.Dev.CardsTitle)
+		ui.addButton(Strings.Dev.RefillCards, false, function()
+			command:FireServer("RefillCards")
+		end)
+		-- Renascer sem outro jogador: use a ult e aperte aqui dentro dos 8 s
+		ui.addButton(string.format(Strings.Dev.HurtSelf, DevConfig.HurtSelfDamage), false, function()
+			command:FireServer("HurtSelf")
+		end)
+		-- Pedidos de carta pelo remote real, sem esperar a recarga: o servidor conta quantos aceitou.
+		local function cardExploit(key: string?, count: number)
+			if key == nil then
+				ui.showStatus(false, Strings.Dev.MatchResults.NoCards)
+				return
+			end
+			command:FireServer("CardWatchStart")
+			task.wait(0.15)
+			CardController.devSpam(key, count)
+			task.wait(0.5)
+			command:FireServer("CardWatchEnd", count)
+		end
+		ui.addButton(Strings.Dev.CardSpamTest, false, function()
+			local key = CardController.basicKey()
+			if key == nil then
+				for _, view in CardController.getViews() do
+					if not view.locked then
+						key = view.key
+					end
+				end
+			end
+			task.spawn(cardExploit, key, 10)
+		end)
+		ui.addButton(Strings.Dev.CardNotChosenTest, false, function()
+			task.spawn(cardExploit, CardController.devMissingKey(), 1)
 		end)
 
 		local shownTeams = ""

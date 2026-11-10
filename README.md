@@ -104,6 +104,41 @@ No mesmo painel **TESTE**, seção **DADOS DO JOGADOR**:
 
 Para simular falha do DataStore: no Studio, selecione o **ServerStorage**, adicione o atributo booleano `DEV_SimulateLoadFailure` marcado e aperte Play. O jogador deve ser expulso com a mensagem de falha, sem perder nada. Apague o atributo depois.
 
+## Testar as cartas (F4)
+
+No place **Partida**, como na F3. As cartas só existem para quem as tem: até o tutorial (F6), abra o painel **TESTE › DADOS DO JOGADOR** e toque em **DAR AS 4 CARTAS** (o resumo mostra "Cartas: 4"). **TIRAR AS CARTAS** testa a partida sem carta.
+
+### Controles
+
+| Ação | PC | Celular | Controle |
+|---|---|---|---|
+| Carta básica escolhida | a tecla dela (C, Q ou E) | botão fixo da tecla | **LB** |
+| Ult (Renascer) | **X** | botão **X** | **RB** |
+| Nuvem | segurar mostra o arco, soltar arremessa | igual (segurar o botão) | igual (LB) |
+| Painel de habilidades | **B** | segurar uma carta (menos a Nuvem) | direcional **↓** |
+
+### Painel TESTE › PARTIDA › CARTAS (TESTE)
+
+| Botão | O que faz |
+|---|---|
+| **CARGAS CHEIAS** | todas as suas cartas prontas de novo |
+| **LEVAR 300 DE DANO** | você leva dano como se fosse um tiro (para testar o Renascer sozinho) |
+| **TESTE: CARTA 10× DE UMA VEZ** | manda 10 pedidos da sua carta sem esperar; o servidor tem que aceitar no máximo as cargas que você tinha |
+| **TESTE: CARTA QUE NÃO ESCOLHI** | pede uma carta que você não tem nesta rodada; o servidor tem que recusar |
+
+### Roteiro dos critérios de aceite
+
+1. **Escolha (1ª rodada):** a etapa CARTA abre primeiro, com Nuvem, Impulso e Tremor (tecla e o que faz) e o Renascer com cadeado. Escolha uma (clique, toque, atalho 1–3 ou controle). Nas rodadas seguintes a etapa aparece travada (🔒) com a carta. Numa outra partida, deixe o tempo acabar sem escolher: você joga sem carta básica (só a ult a partir da 4ª).
+2. **Nuvem:** 2 por rodada. A bola faz arco e vira uma nuvem de raio 8 por 7 s. Atrás dela o inimigo some (sem contorno); dentro dela a tela fica coberta; do mirante ela fica translúcida.
+3. **Impulso:** sobe ~18 studs; recarga de 20 s (o número aparece na carta).
+4. **Tremor:** onda de 20 × 6 à frente, no chão. Precisa de **dois clientes**: quem for atingido no chão fica 50% mais lento e com a mira tremida por 2 s ("ATINGIDO PELO TREMOR"). Não atravessa parede, não pega o parceiro nem quem está no ar ou em outra altura. Recarga de 25 s.
+5. **Renascer (4ª rodada em diante; use PULAR RODADA):** use X, afaste-se e toque em LEVAR 300 DE DANO dentro dos 8 s: você volta à marca com vida e escudo cheios. Use de novo em outra rodada e espere os 8 s: volta à marca mantendo a vida. Só 1 por rodada.
+6. **Ult travada:** nas rodadas 1 a 3, X não faz nada e a carta mostra 🔒 4ª.
+7. **Toque, teclado e controle:** repita 2 a 5 no emulador de celular (aba Teste › Dispositivo) e com um controle.
+8. **Exploit:** os dois botões TESTE do painel. Esperado com a carta pronta: "aceitou 1 de 10" (mesmo a Nuvem com 2 cargas: há um intervalo mínimo entre usos); em recarga: "aceitou 0 de 10"; carta que não escolheu: "aceitou 0 de 1".
+
+Os testes automáticos conferem os números do GDD 8.4, cargas e recargas, ult na 4ª rodada, opções da escolha, a geometria da Nuvem e do Tremor e o bloqueio de pedidos repetidos.
+
 ## Testar a partida (F3)
 
 No place **Partida** (porta **34874**). Ao dar Play, o servidor monta o **mirante** (losango no alto) e as **4 ilhas cinza** em volta e abaixo, e roda a partida sozinho. A arena de teste da F2 fica desligada (`CombatConfig.TestArena.Enabled = true` volta a ela).

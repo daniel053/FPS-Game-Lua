@@ -38,6 +38,9 @@ local CombatConfig = {
 	Input = {
 		GamepadSwitchHoldSeconds = 0.35, -- controle: tocar Y alterna 1/2; segurar Y pega o corpo a corpo
 		TouchSwitchHoldSeconds = 0.4, -- celular: segurar o botão de troca abre as 3 opções
+		TouchCardDetailsHoldSeconds = 0.5, -- celular: segurar uma carta (menos a Nuvem) abre os detalhes
+		AbilitiesPanelKey = Enum.KeyCode.B, -- PC: painel de habilidades (GDD 13.3)
+		AbilitiesPanelGamepadButton = Enum.KeyCode.DPadDown, -- controle: o mesmo painel
 		TouchLookRadiansPerPixel = 0.006, -- arrastar o dedo no botão ATIRAR também gira a câmera
 	},
 
@@ -54,6 +57,15 @@ local CombatConfig = {
 			Switch = Vector2.new(-175, -150),
 			Reload = Vector2.new(-175, -60),
 			AmmoRightMargin = 220, -- munição à esquerda dos botões
+			-- Cartas (GDD 13.1): [Q] [E] [C] em linha ao lado da MIRA e [X] ao lado da recarga.
+			-- Cada tecla sempre no mesmo lugar (GDD 8.3), mesmo que só apareçam as cartas da partida.
+			CardSize = 64,
+			Cards = {
+				Q = Vector2.new(-307, -255),
+				E = Vector2.new(-231, -255),
+				C = Vector2.new(-155, -255),
+				X = Vector2.new(-275, -60),
+			} :: { [string]: Vector2 },
 		},
 		Large = {
 			FireSize = 110,
@@ -63,6 +75,13 @@ local CombatConfig = {
 			Switch = Vector2.new(-240, -260),
 			Reload = Vector2.new(-240, -140),
 			AmmoRightMargin = 300,
+			CardSize = 80,
+			Cards = {
+				Q = Vector2.new(-389, -405),
+				E = Vector2.new(-297, -405),
+				C = Vector2.new(-205, -405),
+				X = Vector2.new(-370, -140),
+			} :: { [string]: Vector2 },
 		},
 		ButtonTransparency = 0.35, -- semitransparentes (guia, quadro 4)
 	},

@@ -1,8 +1,11 @@
 --!strict
 -- Modal de preparação, versão SIMPLES (GDD 4.10 e ESTILO T2; visual final na F7).
 --   * Modal sobre o jogo: o mapa continua visível atrás (fundo escurecido, nunca preto opaco).
---   * Etapas no topo: CARTA (só a 1ª rodada; placeholder até a F4; travada depois), PRIMÁRIA
---     (a partir da 3ª rodada) e SECUNDÁRIA.
+--   * Etapas no topo: CARTA (na 1ª preparação do jogador; travada depois, com a carta escolhida),
+--     PRIMÁRIA (a partir da 3ª rodada) e SECUNDÁRIA.
+--   * Etapa CARTA (F4): as cartas básicas que o jogador tem, lado a lado, com a tecla e o que faz;
+--     a ult ao lado com cadeado ("Libera na 4ª rodada"). Sem escolha = partida sem carta básica.
+--     Raridade das cartas iniciais ainda [ABERTO] (GDD 8.9): borda na cor da carta, sem moldura.
 --   * Armas da fase agrupadas por categoria, cada arma uma vez só; a escolhida com borda do acento;
 --     barras de dano, cadência e alcance da escolhida.
 --   * Rodapé: carta, escolha do parceiro em tempo real, REPETIR ÚLTIMA e CONFIRMAR.
@@ -33,6 +36,8 @@ local MatchUi = require(script.Parent.MatchUi)
 local S = Strings.Match
 local CARD_WIDTH = 116
 local CARD_HEIGHT = 64
+local ABILITY_WIDTH = 170
+local ABILITY_HEIGHT = 128
 local SEGMENTS = 5
 local CATEGORY_ORDER = { "Pistol", "SMG", "Shotgun", "LightRifle", "Rifle", "Sniper", "MachineGun" }
 local NUMBER_KEYS = {
@@ -70,6 +75,7 @@ local waitingText: TextLabel
 local data: MatchTypes.PrepData? = nil
 local step: Step = "secondary"
 local chosen: { primary: string?, secondary: string? } = {}
+local chosenCard: string? = nil
 local confirmed = false
 local visibleIds: { string } = {}
 
@@ -117,8 +123,13 @@ local function refreshSteps()
 	for name, button in stepButtons do
 		local active = name == step
 		button.BackgroundColor3 = if active then Theme.Color.Accent else Theme.Color.PanelRaised
-		local done = (name == "primary" and chosen.primary ~= nil) or (name == "secondary" and chosen.secondary ~= nil)
+		local done = (name == "primary" and chosen.primary ~= nil)
+			or (name == "secondary" and chosen.secondary ~= nil)
+			or (name == "card" and chosenCard ~= nil)
 		local base = if name == "card" then S.StepCard elseif name == "primary" then S.StepPrimary else S.StepSecondary
+		if name == "card" and not current.cardStep then
+			base = Strings.CardHud.Locked .. base -- travada: a carta vale a partida inteira
+		end
 		button.Text = if done then base .. " ✓" else base
 		button.TextColor3 = if name == "card" and not current.cardStep
 			then Theme.Color.TextSecondary
@@ -130,8 +141,41 @@ local function sendChoice()
 	MatchClient.request("PrepChoose", { primary = chosen.primary, secondary = chosen.secondary })
 end
 
+local function cardLabel(id: string?): string
+	local def = if id then CardConfig.get(id) else nil
+	if id == nil or def == nil then
+		return "—"
+	end
+	return string.format(S.CardWithKey, (Strings.Cards[id] or { name = id }).name, def.key)
+end
+
+local function refreshCardText()
+	cardText.Text = if chosenCard then string.format(S.YourCard, cardLabel(chosenCard)) else S.YourCardNone
+end
+
+local function nextWeaponStep(): Step
+	local current = data
+	return if current and #current.primaries > 0 then "primary" else "secondary"
+end
+
+local function chooseCard(id: string)
+	local current = data
+	if current == nil or not current.cardStep or not table.find(current.cardOptions, id) then
+		return
+	end
+	chosenCard = id
+	MatchClient.request("PrepCard", id)
+	refreshCardText()
+end
+
 local function choose(id: string)
 	if confirmed then
+		return
+	end
+	if step == "card" then
+		chooseCard(id)
+		step = nextWeaponStep() -- escolheu a carta: passa para as armas
+		PrepModal.rebuildGrid()
 		return
 	end
 	if step == "primary" then
@@ -186,19 +230,7 @@ function PrepModal.rebuildGrid()
 	end
 
 	if step == "card" then
-		-- Placeholder até a F4: as cartas ainda não existem
-		local column = MatchUi.frame("Cards", grid)
-		column.Size = UDim2.fromOffset(420, CARD_HEIGHT * 2)
-		local text =
-			MatchUi.label("Info", Theme.Font.BodyStrong, Theme.TextSize.Body, Theme.Color.TextSecondary, column)
-		text.Size = UDim2.new(1, 0, 0, 24)
-		text.TextXAlignment = Enum.TextXAlignment.Left
-		text.Text = S.CardPlaceholder
-		local ult = MatchUi.label("Ult", Theme.Font.BodyStrong, Theme.TextSize.Label, Theme.Color.TextSecondary, column)
-		ult.Position = UDim2.fromOffset(0, 30)
-		ult.Size = UDim2.new(1, 0, 0, 20)
-		ult.TextXAlignment = Enum.TextXAlignment.Left
-		ult.Text = "X · " .. string.format(S.UltLocked, CardConfig.UltUnlockRound)
+		PrepModal.buildCardStep(current)
 		return
 	end
 
@@ -241,6 +273,109 @@ function PrepModal.rebuildGrid()
 	end
 end
 
+-- Cartão de uma carta (escolha, travada ou a ult com cadeado).
+local function makeAbilityCard(
+	id: string,
+	order: number,
+	index: number?,
+	selected: boolean,
+	note: string?,
+	parent: Instance
+): TextButton
+	local def = CardConfig.get(id)
+	local locked = index == nil
+	local color = if locked and not selected then Theme.Cards.Locked else (Theme.Cards[id] or Theme.Color.Accent)
+	local button = Instance.new("TextButton")
+	button.Name = id
+	button.LayoutOrder = order
+	button.Size = UDim2.fromOffset(ABILITY_WIDTH, ABILITY_HEIGHT)
+	button.BackgroundColor3 = Theme.Color.PanelRaised
+	button.AutoButtonColor = not locked
+	button.Text = ""
+	button.Selectable = not locked
+	MatchUi.corner(button)
+	MatchUi.stroke(button, if selected then Theme.Color.Accent else color, if selected then 3 else 2)
+	MatchUi.padding(button, 8)
+
+	local title = MatchUi.label("Name", Theme.Font.Title, Theme.TextSize.PrimaryButton, color, button)
+	title.Size = UDim2.new(1, -28, 0, 22)
+	title.TextXAlignment = Enum.TextXAlignment.Left
+	title.Text = TextUtil.upper((Strings.Cards[id] or { name = id }).name)
+	-- A tecla é parte da carta (fixa, GDD 8.3): sempre aparece
+	local keyChip = MatchUi.keyChip(if def then def.key else "?", button)
+	keyChip.AnchorPoint = Vector2.new(1, 0)
+	keyChip.Position = UDim2.fromScale(1, 0)
+	local body = MatchUi.label("Body", Theme.Font.Body, Theme.TextSize.Label, Theme.Color.TextSecondary, button)
+	body.Position = UDim2.fromOffset(0, 26)
+	body.Size = UDim2.new(1, 0, 1, -26 - 18)
+	body.TextWrapped = true
+	body.TextXAlignment = Enum.TextXAlignment.Left
+	body.TextYAlignment = Enum.TextYAlignment.Top
+	body.Text = (Strings.Cards[id] or { description = "" }).description
+	if note then
+		local noteText =
+			MatchUi.label("Note", Theme.Font.BodyStrong, Theme.TextSize.Label, Theme.Color.TextPrimary, button)
+		noteText.AnchorPoint = Vector2.new(0, 1)
+		noteText.Position = UDim2.fromScale(0, 1)
+		noteText.Size = UDim2.new(1, 0, 0, 16)
+		noteText.TextXAlignment = Enum.TextXAlignment.Left
+		noteText.Text = note
+	end
+	if index and InputDevice.get() == "KeyboardMouse" and index <= #NUMBER_KEYS then
+		local chip = MatchUi.keyChip(tostring(index), button)
+		chip.AnchorPoint = Vector2.new(1, 1)
+		chip.Position = UDim2.fromScale(1, 1)
+	end
+	if not locked then
+		button.Activated:Connect(function()
+			choose(id)
+		end)
+	end
+	button.Parent = parent
+	return button
+end
+
+-- Etapa CARTA: escolher (1ª preparação) ou ver a carta travada; a ult ao lado.
+function PrepModal.buildCardStep(current: MatchTypes.PrepData)
+	local column = MatchUi.frame("CardStep", grid)
+	column.Size = UDim2.fromOffset(4 * (ABILITY_WIDTH + 12), ABILITY_HEIGHT + 30)
+	local hint = MatchUi.label("Hint", Theme.Font.BodyStrong, Theme.TextSize.Body, Theme.Color.TextSecondary, column)
+	hint.Size = UDim2.new(1, 0, 0, 20)
+	hint.TextXAlignment = Enum.TextXAlignment.Left
+	local cards = MatchUi.frame("Cards", column)
+	cards.Position = UDim2.fromOffset(0, 28)
+	cards.Size = UDim2.new(1, 0, 0, ABILITY_HEIGHT)
+	MatchUi.list(cards, Enum.FillDirection.Horizontal, 12)
+
+	local firstButton: TextButton? = nil
+	if current.cardStep then
+		if #current.cardOptions == 0 then
+			hint.Text = S.CardNone
+		else
+			hint.Text = S.CardChooseHint
+			for i, id in current.cardOptions do
+				table.insert(visibleIds, id)
+				local button = makeAbilityCard(id, i, #visibleIds, chosenCard == id, nil, cards)
+				firstButton = firstButton or button
+			end
+		end
+	else
+		hint.Text = if chosenCard then S.CardLockedHint else S.CardNotChosen
+		if chosenCard then
+			makeAbilityCard(chosenCard, 1, nil, true, nil, cards)
+		end
+	end
+	if current.ult then
+		local note = if current.ultUnlocked
+			then S.UltReady
+			else Strings.CardHud.Locked .. string.format(S.UltLocked, CardConfig.UltUnlockRound)
+		makeAbilityCard(current.ult, 10, nil, current.ultUnlocked, note, cards)
+	end
+	if InputDevice.get() == "Gamepad" and firstButton and gui.Enabled then
+		GuiService.SelectedObject = firstButton
+	end
+end
+
 local function refreshPartner(partner: MatchTypes.PartnerChoiceData?)
 	if partner == nil then
 		partnerText.Text = S.NoPartner
@@ -252,11 +387,21 @@ local function refreshPartner(partner: MatchTypes.PartnerChoiceData?)
 			table.insert(parts, Strings.Weapons[id] or id)
 		end
 	end
+	local card = partner.card
+	if card then
+		table.insert(parts, (Strings.Cards[card] or { name = card }).name)
+	end
 	if #parts == 0 then
 		partnerText.Text = string.format(S.PartnerChoosing, partner.name)
 		return
 	end
 	local text = table.concat(parts, " + ")
+	if card then
+		-- "Vespa + Bolinha · Impulso" (ESTILO T2)
+		local weapons = table.concat(parts, " + ", 1, #parts - 1)
+		local cardName = parts[#parts]
+		text = if weapons ~= "" then `{weapons} · {cardName}` else cardName
+	end
 	if partner.confirmed then
 		text = string.format(S.PartnerConfirmed, text)
 	end
@@ -291,6 +436,11 @@ local function repeatLast()
 		return
 	end
 	local memory = profile.loadout
+	-- Etapa da carta aberta: repete também a carta da última partida, se ainda tiver
+	local lastCard = memory.lastCard
+	if current.cardStep and lastCard and table.find(current.cardOptions, lastCard) then
+		chooseCard(lastCard)
+	end
 	local primary = memory.lastPrimaryByPhase[current.phaseId]
 	if primary and table.find(current.primaries, primary) then
 		chosen.primary = primary
@@ -307,10 +457,16 @@ local function open(prep: MatchTypes.PrepData)
 	data = prep
 	confirmed = false
 	chosen = { primary = prep.primary, secondary = prep.secondary }
-	step = if #prep.primaries > 0 then "primary" else "secondary"
+	chosenCard = prep.card
+	-- 1ª preparação com cartas: começa pela carta (ESTILO T2: Carta → Primária → Secundária)
+	if prep.cardStep and #prep.cardOptions > 0 then
+		step = "card"
+	else
+		step = if #prep.primaries > 0 then "primary" else "secondary"
+	end
 	local phaseName = TextUtil.upper(Strings.WeaponPhases[prep.phaseId] or "")
 	headerText.Text = string.format(S.RoundPhase, prep.round, phaseName)
-	cardText.Text = S.YourCard
+	refreshCardText()
 	refreshPartner(nil)
 	gui.Enabled = true
 	overlay.Visible = true

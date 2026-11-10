@@ -135,10 +135,15 @@ local function refreshData(profile: PlayerData.Profile?)
 		return
 	end
 	local s = profile.settings.sensitivity
+	local cardCount = 0
+	for _ in profile.cards.owned do
+		cardCount += 1
+	end
 	dataLabel.Text = string.format(
 		Strings.Dev.DataSummary,
 		profile.coins,
 		if profile.tutorialDone then Strings.Dev.TutorialDone else Strings.Dev.TutorialPending,
+		cardCount,
 		s.touch,
 		s.mouse,
 		s.gamepad
@@ -322,6 +327,18 @@ local function build(teleportEvent: RemoteEvent, dataEvent: RemoteEvent)
 	addCoins.Name = "AddCoins"
 	addCoins.Activated:Connect(function()
 		dataEvent:FireServer("AddCoins")
+	end)
+
+	-- Cartas (F4): até o tutorial (F6) entregar de verdade
+	local grantCards = add(makeButton(Strings.Dev.GrantCards, true))
+	grantCards.Name = "GrantCards"
+	grantCards.Activated:Connect(function()
+		dataEvent:FireServer("GrantStarterCards")
+	end)
+	local clearCards = add(makeButton(Strings.Dev.ClearCards, false))
+	clearCards.Name = "ClearCards"
+	clearCards.Activated:Connect(function()
+		dataEvent:FireServer("ClearCards")
 	end)
 
 	-- Pedido de configuração VÁLIDO pelo caminho real (SettingsUpdateRequest): testa salvar e voltar.

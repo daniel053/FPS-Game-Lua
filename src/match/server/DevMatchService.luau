@@ -7,16 +7,22 @@
 --   AddBots (n)        -> jogadores de teste (alvos parados) antes de começar
 --   ClearBots          -> tira os jogadores de teste
 --   Restart            -> encerra a partida sem resultado e volta a esperar jogadores
+--   RefillCards        -> cargas cheias e recargas zeradas (F4)
+--   HurtSelf           -> leva DevConfig.HurtSelfDamage de dano (testar o Renascer sem outro jogador)
+--   CardWatchStart/End -> conta pedidos de carta aceitos e recusados (teste de exploit da F4)
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
+local DevConfig = require(Shared.Config.DevConfig)
 local Env = require(Shared.Env)
 local MatchConfig = require(Shared.Config.MatchConfig)
 local Remotes = require(Shared.Remotes)
 local Strings = require(Shared.Config.Strings)
 
+local CardService = require(script.Parent.CardService)
+local Combatants = require(script.Parent.Combatants)
 local MatchService = require(script.Parent.MatchService)
 
 local COOLDOWN_SECONDS = 0.3
@@ -69,6 +75,29 @@ local function onCommand(player: Player, command: unknown, arg: unknown)
 	elseif command == "Restart" then
 		local ok = MatchService.devRestart()
 		reply(player, ok, if ok then "Restarted" else "WrongPhase")
+	elseif command == "RefillCards" then
+		local ok = CardService.devRefill(player)
+		reply(player, ok, if ok then "CardsRefilled" else "NoCards")
+	elseif command == "HurtSelf" then
+		-- Leva dano como se fosse um tiro (passa pelo guarda do Renascer); serve para testar sozinho
+		local combatant = Combatants.getByPlayer(player)
+		if combatant == nil or not combatant.alive then
+			reply(player, false, "NotInCombat")
+			return
+		end
+		Combatants.applyDamage(combatant, DevConfig.HurtSelfDamage, { player = nil, weaponId = "dev", at = nil })
+		reply(player, true, "SelfHurt")
+	elseif command == "CardWatchStart" then
+		-- Teste de exploit (F4): o cliente manda pedidos de carta pelo remote real; o servidor conta
+		if not CardService.isArmed(player) then
+			reply(player, false, "NoCards")
+			return
+		end
+		CardService.devWatchStart(player)
+	elseif command == "CardWatchEnd" then
+		local accepted, refused = CardService.devWatchEnd(player)
+		local sent = if typeof(arg) == "number" then arg else accepted + refused
+		reply(player, true, "CardExploitDone", string.format(Strings.Dev.CardExploitDetail, accepted, sent, refused))
 	else
 		reply(player, false, "Invalid")
 	end

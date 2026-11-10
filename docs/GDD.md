@@ -460,7 +460,7 @@ Toda arma precisa ser igualmente jogável com toque, mouse e controle.
 | Mirar / modo alternativo | botão direito | botão Mira (só aparece em armas que têm mira ou modo alternativo) | gatilho esquerdo |
 | Recarregar | R | botão Recarregar (recarga automática ao esvaziar) | X / Quadrado |
 | Primária / secundária / corpo a corpo | 1 / 2 / 3 / roda do mouse | botão de troca (toque alterna primária ↔ secundária; segurar abre as 3 opções) | Y / Triângulo |
-| Cartas | C, Q, E, X | botões fixos (seção 13.1) | botões de ombro |
+| Cartas | C, Q, E, X | botões fixos (seção 13.1) | botões de ombro: **LB** = a carta básica escolhida, **RB** = a ult `[PROPOSTA]` (F4) |
 
 **Tiro automático no celular, por tipo de arma:**
 
@@ -555,6 +555,8 @@ Notas de implementação:
 - **Se não escolher a tempo, joga a partida inteira sem carta básica.**
 - A escolha vale para a partida inteira.
 - A ult (X) não é escolhida: quem possui uma carta X a recebe automaticamente a partir da 4ª rodada (seção 8.5).
+- Dupla **de folga na 1ª rodada** (número ímpar de duplas) não passa pela preparação da 1ª rodada: ela escolhe a carta na **sua primeira preparação**, com os mesmos 15 s. `[PROPOSTA]` (F4, `CardConfig.ByeTeamChoosesOnFirstPrep`)
+- **Repetir última** na etapa da carta também escolhe a carta da última partida (`loadout.lastCard`), se o jogador ainda a tiver. Sem tocar em nada, continua valendo "sem escolha = sem carta". `[PROPOSTA]` (F4)
 
 ### 8.3 Teclas fixas e coleção `[DECIDIDO]`
 
@@ -590,7 +592,9 @@ Observação: Tremor e Dash usam a mesma tecla (E). No futuro, seriam opções c
 #### Nuvem (C) — fumaça arremessável
 - Arremessa uma bola que vira uma nuvem esférica que bloqueia a visão.
 - Raio 8 studs, duração 7 s, 2 cargas por rodada. `[PROPOSTA]`
-- Celular: toque para arremessar; segurar mostra o arco.
+- Celular: toque para arremessar; segurar mostra o arco. No PC e no controle é igual: segurar a tecla mostra o arco, soltar arremessa. `[PROPOSTA]` (F4)
+- A bola sai a 48 studs/s com um empurrão para cima (alcance de ~60 studs) e vira nuvem onde bate; no ar, vira nuvem depois de 1,3 s. Caindo no chão, o centro sobe um pouco para cobrir uma pessoa em pé. `[PROPOSTA]` (F4, `CardConfig`)
+- A nuvem **bloqueia a visão, não as balas**: quem atira através dela acerta normalmente; o contorno do inimigo atrás dela some, e o tiro automático e a assistência de mira não "enxergam" através dela. Dentro dela a tela fica coberta de névoa. Do mirante ela fica translúcida, para dar para assistir. `[PROPOSTA]` (F4)
 
 #### Impulso (Q) — salto para cima
 - Lança o jogador ~18 studs para cima. 1 carga, recarga 20 s. `[PROPOSTA]`
@@ -600,10 +604,12 @@ Observação: Tremor e Dash usam a mesma tecla (E). No futuro, seriam opções c
 - Onda em linha reta à frente: 20 studs de comprimento, 6 de largura. Não atravessa paredes. `[PROPOSTA]`
 - Quem está no chão e é atingido fica com **50% de lentidão e mira tremida por 2 s**. Sem dano.
 - 1 carga, recarga 25 s.
+- Só pega **inimigos** (o parceiro não, como o fogo amigo). A onda anda a 40 studs/s: o efeito chega quando ela passa, e só pega quem ainda está no chão nesse momento. "No chão" = pés até 3 studs acima ou abaixo da onda (quem está numa plataforma de 2º nível não é atingido). `[PROPOSTA]` (F4)
 
 #### Renascer (X, ult) — segunda chance
 - Deixa uma marca no chão. Por 8 s, se o jogador cair, volta à marca com HP e escudo cheios.
-- Se os 8 s passarem sem cair, volta à marca mantendo a vida atual. `[PROPOSTA]`
+- Se os 8 s passarem sem cair, volta à marca mantendo a vida atual. `[PROPOSTA]` (configurável: `CardConfig.RenascerReturnOnExpire`)
+- Vale para queda por tiro, golpe e zona. Não vale para sair do mapa (cair da ilha já leva de volta à base, seção 4). Ao voltar, 0,5 s de proteção. Quem atirou não ganha o abate. `[PROPOSTA]` (F4)
 
 #### Dash — impulso horizontal (exemplo)
 - Avança ~8 studs rapidamente na direção do movimento. 1 carga, recarga 12 s. `[PROPOSTA]`
@@ -1148,3 +1154,20 @@ Detalhes de implementação decididos durante o desenvolvimento (não são regra
 | **Telas provisórias** (HUD da partida, modal de preparação, telas de eliminação e fim) com `Theme` e `Strings`, modal sobre o jogo (nunca fundo preto), mouse livre no PC enquanto abertas, atalhos 1–8 e Enter no modal, primeiro cartão selecionado no controle. | Visual final na F7. |
 | **Painel TESTE › PARTIDA** (só `DEV_`): começar agora, pular rodada (no combate decide pelo tempo esgotado), tirar 1 vida de uma dupla (entre rodadas na hora; no meio da rodada, no fim dela), forçar Virada, jogadores de teste (alvos parados; duelo só entre eles é sorteado depois de 6 s) e recomeçar a partida. | Comandos de teste da FASES F3; com jogadores de teste dá para montar partidas de 4 a 16 com um cliente só. |
 | A arena de teste da F2 continua no código: `CombatConfig.TestArena.Enabled = true` volta a ela (sem partida). | Para testar só o combate. |
+
+### F4 · Cartas
+
+| Decisão | Por quê |
+|---|---|
+| **Cargas e recarga numa máquina pura** (`Shared/Cards/CardState`), a mesma no servidor (autoridade) e no cliente (botão responde na hora). Cada rodada começa com as cargas cheias; com recarga, a carga volta uma por vez; entre dois usos há um intervalo mínimo (`minInterval`). A ult tem `CardConfig.UltUsesPerRound` usos. Regras da escolha, da ult na 4ª rodada e a geometria (arco, onda, nuvem) em `Shared/Cards/CardRules`. | Igual às armas (WeaponState): cliente e servidor nunca discordam; os testes usam o mesmo código. |
+| **`CardService` no servidor** valida cada pedido (`CardAction`): carta valendo nesta rodada para este jogador, vivo, no combate, horário em tempo do servidor (mesma janela dos tiros), carga, recarga, intervalo e até 10 pedidos por segundo. Recusou: manda o estado certo de volta (`CardEvent "Cards"`). | CLAUDE.md: servidor é a autoridade das cartas. Teste: 10 pedidos de uma vez → 1 aceito; carta não escolhida e ult travada → 0. |
+| **Escolha da carta** fica no `MatchService` (pedido `PrepCard`, só na etapa da carta, só carta básica que o jogador tem). No fim da etapa ela trava; sem escolha = sem carta básica. A carta escolhida é salva em `loadout.lastCard`. As cartas são armadas (`CardService.arm`) no começo de cada combate e tiradas ao ir para o mirante, ao ser derrubado e no fim da rodada. | GDD 8.2 e DADOS 3.1. |
+| **Impulso:** o cliente aplica a velocidade para cima (`√(2·g·altura)`) na hora; o servidor só gasta a carga. | No Roblox o corpo do jogador é simulado pelo próprio cliente; o servidor não consegue empurrá-lo sem atraso. Quem trapaceia no movimento já consegue voar de qualquer jeito. |
+| **Nuvem:** o servidor calcula o arco a partir da cabeça do jogador e da direção da câmera, com raios contra o mapa, e cria a esfera (`CardWorldEffects`, tag `CardSmoke`, sem colisão e invisível para raios). Os clientes animam a bola e fazem a nuvem crescer. O cliente esconde o contorno do inimigo e desliga tiro automático/assistência quando a linha até ele passa por uma nuvem (`Smoke.blocks`). | O contorno (`Highlight`) aparece através de peças transparentes; sem essa conta ele "furaria" a nuvem. |
+| **Tremor:** o servidor limita a onda na primeira parede à frente, escolhe os inimigos dentro do retângulo, sem parede no meio e na mesma altura, e aplica o efeito quando a onda passa (se ainda estiverem no chão: raio para baixo de até 4,5 studs). Lentidão: `CombatService.applySlow` multiplica a velocidade de andar. Mira tremida: atributo `TremorUntil` no personagem; o cliente balança a câmera (ruído suave, sem acumular desvio). | GDD 8.4. A lentidão é do servidor; o tremor da mira é do cliente (como o recuo). |
+| **Renascer:** guarda de queda no `Combatants` (`setKnockGuard`): antes de derrubar por tiro, golpe ou zona, o `CardService` leva o jogador à marca com vida e escudo cheios e 0,5 s de proteção; sem queda, sai do mesmo jeito depois de 8 s mantendo a vida. Marca no chão em neon (efeito de carta). | GDD 8.4. Sem corpo derrubado, sem abate para quem atirou. |
+| **Controles:** PC C/Q/E/X; controle LB = básica e RB = ult (só dá para levar uma básica e a ult); celular com botões redondos fixos ([Q][E][C] ao lado da MIRA, [X] ao lado de RECARREGAR, posições em `CombatConfig.TouchLayout`). Nuvem: segurar mostra o arco, soltar arremessa (nos três). Celular: segurar as outras cartas abre os detalhes. | GDD 7.2.6 e 13.1. Só aparecem as cartas da partida, cada uma no lugar da sua tecla. |
+| **HUD das cartas provisório** (`CardHUD`): no PC/controle, cartas embaixo no centro com chip da tecla, cargas, segundos de recarga e cadeado da ult; dica fixa **[B] Habilidades**; painel de habilidades (B, direcional ↓ ou toque longo) com o que cada carta faz. Avisos "RENASCER · N s" e "ATINGIDO PELO TREMOR". Sem neon no HUD; cada carta com a sua cor (`Theme.Cards`). | ESTILO T6 e GDD 13.3. Visual final na F7. |
+| **Etapa CARTA no modal:** cartões com nome, tecla, o que faz e atalho 1–3; a ult ao lado com cadeado; travada (🔒) depois. Sem moldura de raridade, porque a raridade das cartas iniciais está `[ABERTO]` (GDD 8.9): borda na cor da carta. | ESTILO T2. |
+| **Comandos de teste:** DADOS › DAR AS 4 CARTAS / TIRAR AS CARTAS (pela regra real de uma carta por tecla); PARTIDA › CARTAS: cargas cheias, levar 300 de dano (`DevConfig.HurtSelfDamage`), carta 10× de uma vez e carta não escolhida (contados pelo servidor). | FASES F4: comando para dar as 4 cartas até o tutorial existir; critério "cliente não consegue usar carta em recarga ou que não escolheu". |
+| Nas cartas novas, a tecla é guardada como `string` (os valores continuam sendo só C, Q, E e X). | O verificador de tipos do Luau perde o tipo `"C" \| "Q" \| "E" \| "X"` ao ler de tabelas e acusava erro em todo uso. |

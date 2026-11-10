@@ -15,6 +15,8 @@ local RunService = game:GetService("RunService")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local Shared = ReplicatedStorage.Shared
+local CardConfig = require(Shared.Config.CardConfig)
+local CardRules = require(Shared.Cards.CardRules)
 local CombatConfig = require(Shared.Config.CombatConfig)
 local CombatNames = require(Shared.Combat.CombatNames)
 local Env = require(Shared.Env)
@@ -31,6 +33,7 @@ local WorldLayout = require(Shared.Match.WorldLayout)
 
 local DataService = require(ServerScriptService.Common.DataService)
 local ActivityService = require(script.Parent.ActivityService)
+local CardService = require(script.Parent.CardService)
 local CharacterService = require(script.Parent.CharacterService)
 local CombatService = require(script.Parent.CombatService)
 local Combatants = require(script.Parent.Combatants)
@@ -59,6 +62,9 @@ type Member = {
 	confirmed: boolean,
 	previous: LoadoutRules.Choice?,
 	afkWarned: boolean,
+	-- Cartas (GDD 8.2): a básica vale a partida toda; escolhida na 1ª preparação do jogador
+	card: string?,
+	cardStepDone: boolean,
 	-- Equipe eliminada / fim (GDD 4.8)
 	exitChoice: ("Watch" | "NewMatch")?,
 	partnerAnswer: boolean?,
@@ -258,6 +264,7 @@ local function toMirante(member: Member)
 	end
 	setLocation(member, MatchTypes.MiranteLocation)
 	CombatService.disarm(player)
+	CardService.disarm(player)
 	task.spawn(CharacterService.place, player, MatchWorld.miranteSpawn(), nil)
 end
 
@@ -611,6 +618,22 @@ local function memoryOf(member: Member): LoadoutRules.Memory?
 	}
 end
 
+local function ownedCards(member: Member): { [string]: any }
+	if member.player == nil then
+		return {}
+	end
+	local profile = DataService.getProfile(member.player)
+	return if profile then profile.cards.owned else {}
+end
+
+-- Etapa da carta: na 1ª rodada; quem estava de folga escolhe na sua primeira preparação.
+local function hasCardStep(member: Member, round: number): boolean
+	if member.cardStepDone or member.isBot then
+		return false
+	end
+	return round == CardConfig.ChoiceRound or CardConfig.ByeTeamChoosesOnFirstPrep
+end
+
 local function sendPartnerChoice(member: Member)
 	local partner = partnerOf(member)
 	if partner == nil then
@@ -620,6 +643,7 @@ local function sendPartnerChoice(member: Member)
 		name = member.name,
 		primary = member.choice.primary,
 		secondary = member.choice.secondary,
+		card = member.card,
 		confirmed = member.confirmed,
 	}
 	sendTo(partner, "PrepPartner", data)
@@ -639,13 +663,19 @@ local function openPrep(round: number, seconds: number)
 		if not m.inDuel or m.isBot then
 			continue
 		end
+		local owned = ownedCards(m)
+		local cardStep = hasCardStep(m, round)
 		local data: MatchTypes.PrepData = {
 			round = round,
 			phaseId = options.phaseId,
 			primaries = options.primaries,
 			secondaries = options.secondaries,
 			endsAt = serverNow() + seconds,
-			cardStep = round == 1,
+			cardStep = cardStep,
+			cardOptions = if cardStep then CardRules.basicOptions(owned) else {},
+			card = m.card,
+			ult = CardRules.ultOf(owned),
+			ultUnlocked = CardRules.ultUnlocked(round),
 			primary = m.choice.primary,
 			secondary = m.choice.secondary :: string,
 		}
@@ -666,12 +696,19 @@ local function closePrepAndArm(round: number)
 		end
 		local primary, secondary = LoadoutRules.resolve(options, m.choice, m.previous, memoryOf(m))
 		m.previous = { primary = primary, secondary = secondary }
+		local choseCardNow = false
+		if hasCardStep(m, round) then
+			-- Fim da etapa da carta: sem escolha = partida inteira sem carta básica (GDD 8.2)
+			m.cardStepDone = true
+			choseCardNow = m.card ~= nil
+		end
 		local player = m.player
 		if player == nil or not m.alive then
 			continue
 		end
 		sendTo(m, "PrepClose", nil)
 		CombatService.setLoadout(player, primary, secondary)
+		CardService.arm(player, m.card, CardRules.ultOf(ownedCards(m)), round)
 		if player.Character then
 			CharacterService.setFrozen(player.Character, false)
 		end
@@ -683,6 +720,9 @@ local function closePrepAndArm(round: number)
 				profile.loadout.lastPrimaryByPhase[options.phaseId] = primary
 			end
 			profile.loadout.lastSecondary = secondary
+			if choseCardNow then
+				profile.loadout.lastCard = m.card
+			end
 			return true, nil
 		end)
 	end
@@ -709,6 +749,17 @@ local function onPrepChoose(member: Member, arg: unknown)
 	sendPartnerChoice(member)
 end
 
+local function onPrepCard(member: Member, arg: unknown)
+	if phase ~= "Prep" or not member.inDuel or plan == nil or not hasCardStep(member, plan.round) then
+		return
+	end
+	if not CardRules.isBasicChoiceAllowed(ownedCards(member), arg) then
+		return
+	end
+	member.card = arg :: string
+	sendPartnerChoice(member)
+end
+
 -- Rodada -----------------------------------------------------------------------------------------
 
 -- Rodada interrompida (recomeçar pelo painel, todos saíram): todos para o mirante, sem resultado.
@@ -720,6 +771,7 @@ local function abortRound()
 			toMirante(m)
 		end
 	end
+	CardService.clearWorld()
 	duels = {}
 	plan = nil
 	combatStartedAt = nil
@@ -790,8 +842,16 @@ local function playRound()
 	end
 	task.wait(0.5) -- personagens novos sendo criados
 
-	-- PREPARACAO: congelado na base, modal de armas
-	local prepSeconds = if state.round == 1 then MatchConfig.PrepTimeFirstRound else MatchConfig.PrepTimeOtherRounds
+	-- PREPARACAO: congelado na base, modal de armas (e da carta, na 1ª preparação de cada um)
+	local anyCardStep = false
+	for _, m in members do
+		if m.inDuel and hasCardStep(m, roundPlan.round) then
+			anyCardStep = true
+		end
+	end
+	local prepSeconds = if state.round == 1 or anyCardStep
+		then MatchConfig.PrepTimeFirstRound
+		else MatchConfig.PrepTimeOtherRounds
 	setPhase("Prep", prepSeconds)
 	openPrep(roundPlan.round, prepSeconds)
 	waitPhase()
@@ -848,7 +908,8 @@ local function playRound()
 		end
 	end
 
-	-- FIM_RODADA: todos voltam ao mirante, placar
+	-- FIM_RODADA: todos voltam ao mirante, placar; nuvens e marcas somem
+	CardService.clearWorld()
 	for _, m in members do
 		if m.inDuel then
 			toMirante(m)
@@ -887,6 +948,8 @@ local function makeMember(key: string, player: Player?, name: string, userId: nu
 		confirmed = false,
 		previous = nil,
 		afkWarned = false,
+		card = nil,
+		cardStepDone = false,
 		exitChoice = nil,
 		partnerAnswer = nil,
 		leaving = false,
@@ -913,6 +976,8 @@ local function resetMatch()
 		m.inDuel = false
 		m.alive = false
 		m.previous = nil
+		m.card = nil
+		m.cardStepDone = false
 		m.exitChoice = nil
 		m.partnerAnswer = nil
 		m.leaving = false
@@ -1029,6 +1094,7 @@ local function champion()
 			local player = m.player :: Player
 			setLocation(m, MatchTypes.MiranteLocation)
 			CombatService.disarm(player)
+			CardService.disarm(player)
 			task.spawn(CharacterService.place, player, MatchWorld.podiumSpawn(slot), nil)
 		end
 	end
@@ -1120,6 +1186,8 @@ local function onRequest(player: Player, kind: unknown, arg: unknown)
 	end
 	if kind == "PrepChoose" then
 		onPrepChoose(member, arg)
+	elseif kind == "PrepCard" then
+		onPrepCard(member, arg)
 	elseif kind == "PrepConfirm" then
 		if phase == "Prep" and member.inDuel and not member.confirmed then
 			member.confirmed = true

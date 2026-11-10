@@ -12,6 +12,9 @@ local DevConfig = {
 	InvalidSensitivity = 99, -- valor fora do intervalo para testar a recusa do servidor
 	PanelMaxSize = Vector2.new(360, 640),
 	PanelHeightScale = 0.85, -- o painel rola quando não cabe (celular deitado)
+
+	-- Testes das cartas (F4): dano que o botão "LEVAR DANO" dá em você (vida + escudo = 150)
+	HurtSelfDamage = 300,
 }
 
 return DevConfig

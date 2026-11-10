@@ -67,12 +67,22 @@ export type PrepData = {
 	primaries: { string },
 	secondaries: { string },
 	endsAt: number,
-	cardStep: boolean, -- 1ª rodada: etapa da carta (placeholder até a F4)
+	cardStep: boolean, -- etapa da carta aberta: 1ª preparação do jogador na partida (GDD 8.2)
+	cardOptions: { string }, -- cartas básicas que o jogador tem (vazio = ainda não tem cartas)
+	card: string?, -- carta básica escolhida (travada depois da etapa da carta)
+	ult: string?, -- ult do jogador (vem sozinha a partir da 4ª rodada)
+	ultUnlocked: boolean,
 	primary: string?, -- escolha atual (já resolvida: anterior / perfil / primeira)
 	secondary: string,
 }
 
-export type PartnerChoiceData = { name: string, primary: string?, secondary: string?, confirmed: boolean }
+export type PartnerChoiceData = {
+	name: string,
+	primary: string?,
+	secondary: string?,
+	card: string?,
+	confirmed: boolean,
+}
 
 export type AnnounceKind =
 	"Matchups"
@@ -99,6 +109,7 @@ export type EndScreenData = {
 -- Cliente -> servidor, remote "MatchRequest": (tipo, argumento)
 export type RequestName =
 	"PrepChoose" -- { primary: string?, secondary: string? }
+	| "PrepCard" -- ID da carta básica (só na etapa da carta)
 	| "PrepConfirm"
 	| "Watch" -- equipe eliminada: assistir do mirante
 	| "NewMatch" -- equipe eliminada ou fim: voltar ao lobby para outra partida

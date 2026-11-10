@@ -115,6 +115,19 @@ local Theme = {
 	},
 	ZoneTransparency = 0.82,
 
+	-- Cartas (F4): uma cor por carta (GDD 14). Brilho/neon só nos EFEITOS das cartas (ESTILO 2.6);
+	-- no HUD as mesmas cores aparecem sem brilho. Nenhuma é vermelha (vermelho = inimigo e perigo).
+	Cards = {
+		card_nuvem = hex("#C9C3E8"), -- lilás bem claro
+		card_impulso = hex("#5ED6FF"), -- azul-céu
+		card_tremor = hex("#F2A93B"), -- âmbar
+		card_renascer = hex("#6EE7B7"), -- verde-menta
+		Smoke = hex("#E6E3F2"), -- a nuvem em si (fosca, sem neon)
+		Locked = hex("#5A6280"), -- ult com cadeado, carta sem carga
+	} :: { [string]: Color3 },
+	SmokeTransparency = 0.03, -- quase opaca: bloqueia a visão de quem está na ilha
+	CardFxTransparency = 0.3, -- onda do Tremor, marca do Renascer, arco da Nuvem
+
 	-- Fontes (ESTILO 2.3) [PROPOSTA]
 	Font = {
 		Title = Font.new("rbxasset://fonts/families/Oswald.json", Enum.FontWeight.Bold),

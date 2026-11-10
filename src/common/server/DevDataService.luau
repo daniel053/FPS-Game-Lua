@@ -3,12 +3,15 @@
 --   AddCoins     -> +DataConfig.DevAddCoinsAmount moedas (pelo EconomyService, como no jogo real)
 --   ResetProfile -> perfil volta ao padrão (o cliente pede confirmação antes)
 --   ShowProfile  -> perfil completo no Output do servidor + resumo na tela
+--   GrantStarterCards -> as 4 cartas iniciais (F4, até o tutorial da F6 entregar de verdade)
+--   ClearCards   -> tira todas as cartas (testar a partida sem carta)
 
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
+local CardConfig = require(Shared.Config.CardConfig)
 local DataConfig = require(Shared.Config.DataConfig)
 local Env = require(Shared.Env)
 local Remotes = require(Shared.Remotes)
@@ -16,6 +19,7 @@ local Remotes = require(Shared.Remotes)
 local Common = script.Parent
 local DataService = require(Common.DataService)
 local EconomyService = require(Common.EconomyService)
+local ProfileRules = require(Common.Data.ProfileRules)
 
 local COOLDOWN_SECONDS = 0.5
 
@@ -40,6 +44,26 @@ local function onCommand(player: Player, command: unknown)
 	if command == "AddCoins" then
 		local ok = EconomyService.addCoins(player, DataConfig.DevAddCoinsAmount, "dev")
 		reply(player, ok, if ok then "CoinsAdded" else "NotLoaded")
+	elseif command == "GrantStarterCards" then
+		-- Até o tutorial existir (F6): as 4 cartas iniciais pela regra real (uma por tecla)
+		local _, reason = DataService.update(player, function(profile)
+			local changed = false
+			for _, id in CardConfig.StarterCards do
+				if ProfileRules.grantCard(profile, id, "admin", os.time()) then
+					changed = true
+				end
+			end
+			return changed, nil
+		end)
+		local loaded = reason ~= "NotLoaded"
+		reply(player, loaded, if loaded then "CardsGranted" else "NotLoaded")
+	elseif command == "ClearCards" then
+		local ok = DataService.update(player, function(profile)
+			profile.cards.owned = {}
+			profile.loadout.lastCard = nil
+			return true, nil
+		end)
+		reply(player, ok, if ok then "CardsCleared" else "NotLoaded")
 	elseif command == "ResetProfile" then
 		local ok = DataService.devResetProfile(player)
 		reply(player, ok, if ok then "ProfileReset" else "NotLoaded")
