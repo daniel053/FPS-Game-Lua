@@ -55,6 +55,16 @@ local exploitWatches: { [Player]: ExploitWatch } = {}
 -- Lentidão de carta (Tremor, GDD 8.4): multiplicador da velocidade e até quando (os.clock)
 local slows: { [Player]: { multiplier: number, untilClock: number } } = {}
 local activityCallbacks: { (player: Player) -> () } = {}
+-- Ações aceitas da arma (tutorial, F6): "Equip" (slot), "Reload" (nil), "Alt" (boolean)
+export type WeaponEventKind = "Equip" | "Reload" | "Alt"
+type WeaponListener = (player: Player, kind: WeaponEventKind, data: any) -> ()
+local weaponListeners: { WeaponListener } = {}
+
+local function emitWeapon(player: Player, kind: WeaponEventKind, data: any)
+	for _, listener in weaponListeners do
+		task.spawn(listener, player, kind, data)
+	end
+end
 
 local sightParams = RaycastParams.new()
 sightParams.CollisionGroup = CombatNames.Groups.SightRay
@@ -178,6 +188,11 @@ end
 -- Chamado a cada pedido de arma aceito para análise (atividade do jogador, GDD 4.9 AFK).
 function CombatService.onActivity(callback: (player: Player) -> ())
 	table.insert(activityCallbacks, callback)
+end
+
+-- Ações da arma aceitas pelo servidor (tutorial: "troque de arma", "recarregue", "abra a mira").
+function CombatService.onWeaponEvent(listener: WeaponListener)
+	table.insert(weaponListeners, listener)
 end
 
 function CombatService.getLoadout(player: Player): Loadout?
@@ -507,16 +522,18 @@ local function onAction(player: Player, action: unknown, t: unknown, arg: unknow
 			WeaponState.equip(state, at)
 		end
 		updateWalkSpeed(player, pc)
+		emitWeapon(player, "Equip", slot)
 	elseif action == "Reload" then
 		local state = pc.guns[pc.equipped]
-		if state then
-			WeaponState.startReload(state, at)
+		if state and WeaponState.startReload(state, at) then
+			emitWeapon(player, "Reload", nil)
 		end
 	elseif action == "Alt" then
 		local state = pc.guns[pc.equipped]
 		if state and typeof(arg) == "boolean" then
 			WeaponState.setAlt(state, arg)
 			updateWalkSpeed(player, pc)
+			emitWeapon(player, "Alt", state.alt)
 		end
 	elseif action == "Spin" then
 		local state = pc.guns[pc.equipped]

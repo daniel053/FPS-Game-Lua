@@ -352,7 +352,19 @@ local function build(teleportEvent: RemoteEvent, dataEvent: RemoteEvent)
 		dataEvent:FireServer("AddCoins")
 	end)
 
-	-- Cartas (F4): até o tutorial (F6) entregar de verdade
+	-- Tutorial (F6): refazer (volta ao começo; no lobby publicado, leva ao tutorial) e concluir
+	local tutorialReset = add(makeButton(Strings.Dev.TutorialReset, false))
+	tutorialReset.Name = "TutorialReset"
+	tutorialReset.Activated:Connect(function()
+		dataEvent:FireServer("TutorialReset")
+	end)
+	local tutorialComplete = add(makeButton(Strings.Dev.TutorialComplete, false))
+	tutorialComplete.Name = "TutorialComplete"
+	tutorialComplete.Activated:Connect(function()
+		dataEvent:FireServer("TutorialComplete")
+	end)
+
+	-- Cartas (F4): comando de teste (o tutorial da F6 entrega de verdade)
 	local grantCards = add(makeButton(Strings.Dev.GrantCards, true))
 	grantCards.Name = "GrantCards"
 	grantCards.Activated:Connect(function()

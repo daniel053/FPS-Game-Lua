@@ -39,7 +39,7 @@
 | F4 | Cartas | 4 cartas funcionando | ✅ |
 | ⭐ | **Marco: primeiro jogável** | Teste interno com amigos | ✅ |
 | F5 | Lobby e fila | Entrar na fila e cair na partida com amigos | ✅ |
-| F6 | Tutorial | Primeira entrada guiada | ☐ |
+| F6 | Tutorial | Primeira entrada guiada | 🔶 em teste |
 | F7 | Interface final | Telas T1–T6 no estilo definitivo | ☐ |
 | F8 | Social e voz | Dupla se comunica e continua junta | ☐ |
 | F9 | Elo, economia e arsenal | Progressão completa | ☐ |
@@ -386,6 +386,6 @@ Só seguir para a F5 quando a partida for divertida em blocos cinza.
 | Girar: sorteio ou visualização (GDD 8.9) | parte da F9 |
 | Raridade muda poder? (GDD 8.9) | parte da F9 |
 | Segunda moeda (GDD 18, DADOS 11) | F9, F11 |
-| Tutorial pode ser pulado? (GDD 18) | F6 |
+| ~~Tutorial pode ser pulado? (GDD 18)~~ Respondida na F6: só as configurações | — |
 | Plantas baixas e tamanhos dos mapas (GDD 15.8) | F10 |
 | Preços em Robux (GDD 10.3) | F11 |

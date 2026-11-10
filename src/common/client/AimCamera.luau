@@ -12,6 +12,7 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
 local CharacterConfig = require(ReplicatedStorage.Shared.Config.CharacterConfig)
+local PlayerData = require(ReplicatedStorage.Shared.Types.PlayerData)
 
 local InputDevice = require(script.Parent.InputDevice)
 local PlayerDataClient = require(script.Parent.PlayerDataClient)
@@ -30,24 +31,32 @@ local scoped = false
 local frictionProvider: (() -> number)? = nil
 local zoomFov: number? = nil
 local fovTween: Tween? = nil
+-- Prévia (tutorial e configurações): vale no lugar do perfil enquanto o jogador mexe no controle
+-- deslizante, antes de salvar.
+local preview: PlayerData.SensitivitySettings? = nil
 
 local function wrapAngle(angle: number): number
 	return (angle + math.pi) % (2 * math.pi) - math.pi
 end
 
--- Sensibilidade do perfil para o controle em uso (1 = padrão do Roblox).
+-- Sensibilidade do perfil (ou da prévia) para o controle em uso (1 = padrão do Roblox).
 function AimCamera.getSensitivity(): number
 	local profile = PlayerDataClient.get()
-	if profile == nil then
+	if profile == nil and preview == nil then
 		return 1
 	end
-	local s = profile.settings.sensitivity
+	local s = preview or (profile :: PlayerData.Profile).settings.sensitivity
 	local device = InputDevice.get()
 	local value = if device == "Touch" then s.touch elseif device == "Gamepad" then s.gamepad else s.mouse
 	if scoped then
 		value *= s.scopedMultiplier
 	end
 	return value
+end
+
+-- Liga (ou desliga, com nil) a prévia de sensibilidade.
+function AimCamera.setPreview(settings: PlayerData.SensitivitySettings?)
+	preview = settings
 end
 
 -- Gira a câmera (radianos; positivo = para cima / para a esquerda). Aplicado no próximo quadro.

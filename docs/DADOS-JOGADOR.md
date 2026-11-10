@@ -208,7 +208,7 @@ export type Profile = {
 	coins = 0,
 	gems = 0,
 
-	cards = { owned = {} },            -- as 4 cartas iniciais são dadas ao terminar o tutorial
+	cards = { owned = {} },            -- as 4 cartas iniciais são dadas no tutorial, cada uma ao completar o seu desafio (F6)
 
 	cosmetics = {
 		owned = {},

@@ -105,6 +105,49 @@ No mesmo painel **TESTE**, seção **DADOS DO JOGADOR**:
 
 Para simular falha do DataStore: no Studio, selecione o **ServerStorage**, adicione o atributo booleano `DEV_SimulateLoadFailure` marcado e aperte Play. O jogador deve ser expulso com a mensagem de falha, sem perder nada. Apague o atributo depois.
 
+## Testar o tutorial (F6)
+
+No place **Tutorial** (porta **34873**). Ao dar Play, o servidor monta a arena cinza do tutorial (7 estações lado a lado, no alto) e leva o jogador pelas 8 etapas: boas-vindas, movimento, armas (6 lições), cartas (Impulso, Nuvem, Tremor e Renascer, cada uma com um desafio), voz, sensibilidade, retícula e final.
+
+- **Conta nova:** cai no tutorial. No jogo publicado, quem entra no **Lobby** com o tutorial pendente é levado sozinho para o Tutorial; quem já terminou nunca volta para ele (o Tutorial manda de volta ao Lobby).
+- **No Studio** não há teleporte: abra o place Tutorial direto. Com o tutorial já feito, o Studio deixa refazer (para testar) e o final só avisa.
+- **Retomar:** saia no meio e entre de novo: começa da etapa salva. Na etapa das cartas, as que você já ganhou são puladas.
+- **Pular:** só voz, sensibilidade e retícula têm **PULAR**.
+- **PC:** `Enter` aperta o botão principal. Na sensibilidade, **TESTAR** esconde o painel para mirar; `F` (controle: `B`) volta.
+
+### Painel TESTE
+
+| Botão | Onde | O que faz |
+|---|---|---|
+| **TUTORIAL: PULAR ETAPA** | Tutorial | conclui a etapa atual (na das cartas, entrega as que faltam) |
+| **REFAZER TUTORIAL** | DADOS DO JOGADOR | tutorial pendente desde a etapa 1 (no Lobby publicado, leva ao Tutorial) |
+| **CONCLUIR TUTORIAL (PULAR)** | DADOS DO JOGADOR | marca como feito e dá as 4 cartas (para testar o resto do jogo sem fazer o tutorial) |
+| **RESETAR PERFIL** | DADOS DO JOGADOR | conta nova de verdade (sem cartas, tutorial pendente) |
+
+### Roteiro dos critérios de aceite
+
+1. **Conta nova:** RESETAR PERFIL e entre no Lobby publicado: você vai para o Tutorial. Faça tudo e cronometre (alvo: 3 a 5 minutos). No final, **IR PARA O LOBBY**: você cai no Lobby e **VER PERFIL** mostra "cartas 4 · tutorial feito".
+2. **Configurações salvas:** mude a sensibilidade e a retícula no tutorial; no Lobby e na Partida a mira e a retícula são as que você escolheu.
+3. **Sair no meio:** saia na etapa 4 depois de ganhar 2 cartas. Volte: começa na etapa 4, já na 3ª carta.
+4. **Jogador antigo:** com o tutorial feito, entre no Tutorial (botão de teleporte do painel): volta ao Lobby na hora.
+5. **Celular:** repita o roteiro no emulador (aba Teste › Dispositivo) e num celular de verdade: dicas de toque, botões grandes, painel à esquerda com o lado direito livre para mirar.
+
+Os testes automáticos conferem a ordem das etapas, a retomada, o que pode ser pulado, a ordem das tarefas e que as lições cobrem uma arma de cada categoria e as 4 cartas.
+
+## Marcação de aliado e inimigo (revisão na F6)
+
+Na Partida (ou na arena de teste da F2), entre jogadores da mesma ilha:
+
+| Situação | O que aparece |
+|---|---|
+| Inimigo à vista | contorno vermelho pulsando devagar + barra de vida vermelha (linha azul do escudo em cima) |
+| Inimigo atrás de parede ou Nuvem | nada |
+| Aliado à vista | barra verde e nome, sem contorno |
+| Aliado todo escondido | silhueta verde através da parede |
+| Do mirante | nome de quem duela, na cor da equipe |
+
+Os personagens usam o **avatar do Roblox** de cada jogador (tamanho igualado). No Studio os jogadores de teste não têm avatar e aparecem com o corpo cinza de blocos.
+
 ## Testar o lobby e a fila (F5)
 
 **No Studio a partida nunca sai do lobby.** O Studio não tem servidor reservado nem teleporte entre places. No Studio (1 servidor + vários clientes, no place **Lobby**) dá para testar só o grupo e a fila: convites, JOGAR, "Procurando partida… x/7", CANCELAR. Quando a partida fecha, aparece o aviso "Partida encontrada! No Studio não há teleporte" e todos voltam para JOGAR.

@@ -270,7 +270,7 @@ Aparece no começo de **toda rodada**, com o jogador já **dentro do mapa**, con
 - Todo jogador novo cai no tutorial ao entrar pela primeira vez.
 - Ao terminar, o perfil marca `tutorialDone = true` e o jogador é levado ao lobby. **Nunca mais acessa o tutorial.**
 - As configurações feitas no tutorial (sensibilidade, retícula, voz) continuam disponíveis no menu de configurações do lobby e da partida.
-- Pode ser pulado? `[ABERTO]` (sugestão: não pular as cartas e armas; permitir pular as configurações).
+- Pode ser pulado? **Só as configurações** (voz, sensibilidade e retícula) têm botão Pular, que mantém os valores padrão. Movimento, armas e cartas são obrigatórios. `[DECIDIDO]` (F6)
 - Duração alvo: 3 a 5 minutos. `[PROPOSTA]`
 
 ### 5.2 Etapas
@@ -1061,7 +1061,7 @@ Ordem resumida: F0 Base → F1 Dados do jogador → F2 Combate → F3 Loop da pa
 1. Nome do jogo.
 2. ~~Moedor e Gêmea na fase Pesadas?~~ Respondida: entram (seção 7.2.2).
 3. ~~Aviso de abate por rodada ou por partida?~~ Respondida: pela partida (seção 7.7).
-4. O tutorial pode ser pulado?
+4. ~~O tutorial pode ser pulado?~~ Respondida na F6: só as telas de configuração (seção 5.1).
 5. Girar cartas: sorteio de carta nova (A) ou só girar a carta em 3D para ver (B)? (seção 8.9)
 6. Raridade da carta muda o poder dela ou só a dificuldade de conseguir?
 7. O diamante roxo que aparece no lobby do mockup é uma segunda moeda (comprada com Robux)? Se sim, ela não pode ser usada para girar cartas (seção 8.9).
@@ -1222,3 +1222,14 @@ Detalhes de implementação decididos durante o desenvolvimento (não são regra
 | **Marcação de aliado e inimigo** (`TeamMarkers` no cliente, regra pura em `Shared/Combat/MarkerRules`): a cada 0,1 s, raios da câmera até 6 pontos do corpo. Inimigo à vista: `Highlight` "Occluded" vermelho, com a transparência do contorno pulsando em seno (`CombatConfig.Markers`), e barra vermelha. Aliado à vista: barra verde e nome. Aliado todo escondido: `Highlight` "AlwaysOnTop" verde com preenchimento. A barra é um `BillboardGui` de tamanho fixo na tela, ligado só quando a regra manda (por isso pode ficar "por cima de tudo"). | GDD 7.6 revisto pelo dono do projeto (guia visual de marcação). |
 | **Avatar do Roblox** carregado no servidor (`GetHumanoidDescriptionFromUserId`, uma vez por sessão), com as escalas do corpo zeradas para o padrão (`CharacterConfig.Avatar`). Falhou ou UserId de teste (≤ 0, como os jogadores do Studio): corpo base. Acessórios ficam no grupo de colisão do corpo (tiros e visão atravessam). | GDD 3.2. A hitbox continua a mesma para todos. |
 | **Combate e cartas numa pasta própria** (`src/combat/{server,client}`), mapeada como `ServerScriptService.Combat` e `StarterPlayerScripts.Combat` só na Partida e no Tutorial. O Boot carrega Common → Combat → Place. Os efeitos das cartas leem o mirante pelo atributo do jogador, sem depender do `MatchClient`. | O tutorial usa as mesmas armas e cartas da partida, sem cópia. |
+| **Tutorial conduzido pelo servidor** (`TutorialService`, regras puras em `Shared/Tutorial/TutorialRules`, números em `TutorialConfig`): o servidor confere cada tarefa (alvo derrubado com quem atirou, recarga/troca/mira aceitas pelo `CombatService`, uso das cartas pelo `CardService`, posição a cada 0,1 s) e manda uma foto (`TutorialState`). O cliente só pede (`TutorialRequest`: continuar, pular, olhei, terminar). | CLAUDE.md: servidor é a autoridade das cartas e do perfil. |
+| **`tutorialStep`** guarda a etapa em que o jogador está (1 a 8; 0 = nunca começou), salva ao entrar em cada etapa. Lições de armas não são salvas por dentro (a etapa recomeça); cartas já ganhas são puladas. | FASES F6: "retomar da etapa". |
+| **Cartas entregues ao completar cada desafio** (`source = "tutorial"`), salvando na hora. No final, por segurança, quem chega lá recebe as que faltarem. O DADOS 3.2 dizia "ao terminar o tutorial"; vale o GDD 5.2 e a FASES (corrigido no DADOS). | GDD 5.2. |
+| **Desafios das cartas:** Impulso = subir numa plataforma de 13 studs (o pulo normal não alcança); Nuvem = cair dentro de um círculo; Tremor = acertar 2 alvos; Renascer = ativar e pisar numa área de perigo (vermelha), que só derruba com o Renascer ativo (sem ele, volta ao começo). Errou: as cargas voltam em poucos segundos. A ult fica liberada no tutorial. | Tutorial curto (3 a 5 min) sem esperar recargas. |
+| **Armas:** 6 lições (Bolinha, Ferrão, Balde, Tático, Luneta, Martelo), cada uma ensinando uma coisa: atirar, recarregar, trocar de arma, modo alternativo, mira de sniper e metralhadora; depois um painel com as fases da partida (lido de `WeaponConfig.Phases`). O fuzil é o Tático (fuzil leve) porque o Rajada não tem modo alternativo. | GDD 5.2. |
+| **"Olhei os marcadores"** é a única tarefa avisada pelo cliente (o servidor não sabe para onde a câmera aponta); não dá nada além de passar dessa tarefa. | Sem risco: cartas e `tutorialDone` continuam só no servidor. |
+| **Voz:** `VoiceChatService:IsVoiceEnabledForUserIdAsync` no cliente. Ligada: medidor do microfone pela API de áudio (`AudioDeviceInput` do jogador → `AudioAnalyzer`); se o Roblox não der o áudio, só o texto. Desligada: como ativar nas configurações do Roblox. Ao continuar ou pular, `settings.voicePromptSeen = true`. | GDD 5.2 e 12. O jogo não ativa nada sozinho. |
+| **Sensibilidade com prévia na hora** (`AimCamera.setPreview`), um controle para o aparelho em uso e outro para a mira aberta (sniper na mão). Salvar usa o pedido normal de configuração (validado). No PC/controle, TESTAR esconde o painel para mirar com o mouse preso; F/B volta. | GDD 5.2 e 7.5. |
+| **Retícula:** desenho em `Shared/Ui/Crosshair`, usado pelo HUD e pela prévia do editor. Cores prontas em `Theme.CrosshairPalette` (sem vermelho). | Uma só implementação da retícula. |
+| **Lobby → Tutorial** (`TutorialGate` no lobby, `PlaceTeleport` comum): perfil carregado com `tutorialDone = false` → servidor reservado só para o jogador. **Tutorial → Lobby:** ao terminar, ou na hora para quem já terminou. Perfil salvo e liberado antes (DADOS 5.3). No Studio não há teleporte: o lobby segue normal e o tutorial deixa refazer. | GDD 5.1. |
+| **Arena do tutorial** montada por código (`TutorialWorld`, nada salvo no place), em Y = 200, 7 estações fechadas (com teto invisível). Os alvos são jogadores de teste do time "Alvo" (contorno e barra vermelhos, como inimigos). | Visual cinza aceito até a F10. |

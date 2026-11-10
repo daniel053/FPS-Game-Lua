@@ -54,6 +54,11 @@ type Renascer = { mark: CFrame, endsAt: number, part: BasePart, token: {} }
 
 type Watch = { accepted: number, refused: number }
 
+-- O que aconteceu com uma carta, para quem precisa reagir (tutorial, F6):
+--   "Used" (ID da carta), "SmokeLanded" (Vector3), "TremorHit" (Combatant atingido), "Revived" (nil)
+export type CardEventKind = "Used" | "SmokeLanded" | "TremorHit" | "Revived"
+type CardListener = (player: Player, kind: CardEventKind, data: any) -> ()
+
 local CardService = {}
 
 local actionEvent: RemoteEvent
@@ -64,6 +69,7 @@ local worldFolder: Folder
 local armed: { [Player]: Armed } = {}
 local renascers: { [Player]: Renascer } = {}
 local watches: { [Player]: Watch } = {}
+local listeners: { CardListener } = {}
 local roundToken = 0 -- muda a cada fim de rodada: efeitos atrasados da rodada anterior não acontecem
 
 local sightParams = RaycastParams.new()
@@ -148,6 +154,12 @@ local function effectPart(name: string, shape: Enum.PartType): Part
 	return part
 end
 
+local function emit(player: Player, kind: CardEventKind, data: any)
+	for _, listener in listeners do
+		task.spawn(listener, player, kind, data)
+	end
+end
+
 -- Nuvem (C) ----------------------------------------------------------------------------------------
 
 local function spawnSmoke(position: Vector3, def: CardDef)
@@ -165,7 +177,7 @@ local function spawnSmoke(position: Vector3, def: CardDef)
 	end)
 end
 
-local function useNuvem(_player: Player, combatant: Combatants.Combatant, direction: Vector3?, def: CardDef)
+local function useNuvem(player: Player, combatant: Combatants.Combatant, direction: Vector3?, def: CardDef)
 	local head = combatant.model:FindFirstChild("Head")
 	local root = rootOf(combatant.model)
 	if not (head and head:IsA("BasePart")) or root == nil then
@@ -200,6 +212,7 @@ local function useNuvem(_player: Player, combatant: Combatants.Combatant, direct
 	task.delay(flight, function()
 		if token == roundToken then
 			spawnSmoke(impact, def)
+			emit(player, "SmokeLanded", impact)
 		end
 	end)
 end
@@ -236,7 +249,7 @@ local function hitByTremor(target: Combatants.Combatant, def: CardDef)
 	end
 end
 
-local function useTremor(_player: Player, combatant: Combatants.Combatant, direction: Vector3?, def: CardDef)
+local function useTremor(player: Player, combatant: Combatants.Combatant, direction: Vector3?, def: CardDef)
 	local root = rootOf(combatant.model)
 	if root == nil then
 		return
@@ -283,6 +296,7 @@ local function useTremor(_player: Player, combatant: Combatants.Combatant, direc
 			-- Só quem ainda está no chão quando a onda passa (GDD 8.4: "quem está no chão")
 			if token == roundToken and target.alive and isGrounded(target.model, p.GroundedCheck) then
 				hitByTremor(target, def)
+				emit(player, "TremorHit", target)
 			end
 		end)
 	end
@@ -331,6 +345,7 @@ local function finishRenascer(player: Player, revived: boolean, def: CardDef)
 	end
 	if revived then
 		Combatants.revive(combatant, def.params.ReturnProtection)
+		emit(player, "Revived", nil)
 	end
 	sendRenascer(player, nil, revived)
 end
@@ -446,6 +461,7 @@ local function onAction(player: Player, action: unknown, key: unknown, t: unknow
 			warn(`[Cartas] Erro no efeito de {def.id}: {err}`)
 		end
 	end
+	emit(player, "Used", def.id)
 	sendCards(player)
 end
 
@@ -495,7 +511,8 @@ function CardService.clearWorld()
 end
 
 -- Painel de teste: cargas cheias e recargas zeradas.
-function CardService.devRefill(player: Player): boolean
+-- Cargas cheias de novo (tutorial: tentar de novo sem esperar a recarga; painel de teste).
+function CardService.refill(player: Player): boolean
 	local a = armed[player]
 	if a == nil then
 		return false
@@ -505,6 +522,10 @@ function CardService.devRefill(player: Player): boolean
 	end
 	sendCards(player)
 	return true
+end
+
+function CardService.devRefill(player: Player): boolean
+	return CardService.refill(player)
 end
 
 -- Painel de teste: conta os pedidos aceitos e recusados até `devWatchEnd`.
@@ -519,6 +540,16 @@ function CardService.devWatchEnd(player: Player): (number, number)
 		return 0, 0
 	end
 	return watch.accepted, watch.refused
+end
+
+-- Avisos de uso das cartas (tutorial, F6). Chamado fora da thread do pedido.
+function CardService.onEvent(listener: CardListener)
+	table.insert(listeners, listener)
+end
+
+-- Renascer ativo (marca no chão, janela aberta)?
+function CardService.isRenascerActive(player: Player): boolean
+	return renascers[player] ~= nil
 end
 
 function CardService.isArmed(player: Player): boolean

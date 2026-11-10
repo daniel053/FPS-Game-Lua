@@ -73,6 +73,10 @@ local Theme = {
 	},
 	MarkerBarBackTransparency = 0.25,
 
+	-- Cores prontas da retícula no editor (tutorial e configurações). Salvas como hex no perfil.
+	-- Sem vermelho (reservado ao inimigo e ao perigo).
+	CrosshairPalette = { "#FFFFFF", "#7CFF6B", "#FFE14D", "#4DE8FF", "#FF7AF2", "#C9A0FF" },
+
 	-- Contorno e barra do inimigo (GDD 7.6) e opções para daltônicos (ESTILO 5). Escolha salva em settings.enemyOutlineColor.
 	EnemyOutline = {
 		red = hex("#FF3B4E"),

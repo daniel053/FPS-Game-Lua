@@ -31,6 +31,8 @@ export type EventName =
 	| "LobbyEvent" -- servidor -> cliente: (tipo, dados) — avisos do lobby
 	| "DevQueueCommand" -- cliente -> servidor: (comando: string) — só em DEV_
 	| "DevQueueResult" -- servidor -> cliente: (sucesso: boolean, chaveDaMensagem: string, detalhe: string?) — só em DEV_
+	| "TutorialState" -- servidor -> cliente: (foto: Tutorial/TutorialTypes.Snapshot)
+	| "TutorialRequest" -- cliente -> servidor: (pedido: Tutorial/TutorialTypes.RequestName)
 
 -- Eventos sem garantia de entrega (efeitos visuais frequentes; perder um não muda o jogo).
 export type UnreliableEventName =

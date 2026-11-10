@@ -3,7 +3,9 @@
 --   AddCoins     -> +DataConfig.DevAddCoinsAmount moedas (pelo EconomyService, como no jogo real)
 --   ResetProfile -> perfil volta ao padrão (o cliente pede confirmação antes)
 --   ShowProfile  -> perfil completo no Output do servidor + resumo na tela
---   GrantStarterCards -> as 4 cartas iniciais (F4, até o tutorial da F6 entregar de verdade)
+--   GrantStarterCards -> as 4 cartas iniciais (F4; o tutorial da F6 entrega de verdade)
+--   TutorialReset    -> tutorial pendente desde a etapa 1 (no lobby publicado, leva ao tutorial)
+--   TutorialComplete -> tutorial feito, com as 4 cartas (pular o tutorial nos testes)
 --   ClearCards   -> tira todas as cartas (testar a partida sem carta)
 
 local HttpService = game:GetService("HttpService")
@@ -15,6 +17,7 @@ local CardConfig = require(Shared.Config.CardConfig)
 local DataConfig = require(Shared.Config.DataConfig)
 local Env = require(Shared.Env)
 local Remotes = require(Shared.Remotes)
+local TutorialConfig = require(Shared.Config.TutorialConfig)
 
 local Common = script.Parent
 local DataService = require(Common.DataService)
@@ -57,6 +60,23 @@ local function onCommand(player: Player, command: unknown)
 		end)
 		local loaded = reason ~= "NotLoaded"
 		reply(player, loaded, if loaded then "CardsGranted" else "NotLoaded")
+	elseif command == "TutorialReset" then
+		local ok = DataService.update(player, function(profile)
+			profile.tutorialDone = false
+			profile.tutorialStep = 0
+			return true, nil
+		end)
+		reply(player, ok, if ok then "TutorialReset" else "NotLoaded")
+	elseif command == "TutorialComplete" then
+		local ok = DataService.update(player, function(profile)
+			for _, id in CardConfig.StarterCards do
+				ProfileRules.grantCard(profile, id, "admin", os.time())
+			end
+			profile.tutorialDone = true
+			profile.tutorialStep = #TutorialConfig.Steps
+			return true, nil
+		end)
+		reply(player, ok, if ok then "TutorialCompleted" else "NotLoaded")
 	elseif command == "ClearCards" then
 		local ok = DataService.update(player, function(profile)
 			profile.cards.owned = {}

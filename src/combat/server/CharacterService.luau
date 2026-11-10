@@ -314,8 +314,8 @@ function CharacterService.setFrozen(model: Model, frozen: boolean)
 	end
 end
 
--- Jogador de teste (só DEV_): alvo parado com o corpo base, registrado como combatente da dupla.
-function CharacterService.spawnBot(name: string, teamId: string, island: number, cframe: CFrame): Combatants.Combatant?
+-- Jogador de teste (só DEV_) e alvo do tutorial (F6): parado, com o corpo base, registrado como combatente.
+function CharacterService.spawnBot(name: string, teamId: string, island: number?, cframe: CFrame): Combatants.Combatant?
 	local ok, model = pcall(function()
 		return Players:CreateHumanoidModelFromDescription(CharacterService.baseDescription(), Enum.HumanoidRigType.R15)
 	end)
