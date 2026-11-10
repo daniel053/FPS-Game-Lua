@@ -313,6 +313,29 @@ local function build(teleportEvent: RemoteEvent, dataEvent: RemoteEvent)
 			statusLabel.Text = ""
 			teleportEvent:FireServer(placeName)
 		end)
+		-- Testes em grupo (até a fila da F5): todos deste servidor juntos no mesmo servidor do destino.
+		-- Pede um segundo toque, porque leva também quem não apertou.
+		local groupLabel = string.format(Strings.Dev.GoToEveryone, string.upper(Strings.Places[placeName]))
+		local group = add(makeButton(groupLabel, false))
+		group.Name = `GoToEveryone{placeName}`
+		local armedUntil = 0
+		group.Activated:Connect(function()
+			local now = os.clock()
+			if now < armedUntil then
+				armedUntil = 0
+				group.Text = groupLabel
+				statusLabel.Text = ""
+				teleportEvent:FireServer(placeName, true)
+				return
+			end
+			armedUntil = now + DataConfig.DevResetConfirmSeconds
+			group.Text = string.format(Strings.Dev.GoToEveryoneConfirm, #Players:GetPlayers())
+			task.delay(DataConfig.DevResetConfirmSeconds, function()
+				if os.clock() >= armedUntil then
+					group.Text = groupLabel
+				end
+			end)
+		end)
 	end
 
 	-- ===== Dados do jogador (F1) =====

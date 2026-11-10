@@ -7,7 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 export type EventName =
-	"DevTeleportRequest" -- cliente -> servidor: (destino: PlaceName) — só em DEV_
+	"DevTeleportRequest" -- cliente -> servidor: (destino: PlaceName, todos: boolean?) — só em DEV_
 	| "DevTeleportResult" -- servidor -> cliente: (sucesso: boolean, chaveDaMensagem: string) — só em DEV_
 	| "ProfileSnapshot" -- servidor -> cliente: (perfil: PlayerData.Profile) — cópia somente leitura, a cada mudança
 	| "SettingsUpdateRequest" -- cliente -> servidor: (pedido: campos de Settings que mudaram)

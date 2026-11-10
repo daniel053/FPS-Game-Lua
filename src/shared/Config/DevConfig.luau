@@ -4,6 +4,7 @@
 local DevConfig = {
 	-- Painel de teleporte de teste
 	TeleportCooldownSeconds = 3, -- limite de pedidos por jogador
+	TeleportGroupCooldownSeconds = 10, -- "levar todos": um pedido a cada 10 s no servidor
 	PanelToggleKey = Enum.KeyCode.T, -- PC
 	PanelToggleGamepadButton = Enum.KeyCode.DPadUp, -- controle
 

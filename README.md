@@ -104,6 +104,18 @@ No mesmo painel **TESTE**, seção **DADOS DO JOGADOR**:
 
 Para simular falha do DataStore: no Studio, selecione o **ServerStorage**, adicione o atributo booleano `DEV_SimulateLoadFailure` marcado e aperte Play. O jogador deve ser expulso com a mensagem de falha, sem perder nada. Apague o atributo depois.
 
+## Testar em grupo no jogo publicado (até a fila da F5)
+
+Sem fila, quem vai para a Partida pelo botão IR PARA PARTIDA cai numa partida sozinho (cada pedido cria um servidor reservado). Para jogar juntos:
+
+1. Publique os places na experiência de **teste** (nunca na de produção).
+2. Todos entram no **mesmo servidor do lobby**: você entra, e os outros clicam em **Entrar** no seu perfil do Roblox (ou usam um servidor privado).
+3. Uma pessoa abre o painel **TESTE** e toca em **LEVAR TODOS PARA PARTIDA** duas vezes (o segundo toque confirma e mostra quantos vão). Todos do servidor vão juntos para a mesma Partida.
+4. Lá, a partida começa sozinha em 20 s (ou **COMEÇAR AGORA** no painel). Para completar duplas, use **+N JOGADORES DE TESTE** antes de começar.
+5. No fim da partida, cada um volta ao lobby por conta própria e pode cair em servidores diferentes. Para seguir juntos, use **LEVAR TODOS PARA LOBBY** antes do fim, ou entrem de novo pelo perfil de um de vocês.
+
+O botão também existe para o Tutorial. No Studio não funciona (o Roblox não teleporta dentro do Studio).
+
 ## Testar as cartas (F4)
 
 No place **Partida**, como na F3. As cartas só existem para quem as tem: até o tutorial (F6), abra o painel **TESTE › DADOS DO JOGADOR** e toque em **DAR AS 4 CARTAS** (o resumo mostra "Cartas: 4"). **TIRAR AS CARTAS** testa a partida sem carta.
