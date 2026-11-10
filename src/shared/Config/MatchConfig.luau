@@ -19,12 +19,18 @@ local MatchConfig = {
 	-- Duelo que acabou antes dos outros: a dupla volta ao mirante depois deste tempo
 	DuelEndToMiranteDelay = 3,
 
-	-- Começo da partida (sem fila até a F5): quem estiver no servidor.
-	-- Começa ReceivingPlayersTimeout segundos depois do primeiro jogador, se houver o mínimo.
+	-- Começo da partida.
+	-- Vindo da fila (F5): o servidor reservado lê a composição (MatchHandoff) e começa quando todos
+	-- chegam ou ReceivingPlayersTimeout segundos depois do primeiro. Quem não chegou fica de fora;
+	-- com menos de MinArrived, quem chegou volta para a fila, na frente.
+	-- Sem composição (teste no Studio ou teleporte de teste): como na F3, quem estiver no servidor,
+	-- com o mínimo de MinPlayers.
 	Start = {
 		MinPlayers = 4, -- igual ao mínimo flexível da fila (QueueConfig.FlexibleMinPlayers)
 		DevMinPlayers = 2, -- ambiente DEV_: dá para testar com 2 clientes (ou 1 + jogadores de teste)
 		MaxPlayers = 16, -- QueueConfig.MaxPlayers
+		MinArrived = 2, -- vindo da fila: segue com quem chegou, a partir de 2 [DECIDIDO na F5]
+		HandoffReadSeconds = 10, -- quanto tempo tenta ler o MatchHandoff ao abrir o servidor
 	},
 
 	-- Jogador sem par (número ímpar) joga 1v2, sem bônus (GDD 4.2) [DECIDIDO].

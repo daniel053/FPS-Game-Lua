@@ -232,11 +232,15 @@ Quando uma dupla é eliminada, cada jogador vê uma tela com duas opções:
 
 A mesma pergunta aparece ao fim da partida para todos os jogadores, para que amigos (novos ou antigos) não se percam.
 
+- Na tela final, a dupla que respondeu "sim" dos dois lados volta junta ao lobby e entra direto na fila. Se um dos dois aperta **Nova partida** depois dos dois "sim", o parceiro vai junto. `[DECIDIDO]` (F5)
+
 ### 4.9 Casos especiais
 
 | Situação | Regra |
 |---|---|
 | Um jogador sai no meio da partida | O parceiro joga sozinho (1v2) até o fim da rodada; segue sozinho no resto da partida. `[PROPOSTA]` |
+| Alguém da fila não chegou à partida | A partida espera até 20 s e segue com quem chegou, a partir de **2 jogadores**. Com menos de 2, quem chegou volta ao lobby e entra direto na fila, **na frente**. `[DECIDIDO]` (F5) |
+| Jogador que não estava na composição da partida | Volta ao lobby (servidor reservado de outro grupo). `[DECIDIDO]` (F5) |
 | Os dois saem | Dupla eliminada. |
 | Jogador ausente (AFK) 30 s em combate | Aviso; aos 60 s é mandado de volta ao lobby. |
 
@@ -304,7 +308,8 @@ Aparece no começo de **toda rodada**, com o jogador já **dentro do mapa**, con
 - O jogador entra na fila pelo lobby (sozinho ou em dupla fixa).
 - A partida é montada quando a fila junta **7 jogadores**. `[DECIDIDO]`
 - Ao atingir 7, a fila espera mais **15 s** para completar até **16 jogadores**, e então teleporta o grupo. `[PROPOSTA]`
-- **Flexibilidade com poucos jogadores:** se a fila não chegar a 7 em **60 s**, a partida começa com quem houver, a partir de **4 jogadores**. `[PROPOSTA]`
+- **Flexibilidade com poucos jogadores:** se a fila não chegar a 7 em **20 s**, a partida começa com quem houver, a partir de **4 jogadores**. O tempo é `[DECIDIDO]` (F5; era 60 s, longo demais no teste); o mínimo de 4 continua `[PROPOSTA]`.
+- **Modo de teste (`DEV_`):** com 2 ou mais na fila, a partida sai em **5 s** (as faixas também se juntam em 5 s). `[DECIDIDO]` (F5)
 - A fila é **compartilhada entre todos os servidores de lobby** (não só o servidor onde o jogador está), para juntar gente mais rápido.
 - 7 jogadores formam 3 duplas e 1 jogador sem par, que joga sozinho (1v2), sem bônus, como na seção 4.2. `[DECIDIDO]`
 
@@ -329,6 +334,12 @@ Objetivo: jogadores muito bons não estragarem a experiência de quem está come
 - **Ranking** (top do servidor e global, por elo).
 - **Treino:** alvos para testar armas e cartas enquanto espera na fila.
 - Câmera do lobby em primeira pessoa (seção 3.1).
+
+Grupo de 2 e fila `[DECIDIDO]` (F5):
+- O grupo se forma com **qualquer jogador do mesmo servidor de lobby**, por convite dentro do jogo (ele aceita ou recusa). Amigos de fora chegam pelo convite nativo do Roblox e caem no mesmo servidor. Juntar-se a alguém de outro servidor de lobby fica fora.
+- Cada um aperta **Jogar** e fica "Pronto"; com os 2 prontos, a dupla entra na fila como dupla fixa. Qualquer um pode cancelar, e a dupla sai da fila.
+- Se um dos dois sai do jogo ou da dupla, o outro sai da fila com um aviso e precisa apertar Jogar de novo.
+- A área de **Treino** fica para depois (não entra na F5).
 
 ### 6.5 Mirante (dentro do servidor de partida)
 
@@ -1172,3 +1183,21 @@ Detalhes de implementação decididos durante o desenvolvimento (não são regra
 | **Comandos de teste:** DADOS › DAR AS 4 CARTAS / TIRAR AS CARTAS (pela regra real de uma carta por tecla); PARTIDA › CARTAS: cargas cheias, levar 300 de dano (`DevConfig.HurtSelfDamage`), carta 10× de uma vez e carta não escolhida (contados pelo servidor). | FASES F4: comando para dar as 4 cartas até o tutorial existir; critério "cliente não consegue usar carta em recarga ou que não escolheu". |
 | **Teleporte de teste "levar todos"** (só `DEV_`): o mesmo pedido `DevTeleportRequest` com `todos = true` salva e libera o perfil de todos os jogadores do servidor e teleporta a lista de uma vez (na Partida, um único servidor reservado). Um pedido a cada 10 s por servidor (`DevConfig.TeleportGroupCooldownSeconds`); o botão pede um segundo toque. | Testes em grupo do marco "primeiro jogável" antes da fila (F5): sem isso, cada jogador caía numa Partida diferente. |
 | Nas cartas novas, a tecla é guardada como `string` (os valores continuam sendo só C, Q, E e X). | O verificador de tipos do Luau perde o tipo `"C" \| "Q" \| "E" \| "X"` ao ler de tabelas e acusava erro em todo uso. |
+
+### F5 · Lobby e fila
+
+| Decisão | Por quê |
+|---|---|
+| **Regras da fila puras** em `Shared/Queue/QueueRules` (7 → espera 15 s até 16; flexível a partir de 4 depois de 20 s; faixas que se juntam depois de 45 s; dupla nunca separada; prioridade). "Quando a fila chegou a 7" não é guardado: é o horário de chegada da ficha que fez a conta passar de 7, recalculado a cada ciclo. | Os testes simulam a fila sem servidor; nenhum estado escondido entre servidores. |
+| **Fila no MemoryStore como mapa ordenado** (`MatchQueue_v1`), não como fila (`MemoryStoreQueue`): uma **ficha** por grupo, com validade de 30 s renovada a cada 3 s pelo lobby dono. Servidor que cai = fichas somem sozinhas. | O líder precisa ler a fila inteira (faixas, tempos, duplas); a fila do MemoryStore só entrega itens um a um. |
+| **Um lobby líder** por vez (trava no `MatchQueueControl_v1`, 10 s). O líder lê as fichas a cada 1 s, monta as partidas, reserva o servidor, grava o `MatchHandoff`, marca as fichas com o código e avisa os lobbies (MessagingService). O líder também grava o estado da fila (contagem "5/7"), que os outros lobbies leem a cada 2 s. | GDD 16.5. Um só servidor decide: duas partidas nunca pegam a mesma ficha (a marca é feita com `UpdateAsync`, que recusa ficha já marcada). |
+| **Cada lobby teleporta os seus jogadores** (`TeleportToPrivateServer`). O aviso pelo MessagingService pode se perder; a renovação da ficha descobre a marca em até 3 s. Teleporte que falha ou trava (30 s) → perfil reaberto e o grupo volta para a fila, **na frente**. | O Roblox só teleporta quem está no servidor. FASES F5: ninguém fica preso em teleporte. |
+| **`MatchHandoff_v1`** usa a chave **`PrivateServerId`** (devolvida pelo `ReserveServerAsync`), não o código de acesso: o servidor de partida lê `game.PrivateServerId`. Expira em 5 min. Contém os UserIds, as duplas fixas e a faixa. | O servidor reservado não conhece o próprio código de acesso. |
+| **Volta da partida pelo `LobbyHandoff_v1`** (chave `u_<UserId>`, 2 min): "entrar direto na fila", "passar na frente" e "dupla fixa com X". O `partyWith` saiu do TeleportData (F3). A dupla só é refeita se os dois apontam um para o outro; ela viaja num teleporte só e cai no mesmo lobby. Se o parceiro não chegar em 20 s, segue sozinho. | DADOS 5.3: dados de teleporte passam pelo cliente. |
+| Nomes no MemoryStore com o prefixo `DEV_` em teste e o sufixo `_Studio` no Studio. | Testes no Studio não se misturam com os servidores publicados de teste. |
+| **No Studio** não há servidor reservado nem teleporte: a fila funciona (dá para testar grupo e fila com vários clientes no Studio), mas a partida "encontrada" só gera um aviso. | O teste de verdade (critérios de aceite) é no jogo publicado. |
+| **Faixa de fila:** `stats.matchesPlayed` < 10 ou elo Bronze/Prata = Aprendizes. Elo pela tabela `RankConfig.Tiers`. Até a F9, todo mundo é Aprendiz (ninguém ganha partidas nem pontos ainda). | GDD 6.3. |
+| **Teste:** `QueueConfig.Dev` = mínimo 2, começa em 5 s, faixas juntas em 5 s. Painel TESTE › FILA (só no lobby, só `DEV_`): estado da fila, **começar já com quem está na fila** (respeita o mínimo de teste) e lista das fichas no Output. | FASES F5: "mínimo 4 em produção; reduzir em teste". |
+| **Lobby simples** (`LobbyScreen`): dupla à esquerda, cartão do modo com JOGAR / "Procurando partida… 5/7" / CANCELAR à direita, moedas no topo, janela de convite e convite recebido. PC: `[Enter]` jogar/cancelar, `[G]` convidar, `[Y]`/`[N]` aceitar/recusar, chips visíveis. Controle: X e Y, seleção pelos botões. **No PC o mouse fica livre no lobby** (é um menu); a câmera continua em primeira pessoa. | ESTILO T3 e 3. Visual final na F7. |
+| As peças de interface provisórias (`MatchUi`) foram para `Shared/Ui/ProvisionalUi`, usadas pela partida e pelo lobby. | Evitar duas cópias até os componentes finais da F7. |
+| Partida vinda da fila: começa quando todos chegam ou 20 s depois do primeiro; segue com 2 ou mais (`MatchConfig.Start.MinArrived`). Quem não estava na composição volta ao lobby (fora de `DEV_`). A composição vale só para a primeira partida do servidor. Sem composição (teleporte de teste), vale a regra da F3. | GDD 4.1 e 4.9 (decisões da F5). |

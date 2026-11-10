@@ -104,6 +104,28 @@ No mesmo painel **TESTE**, seção **DADOS DO JOGADOR**:
 
 Para simular falha do DataStore: no Studio, selecione o **ServerStorage**, adicione o atributo booleano `DEV_SimulateLoadFailure` marcado e aperte Play. O jogador deve ser expulso com a mensagem de falha, sem perder nada. Apague o atributo depois.
 
+## Testar o lobby e a fila (F5)
+
+**No Studio a partida nunca sai do lobby.** O Studio não tem servidor reservado nem teleporte entre places. No Studio (1 servidor + vários clientes, no place **Lobby**) dá para testar só o grupo e a fila: convites, JOGAR, "Procurando partida… x/7", CANCELAR. Quando a partida fecha, aparece o aviso "Partida encontrada! No Studio não há teleporte" e todos voltam para JOGAR.
+
+Tempos da fila:
+
+| | Produção | Teste (`DEV_`: Studio e jogo de teste) |
+|---|---|---|
+| Poucos jogadores | começa em **20 s**, com 4 ou mais | começa em **5 s**, com 2 ou mais |
+| Chegou a 7 | espera **15 s** para completar até 16 | igual |
+| Faixas de elo se juntam | 45 s | 5 s |
+
+Para testar de verdade (cair na partida):
+
+1. Sincronize os 3 places com o Rojo e publique na experiência de **teste**.
+2. Entrem no jogo publicado com contas diferentes (cada uma no seu aparelho ou janela).
+3. **Dupla:** um toca em **+ CONVIDAR** (PC: `G`) e escolhe o outro; o outro toca em **ACEITAR** (PC: `Y`). Os dois tocam em **JOGAR** (PC: `Enter`).
+4. Em 5 s a partida fecha e todos são levados ao mesmo servidor de Partida, com a dupla junta.
+5. No fim, **SIM** em "Ir para a próxima partida com…" leva a dupla junta de volta, já na fila.
+
+Painel **TESTE › FILA** (só no lobby): estado da fila, **COMEÇAR JÁ COM QUEM ESTÁ NA FILA** e a lista das fichas no Output do servidor.
+
 ## Testar em grupo no jogo publicado (até a fila da F5)
 
 Sem fila, quem vai para a Partida pelo botão IR PARA PARTIDA cai numa partida sozinho (cada pedido cria um servidor reservado). Para jogar juntos:

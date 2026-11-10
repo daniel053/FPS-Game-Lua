@@ -25,7 +25,7 @@ local Theme = require(Shared.Config.Theme)
 
 local InputDevice = require(script.Parent.Parent.Common.InputDevice)
 local CardController = require(script.Parent.CardController)
-local MatchUi = require(script.Parent.MatchUi)
+local MatchUi = require(Shared.Ui.ProvisionalUi)
 
 type CardKey = string -- "C", "Q", "E" ou "X" (Types.CardKey); string por causa do verificador de tipos
 type CardView = CardTypes.CardView

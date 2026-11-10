@@ -23,7 +23,7 @@ local WeaponConfig = require(Shared.Config.WeaponConfig)
 local WorldLayout = require(Shared.Match.WorldLayout)
 
 local MatchClient = require(script.Parent.MatchClient)
-local MatchUi = require(script.Parent.MatchUi)
+local MatchUi = require(Shared.Ui.ProvisionalUi)
 local SpectateCamera = require(script.Parent.SpectateCamera)
 
 local S = Strings.Match

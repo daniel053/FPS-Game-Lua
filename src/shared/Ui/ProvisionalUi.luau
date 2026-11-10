@@ -1,5 +1,5 @@
 --!strict
--- Peças simples de interface para as telas PROVISÓRIAS da partida (F3): HUD da partida, modal de
+-- Peças simples de interface para as telas PROVISÓRIAS (F3 partida, F5 lobby): HUD da partida, modal de
 -- preparação e telas de eliminação/fim. Tudo com Theme e tamanhos mínimos do ESTILO 2.5 e 3.
 -- Os componentes definitivos (botões, abas, cartões, modal) são da F7, que substituem estes.
 

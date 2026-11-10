@@ -36,9 +36,9 @@
 | F1 | Dados do jogador | Perfil salvo com segurança | ✅ |
 | F2 | Combate | Atirar e derrubar com as 18 armas + corpo a corpo | ✅ |
 | F3 | Loop da partida | Partida completa em arenas cinza | ✅ |
-| F4 | Cartas | 4 cartas funcionando | 🔶 em teste |
-| ⭐ | **Marco: primeiro jogável** | Teste interno com amigos | ☐ |
-| F5 | Lobby e fila | Entrar na fila e cair na partida com amigos | ☐ |
+| F4 | Cartas | 4 cartas funcionando | ✅ |
+| ⭐ | **Marco: primeiro jogável** | Teste interno com amigos | ✅ |
+| F5 | Lobby e fila | Entrar na fila e cair na partida com amigos | 🔶 em teste |
 | F6 | Tutorial | Primeira entrada guiada | ☐ |
 | F7 | Interface final | Telas T1–T6 no estilo definitivo | ☐ |
 | F8 | Social e voz | Dupla se comunica e continua junta | ☐ |
@@ -215,7 +215,7 @@ Só seguir para a F5 quando a partida for divertida em blocos cinza.
 **Tarefas:**
 - Lobby funcional (visual simples) com botão Jogar, grupo de 2, convidar amigos.
 - Fila compartilhada entre servidores de lobby (MemoryStore).
-- Regras do GDD 6.2: começa com 7, espera até 16 por 15 s, flexível a partir de 4 após 60 s.
+- Regras do GDD 6.2: começa com 7, espera até 16 por 15 s, flexível a partir de 4 após 20 s (decidido na F5; era 60 s).
 - Separação por faixa (GDD 6.3), juntando as faixas quando não há gente.
 - Dupla fixa entra junta e cai junta.
 - Criação de servidor reservado e teleporte do grupo; `MatchHandoff` com a composição.
@@ -224,7 +224,7 @@ Só seguir para a F5 quando a partida for divertida em blocos cinza.
 
 **Critérios de aceite:**
 - Duas contas amigas entram na fila juntas e caem na mesma partida, na mesma dupla, várias vezes seguidas.
-- Com 3 contas na fila, a partida começa após 60 s com o que tiver (mínimo 4 em produção; reduzir em teste).
+- Com 3 contas na fila, a partida começa com o que tiver: após 20 s em produção (mínimo 4); após 5 s em teste (mínimo 2).
 - Ninguém fica preso em teleporte; dados não duplicam.
 
 **Fora:** visual final do lobby (F7), ranking (F9).

@@ -26,6 +26,11 @@ export type EventName =
 	| "CardAction" -- cliente -> servidor: (ação, tecla, horário, direção?) — ver Cards/CardTypes
 	| "CardEvent" -- servidor -> cliente: (tipo, dados) — ver Cards/CardTypes
 	| "CardFx" -- servidor -> clientes: (tipo, dados) — efeitos visuais das cartas
+	| "LobbyState" -- servidor -> cliente: (foto: Queue/LobbyTypes.Snapshot) — grupo, convites e fila
+	| "LobbyRequest" -- cliente -> servidor: (tipo, argumento) — ver Queue/LobbyTypes
+	| "LobbyEvent" -- servidor -> cliente: (tipo, dados) — avisos do lobby
+	| "DevQueueCommand" -- cliente -> servidor: (comando: string) — só em DEV_
+	| "DevQueueResult" -- servidor -> cliente: (sucesso: boolean, chaveDaMensagem: string, detalhe: string?) — só em DEV_
 
 -- Eventos sem garantia de entrega (efeitos visuais frequentes; perder um não muda o jogo).
 export type UnreliableEventName =

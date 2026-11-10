@@ -31,7 +31,7 @@ local WeaponConfig = require(Shared.Config.WeaponConfig)
 local InputDevice = require(script.Parent.Parent.Common.InputDevice)
 local PlayerDataClient = require(script.Parent.Parent.Common.PlayerDataClient)
 local MatchClient = require(script.Parent.MatchClient)
-local MatchUi = require(script.Parent.MatchUi)
+local MatchUi = require(Shared.Ui.ProvisionalUi)
 
 local S = Strings.Match
 local CARD_WIDTH = 116

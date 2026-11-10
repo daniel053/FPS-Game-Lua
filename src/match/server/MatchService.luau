@@ -6,8 +6,9 @@
 --
 -- As regras puras (duplas, folga, confrontos, ilhas, vidas, Virada, final) ficam em
 -- Shared/Match/MatchRules; aqui ficam o tempo, os personagens, a rede e os casos especiais.
--- Sem fila até a F5: entram na partida os jogadores que estão no servidor (e, só em DEV_, os
--- jogadores de teste do painel).
+-- Vindo da fila (F5), a composição chega pelo MatchHandoff (MemoryStore): quem vai jogar e as duplas
+-- fixas. Sem composição (Studio, teleporte de teste), entram os jogadores que estão no servidor (e,
+-- só em DEV_, os jogadores de teste do painel), como na F3.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -32,6 +33,7 @@ local TeamColors = require(Shared.Config.TeamColors)
 local WorldLayout = require(Shared.Match.WorldLayout)
 
 local DataService = require(ServerScriptService.Common.DataService)
+local Handoff = require(ServerScriptService.Common.Matchmaking.Handoff)
 local ActivityService = require(script.Parent.ActivityService)
 local CardService = require(script.Parent.CardService)
 local CharacterService = require(script.Parent.CharacterService)
@@ -105,6 +107,9 @@ local skipRequested = false
 local abortRequested = false -- painel de teste: recomeçar a partida
 local pendingLifeRemovals: { string } = {}
 local requestWindow: { [Player]: { start: number, count: number } } = {}
+-- Composição vinda da fila (F5). Vale para a primeira partida deste servidor.
+local handoff: Handoff.MatchHandoff? = nil
+local expected: { [number]: boolean } = {}
 
 local function serverNow(): number
 	return workspace:GetServerTimeNow()
@@ -207,7 +212,7 @@ local function snapshot(): MatchTypes.Snapshot
 		bye = if plan then plan.bye else nil,
 		championId = if rules then rules.championId else nil,
 		waiting = memberCount(),
-		minPlayers = minPlayers(),
+		minPlayers = if handoff then #(handoff :: Handoff.MatchHandoff).userIds else minPlayers(),
 	}
 end
 
@@ -340,7 +345,7 @@ end
 local function formTeams()
 	local list: { Member } = {}
 	for _, m in members do
-		if m.connected then
+		if m.connected and not m.leaving then -- quem está voltando ao lobby não joga
 			table.insert(list, m)
 		end
 	end
@@ -349,8 +354,16 @@ local function formTeams()
 		table.insert(infos, { key = m.key, elo = eloOf(m) })
 	end
 	local friends = friendPairs(list)
-	-- Duplas fixas vindas do lobby chegam pelo TeleportData na F5.
-	local groups = MatchRules.formTeams(infos, {}, function(a: string, b: string): boolean
+	-- Duplas fixas vindas da fila (MatchHandoff). Se um dos dois não chegou, o outro é pareado
+	-- normalmente (MatchRules ignora a dupla incompleta).
+	local fixedPairs: { { string } } = {}
+	local current = handoff
+	if current then
+		for _, duo in current.duos do
+			table.insert(fixedPairs, { `p{duo[1]}`, `p{duo[2]}` })
+		end
+	end
+	local groups = MatchRules.formTeams(infos, fixedPairs, function(a: string, b: string): boolean
 		return friends[a .. "|" .. b] == true
 	end)
 
@@ -1010,10 +1023,114 @@ local function resetMatch()
 	firstJoinAt = if connectedHumanCount() > 0 then os.clock() else nil
 end
 
+-- Composição vinda da fila --------------------------------------------------------------------------
+
+local function arrivedExpected(): (number, number)
+	local current = handoff
+	if current == nil then
+		return 0, 0
+	end
+	local arrived = 0
+	for _, m in humans() do
+		if expected[m.userId] then
+			arrived += 1
+		end
+	end
+	return arrived, #current.userIds
+end
+
+-- Volta para o lobby sem jogar. Na partida que não aconteceu, entra direto na fila, na frente.
+local function sendBack(member: Member, reason: LobbyReturn.ReturnReason, options: LobbyReturn.ReturnOptions?)
+	local player = member.player
+	if player == nil or member.leaving then
+		return
+	end
+	member.leaving = true
+	task.spawn(function()
+		if not LobbyReturn.send({ player }, reason, options) then
+			if reason == "NotExpected" then
+				player:Kick(Strings.Match.NotExpectedKick)
+				return
+			end
+			member.leaving = false
+			sendTo(member, "Notice", { key = if Env.IsStudio then "TeleportStudio" else "TeleportFailed" })
+		end
+	end)
+end
+
+-- Quem não está na composição não joga esta partida (só fora do ambiente de teste).
+local function isUnexpected(player: Player): boolean
+	return handoff ~= nil and not expected[player.UserId] and not Env.IsDev
+end
+
+local function loadHandoff()
+	if Env.IsStudio or game.PrivateServerId == "" then
+		return
+	end
+	local data = Handoff.readMatchAsync(game.PrivateServerId, MatchConfig.Start.HandoffReadSeconds)
+	if data == nil then
+		warn("[Partida] Sem MatchHandoff: começando com quem estiver no servidor (como na F3)")
+		return
+	end
+	handoff = data
+	for _, userId in data.userIds do
+		expected[userId] = true
+	end
+	print(`[Partida] Partida {data.matchId}: esperando {#data.userIds} jogador(es), {#data.duos} dupla(s) fixa(s)`)
+	for _, m in humans() do
+		if m.player and isUnexpected(m.player) then
+			sendBack(m, "NotExpected", nil)
+		end
+	end
+	publish()
+end
+
+local function receivingFromQueue(): boolean
+	-- Começa quando todos chegam, ou ReceivingPlayersTimeout depois do primeiro (GDD 4.1).
+	-- Devolve true para começar; false = a partida não vai acontecer (todos voltaram para a fila).
+	while true do
+		local arrived, total = arrivedExpected()
+		if firstJoinAt then
+			local startAt = firstJoinAt + MatchConfig.ReceivingPlayersTimeout
+			local newEndsAt = serverNow() + math.max(0, startAt - os.clock())
+			if endsAt == nil or math.abs(newEndsAt - endsAt) > 0.5 then
+				endsAt = newEndsAt
+				publish()
+			end
+			if forceStart or arrived >= total or os.clock() >= startAt then
+				local present = 0
+				for _, m in members do
+					if m.connected and not m.leaving then
+						present += 1
+					end
+				end
+				if present >= MatchConfig.Start.MinArrived and connectedHumanCount() > 0 then
+					return true
+				end
+				-- Chegou gente de menos: quem chegou volta para a fila, na frente (decisão da F5).
+				warn(`[Partida] Só {present} de {total} jogador(es) chegaram: de volta para a fila`)
+				handoff = nil
+				table.clear(expected)
+				for _, m in humans() do
+					sendTo(m, "Notice", { key = "NotEnoughPlayers" })
+					sendBack(m, "NotEnoughPlayers", { autoQueue = true, priority = true })
+				end
+				publish()
+				return false
+			end
+		end
+		task.wait(0.25)
+	end
+end
+
 local function receiving()
 	setPhase("Receiving", nil)
 	for _, m in humans() do
 		toMirante(m)
+	end
+	if handoff and receivingFromQueue() then
+		forceStart = false
+		return
 	end
 	while true do
 		local count = memberCount()
@@ -1038,20 +1155,38 @@ local function receiving()
 end
 
 -- Equipe eliminada ou fim: "Nova partida" e "seguir com o parceiro?" (GDD 4.8).
-local function goToLobby(member: Member, partyWithUserId: number?)
-	local player = member.player
-	if player == nil or member.leaving then
+-- `list` com 2 membros e options.together = dupla fixa: viajam juntos e caem no mesmo lobby.
+local function goToLobby(list: { Member }, reason: LobbyReturn.ReturnReason, options: LobbyReturn.ReturnOptions)
+	local going: { Member } = {}
+	local players: { Player } = {}
+	for _, m in list do
+		local player = m.player
+		if player and m.connected and not m.leaving then
+			m.leaving = true
+			table.insert(going, m)
+			table.insert(players, player)
+			sendTo(m, "Notice", { key = "GoingToLobby" })
+		end
+	end
+	if #players == 0 then
 		return
 	end
-	member.leaving = true
-	sendTo(member, "Notice", { key = "GoingToLobby" })
+	local opts: LobbyReturn.ReturnOptions = {
+		autoQueue = options.autoQueue,
+		priority = options.priority,
+		together = options.together == true and #players == 2,
+	}
 	task.spawn(function()
-		local party = if partyWithUserId then { [player] = partyWithUserId } else nil
-		if not LobbyReturn.send({ player }, "NewMatch", party) then
-			member.leaving = false
-			member.exitChoice = nil
-			member.partnerAnswer = nil
-			sendTo(member, "Notice", { key = if Env.IsStudio then "TeleportStudio" else "TeleportFailed" })
+		if not LobbyReturn.send(players, reason, opts) then
+			for _, m in going do
+				local player = m.player
+				if player and player.Parent == Players then
+					m.leaving = false
+					m.exitChoice = nil
+					m.partnerAnswer = nil
+					sendTo(m, "Notice", { key = if Env.IsStudio then "TeleportStudio" else "TeleportFailed" })
+				end
+			end
 		end
 	end)
 end
@@ -1062,7 +1197,7 @@ local function resolveExit(member: Member)
 	end
 	local partner = partnerOf(member)
 	if partner == nil or partner.isBot or not partner.connected or partner.exitChoice == "Watch" then
-		goToLobby(member, nil)
+		goToLobby({ member }, "NewMatch", { autoQueue = true })
 		return
 	end
 	if partner.exitChoice ~= "NewMatch" then
@@ -1077,9 +1212,13 @@ local function resolveExit(member: Member)
 	if member.partnerAnswer == nil or partner.partnerAnswer == nil then
 		return
 	end
-	local together = member.partnerAnswer == true and partner.partnerAnswer == true
-	goToLobby(member, if together then partner.userId else nil)
-	goToLobby(partner, if together then member.userId else nil)
+	if member.partnerAnswer == true and partner.partnerAnswer == true then
+		-- Os dois aceitaram: entram na fila como dupla fixa (GDD 4.8)
+		goToLobby({ member, partner }, "NewMatch", { autoQueue = true, together = true })
+	else
+		goToLobby({ member }, "NewMatch", { autoQueue = true })
+		goToLobby({ partner }, "NewMatch", { autoQueue = true })
+	end
 end
 
 local function champion()
@@ -1126,33 +1265,41 @@ local function endScreen()
 	end
 	waitPhase()
 
-	-- Todos de volta ao lobby; quem respondeu "sim" dos dois lados vai como dupla fixa
-	local leaving: { Player } = {}
-	local party: { [Player]: number } = {}
+	-- Todos de volta ao lobby. Quem respondeu "sim" dos dois lados vai junto, como dupla fixa, e entra
+	-- direto na fila (GDD 4.8); os outros só voltam ao lobby.
+	local handled: { [Member]: boolean } = {}
 	for _, m in humans() do
-		if m.leaving or m.player == nil then
+		if m.leaving or m.player == nil or handled[m] then
 			continue
 		end
-		table.insert(leaving, m.player)
+		handled[m] = true
 		local partner = partnerOf(m)
-		if partner and m.partnerAnswer == true and partner.partnerAnswer == true then
-			party[m.player] = partner.userId
-		end
-	end
-	if not LobbyReturn.send(leaving, "MatchEnded", party) then
-		for _, m in humans() do
-			sendTo(m, "Notice", { key = if Env.IsStudio then "TeleportStudio" else "TeleportFailed" })
+		local together = partner ~= nil
+			and not partner.isBot
+			and partner.connected
+			and not partner.leaving
+			and m.partnerAnswer == true
+			and partner.partnerAnswer == true
+		if together and partner then
+			handled[partner] = true
+			goToLobby({ m, partner }, "MatchEnded", { autoQueue = true, together = true })
+		else
+			goToLobby({ m }, "MatchEnded", {})
 		end
 	end
 	task.wait(2)
 end
 
 local function runMatch()
+	loadHandoff()
 	while true do
 		resetMatch()
 		receiving()
 		setPhase("Forming", nil)
 		formTeams()
+		-- A composição da fila vale só para a primeira partida deste servidor.
+		handoff = nil
+		table.clear(expected)
 		publish()
 		task.wait(1)
 		local state = rules :: MatchRules.State
@@ -1209,10 +1356,14 @@ local function onRequest(player: Player, kind: unknown, arg: unknown)
 		if allowed then
 			member.exitChoice = "NewMatch"
 			if phase == "EndScreen" then
-				-- No fim: vai agora; junto com o parceiro só se os dois já disseram "sim".
+				-- No fim: vai agora. Se os dois já disseram "sim" a seguir juntos, o parceiro vai junto
+				-- (ele aceitou ir para a próxima partida com este jogador).
 				local partner = partnerOf(member)
-				local together = partner ~= nil and member.partnerAnswer == true and partner.partnerAnswer == true
-				goToLobby(member, if together and partner then partner.userId else nil)
+				if partner and member.partnerAnswer == true and partner.partnerAnswer == true then
+					goToLobby({ member, partner }, "NewMatch", { autoQueue = true, together = true })
+				else
+					goToLobby({ member }, "NewMatch", { autoQueue = true })
+				end
 			else
 				resolveExit(member)
 			end
@@ -1230,6 +1381,13 @@ end
 
 local function onPlayerAdded(player: Player)
 	player:SetAttribute(CombatNames.Attr.Kills, 0)
+	if isUnexpected(player) then
+		-- Servidor de outra partida (não estava na composição da fila): volta ao lobby.
+		local m = newMember(player)
+		memberByPlayer[player] = m
+		sendBack(m, "NotExpected", nil)
+		return
+	end
 	if phase == "Receiving" and memberCount() < MatchConfig.Start.MaxPlayers then
 		local m = newMember(player)
 		members[m.key] = m

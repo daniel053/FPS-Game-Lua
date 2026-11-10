@@ -1,10 +1,11 @@
 --!strict
 -- Telas de saída da partida, versão SIMPLES (GDD 4.8; visual final na F7):
---   * dupla eliminada: ASSISTIR (fica no mirante) ou NOVA PARTIDA (volta ao lobby; até a F5 o
---     lobby ainda não tem fila);
+--   * dupla eliminada: ASSISTIR (fica no mirante) ou NOVA PARTIDA (volta ao lobby e entra direto
+--     na fila, F5);
 --   * "Ir para a próxima partida com [nome]?" (SIM / NÃO), quando os dois querem nova partida e no
 --     fim da partida para todos com parceiro;
---   * fim da partida: colocação, contagem para voltar ao lobby e NOVA PARTIDA.
+--   * fim da partida: colocação, contagem para voltar ao lobby e NOVA PARTIDA. Quem disse "sim" dos
+--     dois lados volta como dupla fixa e entra direto na fila.
 -- Fundo escurecido, nunca preto opaco; o mouse fica livre enquanto a tela está aberta (PC).
 
 local GuiService = game:GetService("GuiService")
@@ -19,7 +20,7 @@ local Theme = require(Shared.Config.Theme)
 
 local InputDevice = require(script.Parent.Parent.Common.InputDevice)
 local MatchClient = require(script.Parent.MatchClient)
-local MatchUi = require(script.Parent.MatchUi)
+local MatchUi = require(Shared.Ui.ProvisionalUi)
 
 local S = Strings.Match
 local NOTICE_SECONDS = 4

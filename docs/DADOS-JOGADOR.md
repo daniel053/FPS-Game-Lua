@@ -38,8 +38,10 @@
 | `PurchaseReceipts_v1` | DataStore | `<PurchaseId>` | Recibos de compras em Robux já processadas (seção 6) |
 | `RankLeaderboard_v1` | OrderedDataStore | `<UserId>` | Pontos de elo, para o ranking global |
 | `WinsLeaderboard_v1` | OrderedDataStore | `<UserId>` | Vitórias de partida, para o ranking de vitórias `[PROPOSTA]` |
-| `MatchQueue` | MemoryStore (fila) | — | Fila de matchmaking (temporário, não é dado do jogador) |
-| `MatchHandoff` | MemoryStore (mapa) | `<ReservedServerCode>` | Composição da partida entregue ao servidor de partida (temporário, expira em 5 min) |
+| `MatchQueue_v1` | MemoryStore (mapa ordenado) | `<id da ficha>` | Fila de matchmaking: uma ficha por grupo, expira em 30 s se o lobby dono não renovar (temporário, não é dado do jogador) |
+| `MatchQueueControl_v1` | MemoryStore (mapa ordenado) | `leader`, `status` | Trava do lobby líder e contagem da fila (temporário) |
+| `MatchHandoff_v1` | MemoryStore (mapa ordenado) | `<PrivateServerId>` | Composição da partida entregue ao servidor de partida (temporário, expira em 5 min) |
+| `LobbyHandoff_v1` | MemoryStore (mapa ordenado) | `u_<UserId>` | Volta da partida: entrar direto na fila, passar na frente, dupla fixa (temporário, expira em 2 min) |
 
 - O sufixo `_v1` no nome do DataStore só muda em caso de **recomeço total** (ex.: limpeza antes do lançamento). Mudanças de formato normais usam `schemaVersion` e migração.
 - Ambiente de teste (Studio e servidores de teste) usa DataStores com prefixo `DEV_` para não misturar com dados reais. `[PROPOSTA]`
@@ -299,6 +301,7 @@ O cliente nunca envia o perfil inteiro. Ele envia **pedidos** ("equipar skin X n
 - Antes de teleportar, o servidor de origem **salva e libera a trava**.
 - O servidor de destino carrega normalmente (passo 5.1).
 - Dados da partida (quem é dupla de quem, faixa de nível) vão pelo `MatchHandoff` no MemoryStore, **não** pelos dados de teleporte enviados pelo cliente, que podem ser adulterados.
+- Na volta da partida para o lobby, o mesmo vale: "entrar direto na fila" e "dupla fixa com X" vão pelo `LobbyHandoff` no MemoryStore (F5).
 
 ### 5.4 Biblioteca
 Usar uma biblioteca madura de perfis com trava de sessão em vez de escrever do zero. `[DECIDIDO]`
