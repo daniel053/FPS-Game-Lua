@@ -16,9 +16,9 @@ local Remotes = require(Shared.Remotes)
 local Strings = require(Shared.Config.Strings)
 local WeaponConfig = require(Shared.Config.WeaponConfig)
 
-local CombatService = require(script.Parent.CombatService)
-local Combatants = require(script.Parent.Combatants)
-local TeamService = require(script.Parent.TeamService)
+local CombatService = require(script.Parent.Parent.Combat.CombatService)
+local Combatants = require(script.Parent.Parent.Combat.Combatants)
+local TeamService = require(script.Parent.Parent.Combat.TeamService)
 local TestArenaService = require(script.Parent.TestArenaService)
 
 local COOLDOWN_SECONDS = 0.2

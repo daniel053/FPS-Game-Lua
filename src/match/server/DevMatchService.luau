@@ -21,8 +21,8 @@ local MatchConfig = require(Shared.Config.MatchConfig)
 local Remotes = require(Shared.Remotes)
 local Strings = require(Shared.Config.Strings)
 
-local CardService = require(script.Parent.CardService)
-local Combatants = require(script.Parent.Combatants)
+local CardService = require(script.Parent.Parent.Combat.CardService)
+local Combatants = require(script.Parent.Parent.Combat.Combatants)
 local MatchService = require(script.Parent.MatchService)
 
 local COOLDOWN_SECONDS = 0.3

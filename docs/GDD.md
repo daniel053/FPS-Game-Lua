@@ -1011,19 +1011,20 @@ src/
     server/ShopService.luau
     client/LobbyController.luau
     client/SettingsController.luau -- sensibilidade, retícula, voz
-  match/
-    server/MatchService.luau        -- máquina de estados (seção 4)
-    server/ArenaService.luau
-    server/PairingService.luau
+  combat/                           -- carregado pela Partida e pelo Tutorial (F6)
     server/CombatService.luau
-    server/CardService.luau         -- escolha de carta (15 s) e validação
-    server/RankService.luau
-    server/PostMatchService.luau    -- assistir / nova partida / seguir com amigo
+    server/CardService.luau         -- validação das cartas
+    server/CharacterService.luau    -- avatar, hitbox
     client/WeaponController.luau
     client/CardController.luau
     client/TeamMarkers.luau         -- marcação de aliado e inimigo (seção 7.6)
-    client/HUDController.luau       -- inclui aviso "N KILL"
-    client/SpectateController.luau
+    client/CombatHUD.luau           -- inclui aviso "N KILL"
+  match/
+    server/MatchService.luau        -- máquina de estados (seção 4), escolha de carta (15 s)
+    server/MatchWorld.luau
+    server/RankService.luau
+    server/LobbyReturn.luau         -- assistir / nova partida / seguir com amigo
+    client/SpectateCamera.luau
   common/
     server/DataService.luau         -- perfil com trava de sessão
     client/InputController.luau
@@ -1220,3 +1221,4 @@ Detalhes de implementação decididos durante o desenvolvimento (não são regra
 |---|---|
 | **Marcação de aliado e inimigo** (`TeamMarkers` no cliente, regra pura em `Shared/Combat/MarkerRules`): a cada 0,1 s, raios da câmera até 6 pontos do corpo. Inimigo à vista: `Highlight` "Occluded" vermelho, com a transparência do contorno pulsando em seno (`CombatConfig.Markers`), e barra vermelha. Aliado à vista: barra verde e nome. Aliado todo escondido: `Highlight` "AlwaysOnTop" verde com preenchimento. A barra é um `BillboardGui` de tamanho fixo na tela, ligado só quando a regra manda (por isso pode ficar "por cima de tudo"). | GDD 7.6 revisto pelo dono do projeto (guia visual de marcação). |
 | **Avatar do Roblox** carregado no servidor (`GetHumanoidDescriptionFromUserId`, uma vez por sessão), com as escalas do corpo zeradas para o padrão (`CharacterConfig.Avatar`). Falhou ou UserId de teste (≤ 0, como os jogadores do Studio): corpo base. Acessórios ficam no grupo de colisão do corpo (tiros e visão atravessam). | GDD 3.2. A hitbox continua a mesma para todos. |
+| **Combate e cartas numa pasta própria** (`src/combat/{server,client}`), mapeada como `ServerScriptService.Combat` e `StarterPlayerScripts.Combat` só na Partida e no Tutorial. O Boot carrega Common → Combat → Place. Os efeitos das cartas leem o mirante pelo atributo do jogador, sem depender do `MatchClient`. | O tutorial usa as mesmas armas e cartas da partida, sem cópia. |

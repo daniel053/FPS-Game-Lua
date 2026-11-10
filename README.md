@@ -8,6 +8,7 @@ Tiro em primeira pessoa no Roblox, duelos 2v2 em formato de torneio. Os document
 |---|---|
 | `src/shared/` | Código usado por servidor e cliente nos 3 places: `Config/` (números, `Theme`, `Strings`), `Types`, `Remotes`, `Env` |
 | `src/common/` | Código que roda igual nos 3 places (`server/` e `client/`) |
+| `src/combat/` | Combate e cartas, usados pela Partida e pelo Tutorial (`server/` e `client/`) |
 | `src/lobby/`, `src/tutorial/`, `src/match/` | Código de cada place |
 | `src/tests/` | Testes automáticos da lógica (rodam no Studio) |
 | `vendor/ProfileStore/` | Biblioteca de perfis com trava de sessão (cópia oficial, ver `ORIGEM.md`) |
@@ -17,9 +18,9 @@ Tiro em primeira pessoa no Roblox, duelos 2v2 em formato de torneio. Os document
 
 **O Rojo nunca mexe no Workspace** (mapas), na Lighting nem no Terrain. Ele só sincroniza:
 - `ReplicatedStorage.Shared` e `ReplicatedStorage.Packages`
-- `ServerScriptService.Common` e `ServerScriptService.Place`
+- `ServerScriptService.Common`, `ServerScriptService.Combat` (Partida e Tutorial) e `ServerScriptService.Place`
 - `ServerStorage.Vendor` (ProfileStore) e `ServerStorage.Tests`
-- `StarterPlayer.StarterPlayerScripts.Common` e `.Place`
+- `StarterPlayer.StarterPlayerScripts.Common`, `.Combat` (Partida e Tutorial) e `.Place`
 - as propriedades de câmera do `StarterPlayer` (primeira pessoa travada)
 
 Qualquer outra coisa que você criar à mão nesses serviços é preservada.

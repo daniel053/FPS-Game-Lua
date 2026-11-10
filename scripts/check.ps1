@@ -28,8 +28,9 @@ Write-Host "`n== luau-lsp (tipos --!strict), um place por vez =="
 foreach ($place in @("lobby", "tutorial", "match")) {
 	Write-Host "-- $place"
 	rojo sourcemap "$place.project.json" --output sourcemap.json
-	luau-lsp analyze --sourcemap=sourcemap.json --definitions=$defs --base-luaurc=.luaurc `
-		src/shared src/common src/tests "src/$place"
+	$folders = @("src/shared", "src/common", "src/tests", "src/$place")
+	if ($place -ne "lobby") { $folders += "src/combat" }
+	luau-lsp analyze --sourcemap=sourcemap.json --definitions=$defs --base-luaurc=.luaurc @folders
 	if ($LASTEXITCODE -ne 0) { $failed = $true }
 }
 

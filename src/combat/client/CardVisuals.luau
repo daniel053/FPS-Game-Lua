@@ -21,7 +21,6 @@ local Remotes = require(Shared.Remotes)
 local Theme = require(Shared.Config.Theme)
 
 local CombatEffects = require(script.Parent.CombatEffects)
-local MatchClient = require(script.Parent.MatchClient)
 local MatchUi = require(Shared.Ui.ProvisionalUi)
 local Smoke = require(script.Parent.Smoke)
 
@@ -32,6 +31,10 @@ local CardVisuals = {}
 
 local player = Players.LocalPlayer
 local overlay: Frame
+
+local function onMirante(): boolean
+	return player:GetAttribute(MatchTypes.Attr.Location) == MatchTypes.MiranteLocation
+end
 
 local function fxPart(name: string, shape: Enum.PartType, color: Color3): Part
 	local part = Instance.new("Part")
@@ -77,7 +80,7 @@ end
 
 local function styleSmoke(part: BasePart)
 	-- Do mirante: translúcida (LocalTransparencyModifier só muda nesta tela)
-	part.LocalTransparencyModifier = if MatchClient.isOnMirante() then NUVEM.params.MiranteTransparency else 0
+	part.LocalTransparencyModifier = if onMirante() then NUVEM.params.MiranteTransparency else 0
 end
 
 local function onSmokeAdded(instance: Instance)
@@ -138,7 +141,7 @@ end
 
 local function stepOverlay()
 	local camera = workspace.CurrentCamera
-	local inside = camera ~= nil and not MatchClient.isOnMirante() and Smoke.containing(camera.CFrame.Position) ~= nil
+	local inside = camera ~= nil and not onMirante() and Smoke.containing(camera.CFrame.Position) ~= nil
 	overlay.Visible = inside
 end
 

@@ -21,8 +21,8 @@ local Strings = require(Shared.Config.Strings)
 local TeamColors = require(Shared.Config.TeamColors)
 local Theme = require(Shared.Config.Theme)
 
-local CharacterService = require(script.Parent.CharacterService)
-local Combatants = require(script.Parent.Combatants)
+local CharacterService = require(script.Parent.Parent.Combat.CharacterService)
+local Combatants = require(script.Parent.Parent.Combat.Combatants)
 
 local ARENA = CombatConfig.TestArena
 local COLORS = Theme.Combat

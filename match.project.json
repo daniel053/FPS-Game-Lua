@@ -13,6 +13,7 @@
 			"$className": "ServerScriptService",
 			"$ignoreUnknownInstances": true,
 			"Common": { "$path": "src/common/server" },
+			"Combat": { "$path": "src/combat/server" },
 			"Place": { "$path": "src/match/server" }
 		},
 		"ServerStorage": {
@@ -36,6 +37,7 @@
 				"$className": "StarterPlayerScripts",
 				"$ignoreUnknownInstances": true,
 				"Common": { "$path": "src/common/client" },
+				"Combat": { "$path": "src/combat/client" },
 				"Place": { "$path": "src/match/client" }
 			}
 		}

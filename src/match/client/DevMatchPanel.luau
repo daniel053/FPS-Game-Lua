@@ -17,7 +17,7 @@ local TextUtil = require(Shared.TextUtil)
 local Theme = require(Shared.Config.Theme)
 
 local DevPanelController = require(script.Parent.Parent.Common.DevPanelController)
-local CardController = require(script.Parent.CardController)
+local CardController = require(script.Parent.Parent.Combat.CardController)
 local MatchClient = require(script.Parent.MatchClient)
 
 local PHASE_NAMES = Strings.Dev.MatchPhases

@@ -16,7 +16,7 @@ local Theme = require(Shared.Config.Theme)
 local WeaponConfig = require(Shared.Config.WeaponConfig)
 
 local DevPanelController = require(script.Parent.Parent.Common.DevPanelController)
-local WeaponController = require(script.Parent.WeaponController)
+local WeaponController = require(script.Parent.Parent.Combat.WeaponController)
 
 local EXPLOIT_SHOTS = 20
 

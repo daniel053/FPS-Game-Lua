@@ -34,14 +34,14 @@ local WorldLayout = require(Shared.Match.WorldLayout)
 
 local DataService = require(ServerScriptService.Common.DataService)
 local Handoff = require(ServerScriptService.Common.Matchmaking.Handoff)
-local ActivityService = require(script.Parent.ActivityService)
-local CardService = require(script.Parent.CardService)
-local CharacterService = require(script.Parent.CharacterService)
-local CombatService = require(script.Parent.CombatService)
-local Combatants = require(script.Parent.Combatants)
+local ActivityService = require(script.Parent.Parent.Combat.ActivityService)
+local CardService = require(script.Parent.Parent.Combat.CardService)
+local CharacterService = require(script.Parent.Parent.Combat.CharacterService)
+local CombatService = require(script.Parent.Parent.Combat.CombatService)
+local Combatants = require(script.Parent.Parent.Combat.Combatants)
 local LobbyReturn = require(script.Parent.LobbyReturn)
 local MatchWorld = require(script.Parent.MatchWorld)
-local TeamService = require(script.Parent.TeamService)
+local TeamService = require(script.Parent.Parent.Combat.TeamService)
 
 type Phase = MatchTypes.Phase
 
