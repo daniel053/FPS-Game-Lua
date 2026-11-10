@@ -156,7 +156,6 @@ end
 
 local function build()
 	local g = Ui.screen("LayoutEditor", 80, Enum.ScreenInsets.DeviceSafeInsets)
-	g.IgnoreGuiInset = false -- mesma área dos botões de toque do combate
 	g.Enabled = false
 	gui = g
 

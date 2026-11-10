@@ -206,7 +206,8 @@ local function useNuvem(player: Player, combatant: Combatants.Combatant, directi
 			break
 		end
 	end
-	local fx: CardTypes.NuvemThrowData = { origin = origin, velocity = velocity, flight = flight, gravity = gravity }
+	local fx: CardTypes.NuvemThrowData =
+		{ origin = origin, velocity = velocity, flight = flight, gravity = gravity, caster = player }
 	fxEvent:FireAllClients("NuvemThrow", fx)
 	local token = roundToken
 	task.delay(flight, function()
@@ -271,7 +272,7 @@ local function useTremor(player: Player, combatant: Combatants.Combatant, direct
 	end
 
 	local fx: CardTypes.TremorWaveData =
-		{ origin = feet, direction = forward, length = length, width = p.Width, speed = p.WaveSpeed }
+		{ origin = feet, direction = forward, length = length, width = p.Width, speed = p.WaveSpeed, caster = player }
 	fxEvent:FireAllClients("TremorWave", fx)
 
 	local token = roundToken
@@ -340,7 +341,7 @@ local function finishRenascer(player: Player, revived: boolean, def: CardDef)
 		if root then
 			root.AssemblyLinearVelocity = Vector3.zero
 		end
-		local fx: CardTypes.RenascerReturnData = { from = from, to = r.mark.Position }
+		local fx: CardTypes.RenascerReturnData = { from = from, to = r.mark.Position, caster = player }
 		fxEvent:FireAllClients("RenascerReturn", fx)
 	end
 	if revived then

@@ -1,11 +1,13 @@
 --!strict
--- Cartas no HUD, versão PROVISÓRIA (FASES F4; visual final na F7). Sem neon no HUD (ESTILO T6).
+-- Cartas no HUD (ESTILO T6, F7). Sem neon no HUD.
 --   PC e controle: as cartas embaixo no centro, com o chip da tecla embaixo de cada uma
 --     (C/Q/E/X no teclado; LB/RB no controle). Carga, recarga em segundos e cadeado da ult.
---     Dica fixa "[B] Habilidades" no canto inferior esquerdo, acima da vida (GDD 13.3).
---   Celular: botões fixos (GDD 13.1), cada tecla sempre no mesmo lugar. Tocar usa; Nuvem: segurar
---     mostra o arco e soltar arremessa; segurar as outras abre os detalhes (ESTILO 3).
---   Painel de habilidades: B (PC), direcional para baixo (controle) ou toque longo (celular).
+--     A dica fixa "[B] Habilidades" fica no bloco de dicas do CombatHUD (GDD 13.3).
+--   Celular: botões fixos (GDD 13.1), cada tecla sempre no mesmo lugar, ou onde o jogador colocou no
+--     editor de botões (settings.mobileLayout). Tocar usa; Nuvem: segurar mostra o arco e soltar
+--     arremessa; segurar as outras abre os detalhes (ESTILO 3).
+--   Painel de habilidades (sobre o jogo, metade da tela, sem pausar): B (PC), direcional para baixo
+--     (controle) ou toque longo (celular).
 --   Avisos: contagem do Renascer e "atingido pelo Tremor".
 
 local Players = game:GetService("Players")
@@ -22,10 +24,14 @@ local CombatNames = require(Shared.Combat.CombatNames)
 local Strings = require(Shared.Config.Strings)
 local TextUtil = require(Shared.TextUtil)
 local Theme = require(Shared.Config.Theme)
+local TouchLayout = require(Shared.Ui.TouchLayout)
+local UiConfig = require(Shared.Config.UiConfig)
 
 local InputDevice = require(script.Parent.Parent.Common.InputDevice)
+local PlayerDataClient = require(script.Parent.Parent.Common.PlayerDataClient)
+local Widgets = require(script.Parent.Parent.Common.Ui.Widgets)
 local CardController = require(script.Parent.CardController)
-local MatchUi = require(Shared.Ui.ProvisionalUi)
+local MatchUi = require(Shared.Ui.Ui)
 
 type CardKey = string -- "C", "Q", "E" ou "X" (Types.CardKey); string por causa do verificador de tipos
 type CardView = CardTypes.CardView
@@ -33,7 +39,8 @@ type CardView = CardTypes.CardView
 local S = Strings.CardHud
 local LAYOUT = CombatConfig.TouchLayout
 local INPUT = CombatConfig.Input
-local TILE = 60
+local KEYS = UiConfig.Keys
+local TILE = Theme.Hud.CardTile
 local MARGIN = Theme.ScreenMargin
 
 type Tile = {
@@ -52,9 +59,8 @@ local player = Players.LocalPlayer
 local gui: ScreenGui
 local row: Frame
 local touchFolder: Frame
-local hint: Frame
-local panel: Frame
-local panelList: Frame
+local panel: Widgets.Modal
+local panelList: ScrollingFrame
 local statusText: TextLabel
 local tremorText: TextLabel
 local tiles: { Tile } = {}
@@ -143,11 +149,15 @@ local function setPanelOpen(open: boolean)
 			end
 		end
 	end
-	panel.Visible = open
+	if open then
+		panel.open()
+	else
+		panel.close()
+	end
 end
 
 local function togglePanel()
-	setPanelOpen(not panel.Visible)
+	setPanelOpen(not panel.isOpen())
 end
 
 -- Cartas -----------------------------------------------------------------------------------------
@@ -249,12 +259,13 @@ local function rebuild()
 	table.clear(tiles)
 	local touch = InputDevice.get() == "Touch"
 	local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(800, 400)
-	local layout = if math.min(viewport.X, viewport.Y) >= LAYOUT.LargeScreenMinSide then LAYOUT.Large else LAYOUT.Small
+	local profile = PlayerDataClient.get()
+	local saved = profile and profile.settings.mobileLayout
 	for _, view in CardController.getViews() do
 		if touch then
-			local tile = makeTile(view, layout.CardSize, touchFolder, true)
-			local center = layout.Cards[view.key] or Vector2.new(-75, -345)
-			tile.button.Position = UDim2.new(1, center.X, 1, center.Y)
+			local placement = TouchLayout.resolve(view.key, viewport, saved)
+			local tile = makeTile(view, placement.size, touchFolder, true)
+			tile.button.Position = placement.position
 			bindTouch(tile)
 			table.insert(tiles, tile)
 		else
@@ -264,7 +275,9 @@ local function rebuild()
 end
 
 local function signature(): string
-	local parts = { InputDevice.get() }
+	local profile = PlayerDataClient.get()
+	local saved = profile and profile.settings.mobileLayout
+	local parts: { string } = { InputDevice.get(), if saved then tostring(saved) else "" }
 	for _, view in CardController.getViews() do
 		table.insert(parts, `{view.key}:{view.id}:{view.locked}`)
 	end
@@ -277,7 +290,7 @@ local function onChanged()
 		shownKey = key
 		rebuild()
 	end
-	if panel.Visible then
+	if panel.isOpen() then
 		setPanelOpen(true)
 	end
 end
@@ -287,9 +300,8 @@ local function update()
 	local touch = InputDevice.get() == "Touch"
 	row.Visible = visible and not touch
 	touchFolder.Visible = visible and touch
-	hint.Visible = visible and not touch
-	if not visible and panel.Visible and not CardController.isActive() then
-		panel.Visible = false
+	if not visible and panel.isOpen() and not CardController.isActive() then
+		panel.close()
 	end
 
 	local t = now()
@@ -349,49 +361,18 @@ local function build()
 	touchFolder = MatchUi.frame("TouchCards", gui)
 	touchFolder.Size = UDim2.fromScale(1, 1)
 
-	-- Dica fixa no PC (GDD 13.3): canto inferior esquerdo, acima da vida
-	hint = MatchUi.frame("Hint", gui)
-	hint.AnchorPoint = Vector2.new(0, 1)
-	hint.Position = UDim2.new(0, MARGIN, 1, -MARGIN - 62)
-	hint.Size = UDim2.fromOffset(200, 22)
-	local chip = MatchUi.keyChip(S.PanelKey, hint)
-	chip.Name = "Key"
-	local hintText = MatchUi.label("Text", Theme.Font.BodyStrong, Theme.TextSize.Label, Theme.Color.TextSecondary, hint)
-	hintText.Position = UDim2.fromOffset(28, 0)
-	hintText.Size = UDim2.new(1, -28, 1, 0)
-	hintText.TextXAlignment = Enum.TextXAlignment.Left
-	hintText.Text = S.PanelHint
-	InputDevice.onChanged(function(device: InputDevice.Device)
-		chip.Text = if device == "Gamepad" then "↓" else S.PanelKey
-	end)
-
-	-- Painel de habilidades: sobreposto, metade da tela (ESTILO T6). O jogo não pausa.
-	panel = MatchUi.panel("Abilities", gui)
-	panel.AnchorPoint = Vector2.new(0.5, 0.5)
-	panel.Position = UDim2.fromScale(0.5, 0.45)
-	panel.Size = UDim2.fromScale(0.5, 0.5)
-	panel.Visible = false
-	local limit = Instance.new("UISizeConstraint")
-	limit.MinSize = Vector2.new(300, 220)
-	limit.MaxSize = Vector2.new(620, 420)
-	limit.Parent = panel
-	MatchUi.padding(panel, 14)
-	local title = MatchUi.label("Title", Theme.Font.Title, Theme.TextSize.Title, Theme.Color.TextPrimary, panel)
-	title.Size = UDim2.new(1, 0, 0, 26)
-	title.TextXAlignment = Enum.TextXAlignment.Left
-	title.Text = S.PanelTitle
-	panelList = MatchUi.frame("List", panel)
-	panelList.Position = UDim2.fromOffset(0, 34)
-	panelList.Size = UDim2.new(1, 0, 1, -34 - 52)
-	MatchUi.list(panelList, Enum.FillDirection.Vertical, 10)
-	local close = MatchUi.button("Close", S.PanelClose, false, panel)
-	close.AnchorPoint = Vector2.new(1, 1)
-	close.Position = UDim2.fromScale(1, 1)
-	close.Size = UDim2.fromOffset(140, Theme.Touch.MinTarget)
-	close.Modal = true -- libera o mouse da primeira pessoa enquanto o painel está aberto (PC)
-	close.Activated:Connect(function()
-		setPanelOpen(false)
-	end)
+	-- Painel de habilidades: sobreposto, metade da tela (ESTILO T6). O jogo não pausa: sem escurecer.
+	panel = Widgets.modal("AbilitiesPanel", 55, {
+		title = S.PanelTitle,
+		size = UDim2.fromScale(0.5, 0.6),
+		minSize = Vector2.new(320, 240),
+		maxSize = Vector2.new(620, 440),
+		overlay = false,
+	})
+	panelList = MatchUi.scroll("List", Enum.ScrollingDirection.Y, panel.body)
+	panelList.Size = UDim2.fromScale(1, 1)
+	MatchUi.list(panelList, Enum.FillDirection.Vertical, 12)
+	panel.gui.Parent = player:WaitForChild("PlayerGui")
 
 	statusText = MatchUi.label("Status", Theme.Font.Title, Theme.TextSize.Title, Theme.Color.TextPrimary, gui)
 	statusText.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -423,6 +404,7 @@ function CardHUD.Start()
 		end
 	end)
 	InputDevice.onChanged(onChanged)
+	PlayerDataClient.onChanged(onChanged) -- layout dos botões editado
 	local camera = workspace.CurrentCamera
 	if camera then
 		camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
@@ -434,7 +416,7 @@ function CardHUD.Start()
 		if processed then
 			return
 		end
-		if input.KeyCode == INPUT.AbilitiesPanelKey or input.KeyCode == INPUT.AbilitiesPanelGamepadButton then
+		if input.KeyCode == KEYS.Abilities or input.KeyCode == KEYS.AbilitiesPad then
 			togglePanel()
 		end
 	end)

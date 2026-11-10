@@ -1,8 +1,10 @@
 --!strict
--- HUD da partida PROVISÓRIO (F3; visual final da T6 na F7):
---   * topo centro: a minha dupla × a dupla adversária (cor, nomes), vidas em corações, tempo da
---     etapa; selo "VIRADA" na Rodada da Virada; na final, vitórias no lugar das vidas;
---   * no mirante: rodada, etapa e tempo no topo, e o placar com todas as duplas à direita;
+-- HUD da partida (tela T6 do ESTILO, visual final da F7):
+--   * topo centro: a minha dupla × a dupla adversária (2 avatares de cada lado, com anel na cor da
+--     equipe), vidas de cada dupla em corações e o tempo no meio; selo "VIRADA" na Rodada da Virada;
+--     na final, vitórias no lugar das vidas;
+--   * no mirante: rodada, etapa e tempo no topo, e o placar resumido com todas as duplas à direita
+--     (o placar completo é o Tab, módulo Scoreboard);
 --   * avisos grandes no centro (confrontos, folga, Virada, final, duelo vencido, eliminação, campeã);
 --   * linha de estado: esperando jogadores, assistindo o parceiro, fora da zona, ausência.
 -- Sem neon; vermelho só para perigo (fora da zona).
@@ -19,28 +21,32 @@ local Strings = require(Shared.Config.Strings)
 local TeamColors = require(Shared.Config.TeamColors)
 local TextUtil = require(Shared.TextUtil)
 local Theme = require(Shared.Config.Theme)
+local Ui = require(Shared.Ui.Ui)
 local WeaponConfig = require(Shared.Config.WeaponConfig)
 local WorldLayout = require(Shared.Match.WorldLayout)
 
+local Captions = require(script.Parent.Parent.Combat.Captions)
+local Avatars = require(script.Parent.Parent.Common.Ui.Avatars)
 local MatchClient = require(script.Parent.MatchClient)
-local MatchUi = require(Shared.Ui.ProvisionalUi)
 local SpectateCamera = require(script.Parent.SpectateCamera)
 
 local S = Strings.Match
+local HUD = Theme.Hud
 local BANNER_SECONDS = 2.6
+local SIDE_WIDTH = 150
 
 type Banner = { title: string, subtitle: string?, color: Color3? }
+type Side = { root: Frame, avatars: { Avatars.Avatar }, lives: TextLabel }
 
 local MatchHUD = {}
 
 local player = Players.LocalPlayer
 local topGui: ScreenGui
 local centerGui: ScreenGui
-local leftTeam: TextLabel
-local rightTeam: TextLabel
-local leftLives: TextLabel
-local rightLives: TextLabel
+local leftSide: Side
+local rightSide: Side
 local timerText: TextLabel
+local timerPlate: Frame
 local badge: TextLabel
 local roundText: TextLabel
 local scoreboard: Frame
@@ -53,6 +59,7 @@ local bannerQueue: { Banner } = {}
 local bannerUntil = 0
 local afkSeconds = 0
 local afkSetAt = 0
+local zoneCaptionRound = 0
 
 local function lives(team: MatchTypes.TeamView?, isFinal: boolean): string
 	if team == nil then
@@ -148,32 +155,28 @@ local function onAnnounce(data: MatchTypes.AnnounceData)
 	end
 end
 
--- Placar (mirante) ------------------------------------------------------------------------------------
+-- Placar resumido (mirante) ---------------------------------------------------------------------------
 
 local function rebuildScoreboard(snapshot: MatchTypes.Snapshot)
-	for _, child in scoreList:GetChildren() do
-		if child:IsA("Frame") then
-			child:Destroy()
-		end
-	end
+	Ui.clear(scoreList)
 	for i, team in snapshot.teams do
-		local row = MatchUi.frame("Row", scoreList)
+		local row = Ui.frame("Row", scoreList)
 		row.LayoutOrder = if team.eliminated then 100 + (team.placement or 0) else i
 		row.Size = UDim2.new(1, 0, 0, 22)
-		local swatch = MatchUi.frame("Color", row)
+		local swatch = Ui.frame("Color", row)
 		swatch.BackgroundTransparency = if team.eliminated then 0.6 else 0
 		swatch.BackgroundColor3 = TeamColors.getColor(team.id)
 		swatch.Size = UDim2.fromOffset(12, 12)
 		swatch.Position = UDim2.fromOffset(0, 5)
-		MatchUi.corner(swatch, 3)
-		local name = MatchUi.label("Name", Theme.Font.BodyStrong, Theme.TextSize.Label, Theme.Color.TextPrimary, row)
+		Ui.corner(swatch, 3)
+		local name = Ui.label("Name", Theme.Font.BodyStrong, Theme.TextSize.Label, Theme.Color.TextPrimary, row)
 		name.TextXAlignment = Enum.TextXAlignment.Left
 		name.Position = UDim2.fromOffset(18, 0)
 		name.Size = UDim2.new(0.55, -18, 1, 0)
 		name.TextTruncate = Enum.TextTruncate.AtEnd
 		name.Text = memberNames(team)
 		name.TextColor3 = if team.eliminated then Theme.Color.TextSecondary else Theme.Color.TextPrimary
-		local value = MatchUi.label("Lives", Theme.Font.BodyStrong, Theme.TextSize.Label, Theme.Color.TextPrimary, row)
+		local value = Ui.label("Lives", Theme.Font.BodyStrong, Theme.TextSize.Label, Theme.Color.TextPrimary, row)
 		value.TextXAlignment = Enum.TextXAlignment.Right
 		value.AnchorPoint = Vector2.new(1, 0)
 		value.Position = UDim2.fromScale(1, 0)
@@ -188,26 +191,36 @@ local function rebuildScoreboard(snapshot: MatchTypes.Snapshot)
 	end
 end
 
+-- Topo: as duas duplas ----------------------------------------------------------------------------
+
+local function fillSide(side: Side, team: MatchTypes.TeamView?, isFinal: boolean)
+	side.root.Visible = team ~= nil
+	if team == nil then
+		return
+	end
+	local color = TeamColors.getColor(team.id)
+	for i, avatar in side.avatars do
+		local member = team.members[i]
+		avatar.root.Visible = member ~= nil
+		if member then
+			Avatars.set(avatar, member.userId, member.name, color, not member.connected)
+		end
+	end
+	side.lives.Text = lives(team, isFinal)
+	side.lives.TextColor3 = if isFinal then Theme.Color.TextPrimary else Theme.Color.Hp
+end
+
 local function refreshTop(snapshot: MatchTypes.Snapshot)
 	local mine = MatchClient.myTeamId()
 	local duel = MatchClient.duelOf(mine)
 	local inDuel = duel ~= nil and MatchClient.myIsland() ~= nil
 	local left, right: MatchTypes.TeamView? = nil, nil
-	if duel then
+	if duel and inDuel then
 		local otherId = if duel.a == mine then duel.b else duel.a
 		left, right = MatchClient.team(mine), MatchClient.team(otherId)
 	end
-	for _, l in { leftTeam, rightTeam, leftLives, rightLives } do
-		l.Visible = inDuel
-	end
-	if inDuel and left and right then
-		leftTeam.Text = memberNames(left)
-		leftTeam.TextColor3 = TeamColors.getColor(left.id)
-		rightTeam.Text = memberNames(right)
-		rightTeam.TextColor3 = TeamColors.getColor(right.id)
-		leftLives.Text = lives(left, snapshot.isFinal)
-		rightLives.Text = lives(right, snapshot.isFinal)
-	end
+	fillSide(leftSide, left, snapshot.isFinal)
+	fillSide(rightSide, right, snapshot.isFinal)
 	roundText.Text = phaseName(snapshot)
 	badge.Visible = snapshot.isVirada
 		and (snapshot.phase == "Prep" or snapshot.phase == "Combat" or snapshot.phase == "Draw")
@@ -243,6 +256,10 @@ local function statusLine(snapshot: MatchTypes.Snapshot?): (string, Color3)
 			local elapsed = now - snapshot.combatStartedAt
 			local center = WorldLayout.islandCenter(island)
 			local flat = Vector3.new(root.Position.X - center.X, 0, root.Position.Z - center.Z)
+			if elapsed >= MatchConfig.Zone.StartsAt and zoneCaptionRound ~= snapshot.round then
+				zoneCaptionRound = snapshot.round
+				Captions.show(Strings.Captions.ZoneClosing)
+			end
 			if flat.Magnitude > WorldLayout.zoneRadius(elapsed) then
 				return S.OutsideZone, Theme.Color.Danger
 			elseif elapsed >= MatchConfig.Zone.StartsAt then
@@ -266,6 +283,7 @@ local function update()
 	else
 		timerText.Visible = false
 	end
+	timerPlate.Visible = timerText.Visible
 
 	local text, color = statusLine(snapshot)
 	statusText.Text = text
@@ -296,122 +314,139 @@ end
 
 -- Montagem --------------------------------------------------------------------------------------------
 
+local function makeSide(parent: Instance, isLeft: boolean): Side
+	local root = Ui.frame(if isLeft then "Left" else "Right", parent)
+	root.AnchorPoint = Vector2.new(if isLeft then 1 else 0, 0)
+	root.Position = UDim2.new(0.5, if isLeft then -62 else 62, 0, 4)
+	root.Size = UDim2.fromOffset(SIDE_WIDTH, HUD.TopAvatarSize + 4)
+	local layout = Ui.list(root, Enum.FillDirection.Horizontal, 6)
+	layout.VerticalAlignment = Enum.VerticalAlignment.Center
+	layout.HorizontalAlignment = if isLeft then Enum.HorizontalAlignment.Right else Enum.HorizontalAlignment.Left
+
+	-- Ordem: [😀😀] ♥♥♥♥♥  tempo  ♥♥♥ [😀😀]
+	local avatars = {}
+	for i = 1, 2 do
+		local avatar = Avatars.new(root, HUD.TopAvatarSize)
+		avatar.root.LayoutOrder = if isLeft then i else 10 + i
+		table.insert(avatars, avatar)
+	end
+	local livesLabel = Ui.label("Lives", Theme.Font.Title, HUD.TopHeartSize, Theme.Color.Hp, root)
+	livesLabel.AutomaticSize = Enum.AutomaticSize.X
+	livesLabel.Size = UDim2.fromOffset(0, HUD.TopAvatarSize)
+	livesLabel.LayoutOrder = 5
+	Ui.outlineText(livesLabel)
+	return { root = root, avatars = avatars, lives = livesLabel }
+end
+
 local function build()
 	local playerGui = player:WaitForChild("PlayerGui")
 
 	-- Topo: abaixo da barra do Roblox em qualquer aparelho (CoreUISafeInsets, decisão da F1)
-	topGui = MatchUi.screen("MatchTop", 3, Enum.ScreenInsets.CoreUISafeInsets)
-	local top = MatchUi.frame("Top", topGui)
+	topGui = Ui.screen("MatchTop", 3, Enum.ScreenInsets.CoreUISafeInsets)
+	local top = Ui.frame("Top", topGui)
 	top.AnchorPoint = Vector2.new(0.5, 0)
 	top.Position = UDim2.new(0.5, 0, 0, Theme.ScreenMargin / 2)
-	top.Size = UDim2.fromOffset(560, 74)
+	top.Size = UDim2.fromOffset(2 * SIDE_WIDTH + 124, 76)
+	-- Celular pequeno: o topo encolhe para não encostar na engrenagem nem no minimapa
+	local fit = Instance.new("UIScale")
+	fit.Parent = top
+	local function refit()
+		local camera = workspace.CurrentCamera
+		local width = if camera then camera.ViewportSize.X else 1000
+		local free = width - 2 * (Theme.ScreenMargin + Theme.Hud.MinimapSize + Theme.Space.Medium)
+		fit.Scale = math.clamp(free / top.Size.X.Offset, 0.7, 1)
+	end
+	refit()
+	local camera = workspace.CurrentCamera
+	if camera then
+		camera:GetPropertyChangedSignal("ViewportSize"):Connect(refit)
+	end
 
-	timerText = MatchUi.label("Timer", Theme.Font.Number, 30, Theme.Color.TextPrimary, top)
+	-- Fundo do tempo: placa chanfrada pequena no meio
+	local plate = Ui.panel("Plate", top, nil, Theme.Chamfer.Tab)
+	timerPlate = plate
+	plate.AnchorPoint = Vector2.new(0.5, 0)
+	plate.Position = UDim2.fromScale(0.5, 0)
+	plate.Size = UDim2.fromOffset(110, 40)
+
+	timerText = Ui.label("Timer", Theme.Font.Number, HUD.TimerTextSize, Theme.Color.TextPrimary, top)
 	timerText.AnchorPoint = Vector2.new(0.5, 0)
 	timerText.Position = UDim2.fromScale(0.5, 0)
-	timerText.Size = UDim2.fromOffset(100, 34)
-	MatchUi.outlineText(timerText)
+	timerText.Size = UDim2.fromOffset(110, 40)
+	timerText.ZIndex = 2
 
-	roundText = MatchUi.label("Round", Theme.Font.BodyStrong, Theme.TextSize.Label, Theme.Color.TextSecondary, top)
+	leftSide = makeSide(top, true)
+	rightSide = makeSide(top, false)
+
+	roundText = Ui.label("Round", Theme.Font.BodyStrong, Theme.TextSize.Label, Theme.Color.TextSecondary, top)
 	roundText.AnchorPoint = Vector2.new(0.5, 0)
-	roundText.Position = UDim2.new(0.5, 0, 0, 34)
+	roundText.Position = UDim2.new(0.5, 0, 0, 42)
 	roundText.Size = UDim2.fromOffset(320, 16)
-	MatchUi.outlineText(roundText)
+	Ui.outlineText(roundText)
 
-	badge = MatchUi.label("Virada", Theme.Font.Title, Theme.TextSize.Label, Theme.Color.Overlay, top)
+	badge = Ui.label("Virada", Theme.Font.Title, Theme.TextSize.Label, Theme.Color.Overlay, top)
 	badge.AnchorPoint = Vector2.new(0.5, 0)
-	badge.Position = UDim2.new(0.5, 0, 0, 52)
+	badge.Position = UDim2.new(0.5, 0, 0, 58)
 	badge.Size = UDim2.fromOffset(72, 18)
 	badge.BackgroundColor3 = Theme.Match.Virada
 	badge.BackgroundTransparency = 0
 	badge.Text = S.ViradaBadge
 	badge.Visible = false
-	MatchUi.corner(badge, 4)
+	Ui.corner(badge, 4)
 
-	local function side(name: string, anchorX: number, x: number, align: Enum.TextXAlignment): (TextLabel, TextLabel)
-		local teamLabel = MatchUi.label(name, Theme.Font.Title, Theme.TextSize.Body, Theme.Color.TextPrimary, top)
-		teamLabel.AnchorPoint = Vector2.new(anchorX, 0)
-		teamLabel.Position = UDim2.new(x, 0, 0, 2)
-		teamLabel.Size = UDim2.fromOffset(200, 18)
-		teamLabel.TextXAlignment = align
-		teamLabel.TextTruncate = Enum.TextTruncate.AtEnd
-		MatchUi.outlineText(teamLabel)
-		local livesLabel = MatchUi.label(name .. "Lives", Theme.Font.Title, Theme.TextSize.Title, Theme.Color.Hp, top)
-		livesLabel.AnchorPoint = Vector2.new(anchorX, 0)
-		livesLabel.Position = UDim2.new(x, 0, 0, 20)
-		livesLabel.Size = UDim2.fromOffset(200, 26)
-		livesLabel.TextXAlignment = align
-		MatchUi.outlineText(livesLabel)
-		return teamLabel, livesLabel
-	end
-	leftTeam, leftLives = side("Left", 0, 0, Enum.TextXAlignment.Left)
-	rightTeam, rightLives = side("Right", 1, 1, Enum.TextXAlignment.Right)
-
-	-- Placar do mirante (direita)
-	scoreboard = MatchUi.panel("Scoreboard", topGui)
+	-- Placar resumido do mirante (direita)
+	local content: Frame
+	scoreboard, content = Ui.autoPanel("Scoreboard", topGui, 10)
 	scoreboard.AnchorPoint = Vector2.new(1, 0)
 	scoreboard.Position = UDim2.new(1, -Theme.ScreenMargin, 0, 90)
 	scoreboard.Size = UDim2.fromOffset(250, 0)
-	scoreboard.AutomaticSize = Enum.AutomaticSize.Y
 	scoreboard.Visible = false
-	MatchUi.padding(scoreboard, 10)
-	MatchUi.list(scoreboard, Enum.FillDirection.Vertical, 6)
-	local title = MatchUi.label("Title", Theme.Font.Title, Theme.TextSize.Body, Theme.Color.TextPrimary, scoreboard)
+	Ui.list(content, Enum.FillDirection.Vertical, 6)
+	local title = Ui.label("Title", Theme.Font.Title, Theme.TextSize.Body, Theme.Color.TextPrimary, content)
 	title.Size = UDim2.new(1, 0, 0, 18)
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.Text = S.Scoreboard
-	scoreList = MatchUi.frame("List", scoreboard)
+	scoreList = Ui.frame("List", content)
 	scoreList.LayoutOrder = 2
 	scoreList.Size = UDim2.fromScale(1, 0)
 	scoreList.AutomaticSize = Enum.AutomaticSize.Y
-	MatchUi.list(scoreList, Enum.FillDirection.Vertical, 2)
+	Ui.list(scoreList, Enum.FillDirection.Vertical, 2)
 
 	-- Centro
-	centerGui = MatchUi.screen("MatchCenter", 4, Enum.ScreenInsets.DeviceSafeInsets)
-	bannerTitle = MatchUi.label("Banner", Theme.Font.Title, 34, Theme.Color.TextPrimary, centerGui)
+	centerGui = Ui.screen("MatchCenter", 4, Enum.ScreenInsets.DeviceSafeInsets)
+	bannerTitle = Ui.label("Banner", Theme.Font.Title, 34, Theme.Color.TextPrimary, centerGui)
 	bannerTitle.AnchorPoint = Vector2.new(0.5, 0.5)
 	bannerTitle.Position = UDim2.fromScale(0.5, 0.28)
 	bannerTitle.Size = UDim2.new(0.9, 0, 0, 44)
 	bannerTitle.TextScaled = true
 	bannerTitle.Visible = false
-	MatchUi.outlineText(bannerTitle)
+	Ui.outlineText(bannerTitle)
 	local limit = Instance.new("UITextSizeConstraint")
 	limit.MaxTextSize = 40
 	limit.MinTextSize = Theme.TextSize.Title
 	limit.Parent = bannerTitle
-	bannerSubtitle = MatchUi.label(
-		"BannerSub",
-		Theme.Font.BodyStrong,
-		Theme.TextSize.PrimaryButton,
-		Theme.Color.TextPrimary,
-		centerGui
-	)
+	bannerSubtitle =
+		Ui.label("BannerSub", Theme.Font.BodyStrong, Theme.TextSize.PrimaryButton, Theme.Color.TextPrimary, centerGui)
 	bannerSubtitle.AnchorPoint = Vector2.new(0.5, 0.5)
 	bannerSubtitle.Position = UDim2.new(0.5, 0, 0.28, 34)
 	bannerSubtitle.Size = UDim2.new(0.9, 0, 0, 24)
 	bannerSubtitle.Visible = false
-	MatchUi.outlineText(bannerSubtitle)
+	Ui.outlineText(bannerSubtitle)
 
-	statusText = MatchUi.label(
-		"Status",
-		Theme.Font.BodyStrong,
-		Theme.TextSize.PrimaryButton,
-		Theme.Color.TextSecondary,
-		centerGui
-	)
+	statusText =
+		Ui.label("Status", Theme.Font.BodyStrong, Theme.TextSize.PrimaryButton, Theme.Color.TextSecondary, centerGui)
 	statusText.AnchorPoint = Vector2.new(0.5, 0)
 	statusText.Position = UDim2.fromScale(0.5, 0.6)
 	statusText.Size = UDim2.new(0.9, 0, 0, 24)
-	MatchUi.outlineText(statusText)
+	Ui.outlineText(statusText)
 
-	afkText =
-		MatchUi.label("Afk", Theme.Font.BodyStrong, Theme.TextSize.PrimaryButton, Theme.Color.TextPrimary, centerGui)
+	afkText = Ui.label("Afk", Theme.Font.BodyStrong, Theme.TextSize.PrimaryButton, Theme.Color.TextPrimary, centerGui)
 	afkText.AnchorPoint = Vector2.new(0.5, 0)
 	afkText.Position = UDim2.new(0.5, 0, 0.6, 30)
 	afkText.Size = UDim2.new(0.9, 0, 0, 24)
 	afkText.TextWrapped = true
 	afkText.Visible = false
-	MatchUi.outlineText(afkText)
+	Ui.outlineText(afkText)
 
 	topGui.Parent = playerGui
 	centerGui.Parent = playerGui

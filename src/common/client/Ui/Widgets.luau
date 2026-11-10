@@ -318,19 +318,15 @@ function Widgets.tabs(parent: Instance, items: { TabItem }, onSelect: (id: strin
 		b.AutoButtonColor = false
 		b.BackgroundTransparency = 1
 		b.LayoutOrder = i
-		b.Size = UDim2.fromOffset(0, h)
-		b.AutomaticSize = Enum.AutomaticSize.X
+		-- Largura medida pelo texto (o tamanho automático do Roblox não combina com o fundo chanfrado)
+		local text = TextUtil.upper(item.label)
+		b.Size = UDim2.fromOffset(Ui.textWidth(text, Theme.Font.Title, Theme.TextSize.Body) + 32, h)
 		b.Parent = root
 		fills[item.id] = Ui.chamferFill(b, Theme.Color.PanelRaised, 0, Theme.Chamfer.Tab)
 		local label = Ui.label("Label", Theme.Font.Title, Theme.TextSize.Body, Theme.Color.TextSecondary, b)
-		label.AutomaticSize = Enum.AutomaticSize.X
-		label.Size = UDim2.fromScale(0, 1)
-		label.Text = TextUtil.upper(item.label)
+		label.Size = UDim2.fromScale(1, 1)
+		label.Text = text
 		label.ZIndex = 2
-		local pad = Instance.new("UIPadding")
-		pad.PaddingLeft = UDim.new(0, 16)
-		pad.PaddingRight = UDim.new(0, 16)
-		pad.Parent = label
 		b.Activated:Connect(function()
 			tabs.select(item.id)
 		end)

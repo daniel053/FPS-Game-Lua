@@ -166,12 +166,30 @@ local Strings = {
 		} :: { [string]: string },
 	},
 
+	-- Placar da partida (Tab no PC; botão no topo no celular). Substitui a lista de jogadores do Roblox.
+	Scoreboard = {
+		Title = "PLACAR",
+		Hint = "Placar",
+		Button = "PLACAR",
+		Team = "Dupla",
+		Lives = "Vidas",
+		Kills = "Abates",
+		Status = "Situação",
+		Dueling = "Duelando · %s",
+		Bye = "Folga",
+		Eliminated = "%dº lugar",
+		Waiting = "No mirante",
+		Champion = "Campeã",
+		Bot = "teste",
+		Offline = "saiu",
+		You = "você",
+	},
+
 	-- Legendas de avisos sonoros importantes (ESTILO 5)
 	Captions = {
 		EnemyCard = "Inimigo usou %s",
 		AllyCard = "Parceiro usou %s",
 		ShieldBroken = "Escudo quebrado",
-		Knocked = "Inimigo derrubado",
 		ZoneClosing = "A zona começou a fechar",
 	},
 

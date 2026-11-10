@@ -21,7 +21,7 @@ local Remotes = require(Shared.Remotes)
 local Theme = require(Shared.Config.Theme)
 
 local CombatEffects = require(script.Parent.CombatEffects)
-local MatchUi = require(Shared.Ui.ProvisionalUi)
+local MatchUi = require(Shared.Ui.Ui)
 local Smoke = require(script.Parent.Smoke)
 
 local NAMES = CardTypes.Names

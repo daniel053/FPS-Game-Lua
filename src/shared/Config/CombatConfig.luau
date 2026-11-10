@@ -39,14 +39,12 @@ local CombatConfig = {
 		GamepadSwitchHoldSeconds = 0.35, -- controle: tocar Y alterna 1/2; segurar Y pega o corpo a corpo
 		TouchSwitchHoldSeconds = 0.4, -- celular: segurar o botão de troca abre as 3 opções
 		TouchCardDetailsHoldSeconds = 0.5, -- celular: segurar uma carta (menos a Nuvem) abre os detalhes
-		AbilitiesPanelKey = Enum.KeyCode.B, -- PC: painel de habilidades (GDD 13.3)
-		AbilitiesPanelGamepadButton = Enum.KeyCode.DPadDown, -- controle: o mesmo painel
 		TouchLookRadiansPerPixel = 0.006, -- arrastar o dedo no botão ATIRAR também gira a câmera
 	},
 
 	-- Botões de toque (GDD 13.1): centro de cada botão em pixels a partir do canto inferior direito.
 	-- Ficam em volta do botão de pulo do Roblox. Tela pequena = menor lado da tela abaixo de 500 px.
-	-- O editor de posição dos botões (settings.mobileLayout) é da F7.
+	-- Posição e tamanho editáveis pelo jogador (settings.mobileLayout, F7): ver Shared/Ui/TouchLayout.
 	TouchLayout = {
 		LargeScreenMinSide = 500,
 		Small = {

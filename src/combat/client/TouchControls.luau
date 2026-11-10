@@ -5,6 +5,8 @@
 --   MIRA / MODO: só aparece em armas com mira ou modo alternativo; toque liga e desliga.
 --   1⇄2: toque alterna primária e pistola; segurar abre as 3 opções (1, 2, 3).
 --   RECARREGAR.
+-- Posição e tamanho: padrão do CombatConfig ou o que o jogador montou no editor de botões
+-- (settings.mobileLayout, F7), resolvido por Shared/Ui/TouchLayout.
 -- Movimento e pulo usam os controles de toque do Roblox (joystick à esquerda, pulo à direita).
 
 local GuiService = game:GetService("GuiService")
@@ -17,9 +19,11 @@ local CombatConfig = require(Shared.Config.CombatConfig)
 local CombatTypes = require(Shared.Combat.CombatTypes)
 local Strings = require(Shared.Config.Strings)
 local Theme = require(Shared.Config.Theme)
+local TouchLayout = require(Shared.Ui.TouchLayout)
 local WeaponConfig = require(Shared.Config.WeaponConfig)
 
 local InputDevice = require(script.Parent.Parent.Common.InputDevice)
+local PlayerDataClient = require(script.Parent.Parent.Common.PlayerDataClient)
 local WeaponController = require(script.Parent.WeaponController)
 
 local LAYOUT = CombatConfig.TouchLayout
@@ -65,19 +69,21 @@ local function setPressed(button: GuiButton, pressed: boolean)
 	button.BackgroundColor3 = if pressed then Theme.Color.AccentPressed else Theme.Color.PanelBase
 end
 
-local function place(button: GuiObject, center: Vector2, size: number)
-	button.Position = UDim2.new(1, center.X, 1, center.Y)
-	button.Size = UDim2.fromOffset(size, size)
-end
-
 local function applyLayout()
 	local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(800, 400)
-	local layout = if math.min(viewport.X, viewport.Y) >= LAYOUT.LargeScreenMinSide then LAYOUT.Large else LAYOUT.Small
-	place(fireButton, layout.Fire, layout.FireSize)
-	place(aimButton, layout.Aim, layout.ButtonSize)
-	place(switchButton, layout.Switch, layout.ButtonSize)
-	place(reloadButton, layout.Reload, layout.ButtonSize)
-	slotPicker.Position = UDim2.new(1, layout.Switch.X, 1, layout.Switch.Y - layout.ButtonSize)
+	local profile = PlayerDataClient.get()
+	local saved = profile and profile.settings.mobileLayout
+	local function place(button: GuiObject, id: string): TouchLayout.Placement
+		local p = TouchLayout.resolve(id, viewport, saved)
+		button.Position = p.position
+		button.Size = UDim2.fromOffset(p.size, p.size)
+		return p
+	end
+	place(fireButton, "Fire")
+	place(aimButton, "Aim")
+	place(reloadButton, "Reload")
+	local switch = place(switchButton, "Switch")
+	slotPicker.Position = switch.position - UDim2.fromOffset(0, switch.size)
 end
 
 local function refresh()
@@ -183,6 +189,7 @@ local function build()
 	gui = Instance.new("ScreenGui")
 	gui.Name = "CombatTouchControls"
 	gui.ResetOnSpawn = false
+	gui.IgnoreGuiInset = true -- mesma área do editor de botões e das cartas (TouchLayout)
 	gui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.DisplayOrder = 5
@@ -232,6 +239,7 @@ function TouchControls.Start()
 	applyLayout()
 	refresh()
 	WeaponController.onChanged(refresh)
+	PlayerDataClient.onChanged(applyLayout)
 	InputDevice.onChanged(function()
 		slotPicker.Visible = false
 		refresh()

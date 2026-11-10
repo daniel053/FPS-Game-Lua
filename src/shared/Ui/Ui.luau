@@ -9,6 +9,8 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local TextService = game:GetService("TextService")
+
 local Theme = require(ReplicatedStorage.Shared.Config.Theme)
 local TextScale = require(script.Parent.TextScale)
 
@@ -273,6 +275,23 @@ function Ui.button(name: string, text: string, isPrimary: boolean, parent: Insta
 	end
 	b.Parent = parent
 	return b
+end
+
+-- Largura do texto em pixels (para botões e abas com largura fixa). Pode esperar (yield) na primeira
+-- vez de cada fonte; se falhar, usa uma estimativa.
+function Ui.textWidth(text: string, font: Font, size: number): number
+	local params = Instance.new("GetTextBoundsParams")
+	params.Text = text
+	params.Font = font
+	params.Size = size
+	params.Width = math.huge
+	local ok, bounds = pcall(function(): Vector2
+		return TextService:GetTextBoundsAsync(params)
+	end)
+	if ok and typeof(bounds) == "Vector2" then
+		return math.ceil(bounds.X)
+	end
+	return math.ceil((utf8.len(text) or #text) * size * 0.6)
 end
 
 function Ui.clear(parent: Instance)

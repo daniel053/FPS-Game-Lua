@@ -1,6 +1,8 @@
 --!strict
--- HUD de combate PROVISÓRIO da F2 (o visual final da tela T6 é da F7), seguindo Theme e ESTILO T6:
---   * baixo esquerdo: escudo e vida em barras com o número;
+-- HUD de combate (tela T6 do ESTILO, visual final da F7):
+--   * baixo esquerdo: escudo (azul) e vida (verde-claro) em barras com o número;
+--   * PC: logo acima das barras, as dicas fixas [B] Habilidades, [P] Configurações e [Tab] Placar
+--     (GDD 13.3), discretas e sempre visíveis; no controle, as setas do direcional;
 --   * baixo direito: munição "25 | ∞", nome da arma, "RECARREGANDO";
 --   * PC: armas 1/2/3 com chips de tecla e dica de recarga (no celular, os botões já mostram);
 --   * centro: retícula do perfil (formato, cor, tamanho, espessura, espaço, contorno);
@@ -29,9 +31,14 @@ local Theme = require(Shared.Config.Theme)
 local Crosshair = require(Shared.Ui.Crosshair)
 local WeaponConfig = require(Shared.Config.WeaponConfig)
 local WeaponState = require(Shared.Combat.WeaponState)
+local Ui = require(Shared.Ui.Ui)
+local UiConfig = require(Shared.Config.UiConfig)
+local TweenService = game:GetService("TweenService")
 
 local InputDevice = require(script.Parent.Parent.Common.InputDevice)
 local PlayerDataClient = require(script.Parent.Parent.Common.PlayerDataClient)
+local Widgets = require(script.Parent.Parent.Common.Ui.Widgets)
+local Captions = require(script.Parent.Captions)
 local CombatEffects = require(script.Parent.CombatEffects)
 local WeaponController = require(script.Parent.WeaponController)
 
@@ -39,17 +46,20 @@ local ATTR = CombatNames.Attr
 local HEALTH = CharacterConfig.Health
 local FX = CombatConfig.Effects
 local MARGIN = Theme.ScreenMargin
-local BAR_WIDTH = 220
-local BAR_HEIGHT = 12
+local HUD = Theme.Hud
+local BAR_WIDTH = HUD.BarWidth
+local BAR_HEIGHT = HUD.BarHeight
+local KEYS = UiConfig.KeyLabels
 
 local CombatHUD = {}
 
 local player = Players.LocalPlayer
 local gui: ScreenGui
-local shieldFill: Frame
+local shieldBar: Widgets.Bar
 local shieldText: TextLabel
-local hpFill: Frame
+local hpBar: Widgets.Bar
 local hpText: TextLabel
+local killScale: UIScale
 local ammoText: TextLabel
 local weaponText: TextLabel
 local ammoBlock: Frame
@@ -90,26 +100,32 @@ end
 
 -- Barras de escudo e vida ----------------------------------------------------------------------------
 
-local function makeBar(name: string, color: Color3, y: number, parent: Instance): (Frame, TextLabel)
-	local back = frame(name, parent)
-	back.Position = UDim2.fromOffset(0, y)
-	back.Size = UDim2.fromOffset(BAR_WIDTH, BAR_HEIGHT)
-	back.BackgroundColor3 = Theme.Color.PanelBase
-	back.BackgroundTransparency = Theme.Transparency.PanelBase
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 3)
-	corner.Parent = back
-	local fill = frame("Fill", back)
-	fill.BackgroundTransparency = 0
-	fill.BackgroundColor3 = color
-	fill.Size = UDim2.fromScale(1, 1)
-	local fillCorner = corner:Clone()
-	fillCorner.Parent = fill
+local function makeBar(name: string, color: Color3, y: number, parent: Instance): (Widgets.Bar, TextLabel)
+	local bar = Widgets.bar(parent, color, UDim2.fromOffset(BAR_WIDTH, BAR_HEIGHT))
+	bar.root.Name = name
+	bar.root.Position = UDim2.fromOffset(0, y)
 	local value = label("Value", Theme.Font.Number, Theme.TextSize.PrimaryButton, Theme.Color.TextPrimary, parent)
 	value.TextXAlignment = Enum.TextXAlignment.Left
 	value.Position = UDim2.fromOffset(BAR_WIDTH + 8, y - 5)
 	value.Size = UDim2.fromOffset(60, BAR_HEIGHT + 10)
-	return fill, value
+	return bar, value
+end
+
+-- Dicas fixas do PC (GDD 13.3): [B] Habilidades, [P] Configurações e, na Partida, [Tab] Placar.
+local function buildHints(parent: Instance)
+	local hints = frame("Hints", parent)
+	hints.AnchorPoint = Vector2.new(0, 1)
+	hints.Position = UDim2.new(0, MARGIN, 1, -MARGIN - (2 * BAR_HEIGHT + 30) - 10)
+	hints.Size = UDim2.fromOffset(BAR_WIDTH + 70, 22)
+	local list = Ui.list(hints, Enum.FillDirection.Horizontal, HUD.HintKeyGap)
+	list.VerticalAlignment = Enum.VerticalAlignment.Center
+	Widgets.hint(hints, KEYS.Abilities, KEYS.AbilitiesPad, Strings.CardHud.PanelHint).LayoutOrder = 1
+	Widgets.hint(hints, KEYS.Settings, KEYS.SettingsPad, Strings.Settings.Hint).LayoutOrder = 2
+	-- O placar só existe na Partida
+	local place = script.Parent.Parent:FindFirstChild("Place")
+	if place and place:FindFirstChild("Scoreboard") then
+		Widgets.hint(hints, KEYS.Scoreboard, KEYS.ScoreboardPad, Strings.Scoreboard.Hint).LayoutOrder = 3
+	end
 end
 
 local function buildHealth()
@@ -123,35 +139,21 @@ local function buildHealth()
 	shieldCaption.Text = Strings.Combat.Shield
 	shieldCaption.TextXAlignment = Enum.TextXAlignment.Left
 	shieldCaption.Size = UDim2.fromOffset(BAR_WIDTH, 14)
-	shieldFill, shieldText = makeBar("Shield", Theme.Color.Shield, 16, block)
-	hpFill, hpText = makeBar("Hp", Theme.Color.Hp, 16 + BAR_HEIGHT + 10, block)
+	shieldBar, shieldText = makeBar("Shield", Theme.Color.Shield, 16, block)
+	hpBar, hpText = makeBar("Hp", Theme.Color.Hp, 16 + BAR_HEIGHT + 10, block)
 end
 
 -- Munição e armas -----------------------------------------------------------------------------------
 
 local function keyChip(text: string, parent: Instance): TextLabel
-	local chip = label("Key", Theme.Font.Title, Theme.TextSize.Label, Theme.Color.TextSecondary, parent)
-	chip.BackgroundTransparency = 0
-	chip.BackgroundColor3 = Theme.Color.PanelRaised
-	chip.TextStrokeTransparency = 1
-	chip.Size = UDim2.fromOffset(22, 22)
-	chip.Text = text
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 4)
-	corner.Parent = chip
-	local stroke = Instance.new("UIStroke")
-	stroke.Color = Theme.Color.TextSecondary
-	stroke.Thickness = 1
-	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	stroke.Parent = chip
-	return chip
+	return Ui.keyChip(text, parent)
 end
 
 local function buildAmmo()
 	ammoBlock = frame("Ammo", gui)
 	ammoBlock.AnchorPoint = Vector2.new(1, 1)
 	ammoBlock.Size = UDim2.fromOffset(240, 70)
-	ammoText = label("Count", Theme.Font.Number, 34, Theme.Color.TextPrimary, ammoBlock)
+	ammoText = label("Count", Theme.Font.Number, HUD.AmmoTextSize, Theme.Color.TextPrimary, ammoBlock)
 	ammoText.TextXAlignment = Enum.TextXAlignment.Right
 	ammoText.AnchorPoint = Vector2.new(1, 1)
 	ammoText.Position = UDim2.fromScale(1, 1)
@@ -303,11 +305,18 @@ local function onCombatEvent(kind: string, data: any)
 		hitMarkerUntil = os.clock() + FX.HitMarkerSeconds
 		CombatEffects.damageNumber(hit.position, hit.damage, hit.toShield >= hit.damage)
 		CombatEffects.playSound(if hit.shieldBroken then AudioConfig.ShieldBreak else AudioConfig.HitMarker)
+		if hit.shieldBroken then
+			Captions.show(Strings.Captions.ShieldBroken)
+		end
 	elseif kind == "Kill" then
 		local kill = data :: CombatTypes.KillData
 		local format = if kill.kills == 1 then Strings.Combat.KillSingular else Strings.Combat.KillPlural
 		killText.Text = string.format(format, kill.kills)
 		killUntil = os.clock() + CombatConfig.KillNotice.Seconds
+		killScale.Scale = UiConfig.KillNotice.PopScale
+		TweenService
+			:Create(killScale, TweenInfo.new(UiConfig.KillNotice.PopSeconds, Enum.EasingStyle.Back), { Scale = 1 })
+			:Play()
 		CombatEffects.playSound(AudioConfig.KillCrack)
 		if Env.IsDev then
 			devReport.Text = string.format(
@@ -338,8 +347,8 @@ local function update()
 	if character and inCombat then
 		local hp = (character:GetAttribute(ATTR.Hp) :: number?) or HEALTH.MaxHp
 		local shield = (character:GetAttribute(ATTR.Shield) :: number?) or HEALTH.MaxShield
-		hpFill.Size = UDim2.fromScale(math.clamp(hp / HEALTH.MaxHp, 0, 1), 1)
-		shieldFill.Size = UDim2.fromScale(math.clamp(shield / HEALTH.MaxShield, 0, 1), 1)
+		hpBar.set(hp / HEALTH.MaxHp)
+		shieldBar.set(shield / HEALTH.MaxShield)
 		hpText.Text = tostring(hp)
 		shieldText.Text = tostring(shield)
 	end
@@ -348,7 +357,7 @@ local function update()
 	if state then
 		local reloading = WeaponState.isReloading(state, workspace:GetServerTimeNow())
 		ammoText.Text = if reloading then Strings.Combat.Reloading else `{state.ammo} | {Strings.Combat.Infinite}`
-		ammoText.TextSize = if reloading then Theme.TextSize.Title else 34
+		ammoText.TextSize = if reloading then Theme.TextSize.Title else HUD.AmmoTextSize
 		weaponText.Text = TextUtil.upper(Strings.Weapons[state.def.id] or state.def.id)
 	else
 		ammoText.Text = ""
@@ -362,22 +371,19 @@ local function update()
 end
 
 function CombatHUD.Start()
-	gui = Instance.new("ScreenGui")
-	gui.Name = "CombatHUD"
-	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = true
-	gui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
-	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	gui.DisplayOrder = 1
+	gui = Ui.screen("CombatHUD", 1, Enum.ScreenInsets.DeviceSafeInsets)
 
 	buildScope()
 	buildHealth()
+	buildHints(gui)
 	buildAmmo()
 	crosshair = frame("Crosshair", gui)
 	crosshair.Size = UDim2.fromScale(1, 1)
 	buildHitMarker()
 
-	killText = label("KillNotice", Theme.Font.Title, 36, Theme.Color.TextPrimary, gui)
+	killText = label("KillNotice", Theme.Font.Title, HUD.KillTextSize, Theme.Color.TextPrimary, gui)
+	killScale = Instance.new("UIScale")
+	killScale.Parent = killText
 	killText.AnchorPoint = Vector2.new(0.5, 1)
 	killText.Position = UDim2.new(0.5, 0, 1, -120)
 	killText.Size = UDim2.fromOffset(300, 44)

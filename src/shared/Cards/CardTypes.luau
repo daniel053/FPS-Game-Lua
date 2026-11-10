@@ -42,11 +42,19 @@ export type FxName =
 	| "TremorWave" -- TremorWaveData
 	| "RenascerReturn" -- RenascerReturnData
 
-export type NuvemThrowData = { origin: Vector3, velocity: Vector3, flight: number, gravity: number }
+-- caster: quem usou (legendas "Inimigo usou …", ESTILO 5)
+export type NuvemThrowData = { origin: Vector3, velocity: Vector3, flight: number, gravity: number, caster: Player? }
 
-export type TremorWaveData = { origin: Vector3, direction: Vector3, length: number, width: number, speed: number }
+export type TremorWaveData = {
+	origin: Vector3,
+	direction: Vector3,
+	length: number,
+	width: number,
+	speed: number,
+	caster: Player?,
+}
 
-export type RenascerReturnData = { from: Vector3, to: Vector3 }
+export type RenascerReturnData = { from: Vector3, to: Vector3, caster: Player? }
 
 -- Nomes no mundo (servidor cria, cliente lê)
 local Names = {

@@ -176,6 +176,18 @@ local function updateBar(entry: Tracked)
 end
 
 -- Aplica um estado da regra na tela.
+-- Inimigos com contorno agora (à vista, sem nuvem no meio). Usado pelo minimapa (GDD 7.6: o inimigo
+-- só aparece no mapa quando visto).
+function TeamMarkers.seenEnemies(): { Model }
+	local list = {}
+	for model, entry in tracked do
+		if entry.state.outline == "Enemy" then
+			table.insert(list, model)
+		end
+	end
+	return list
+end
+
 local function apply(entry: Tracked, state: MarkerRules.State)
 	entry.state = state
 	local highlight = entry.highlight
