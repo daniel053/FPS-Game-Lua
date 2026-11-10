@@ -2,7 +2,7 @@
 -- Arma e mãos em primeira pessoa (GDD 3.1 e docs/referencias/visuais/guia-arma-primeira-pessoa.png).
 -- Modelo de BLOCOS provisório (arte final na F10), só no cliente, preso à câmera:
 --   * sempre no canto inferior direito; o centro da tela fica livre;
---   * luvas escuras e manga com faixa na cor da equipe;
+--   * luvas escuras e manga neutra (sem cor de equipe: aliado e inimigo pela marcação, GDD 7.6);
 --   * pistola com uma mão; as outras armas com duas;
 --   * balanço ao andar, recuo ao atirar, abaixa perto de parede, some com a mira de sniper aberta;
 --   * no celular, 10% menor e mais baixa.
@@ -14,7 +14,6 @@ local RunService = game:GetService("RunService")
 local Shared = ReplicatedStorage.Shared
 local CombatConfig = require(Shared.Config.CombatConfig)
 local CombatNames = require(Shared.Combat.CombatNames)
-local TeamColors = require(Shared.Config.TeamColors)
 local Theme = require(Shared.Config.Theme)
 local Types = require(Shared.Types)
 
@@ -24,7 +23,7 @@ local PlayerDataClient = require(script.Parent.Parent.Common.PlayerDataClient)
 local VM = CombatConfig.ViewModel
 local COLORS = Theme.Combat
 
-type PartSpec = { size: Vector3, cframe: CFrame, color: Color3, team: boolean? }
+type PartSpec = { size: Vector3, cframe: CFrame, color: Color3 }
 
 type Shape = {
 	parts: { PartSpec },
@@ -59,13 +58,12 @@ local function box(size: Vector3, position: Vector3, color: Color3, rotation: CF
 end
 
 -- Segmento (braço) entre dois pontos.
-local function segment(from: Vector3, to: Vector3, thickness: number, color: Color3, team: boolean?): PartSpec
+local function segment(from: Vector3, to: Vector3, thickness: number, color: Color3): PartSpec
 	local length = (to - from).Magnitude
 	return {
 		size = Vector3.new(thickness, thickness, length),
 		cframe = CFrame.lookAt(from, to) * CFrame.new(0, 0, -length / 2),
 		color = color,
-		team = team,
 	}
 end
 
@@ -73,10 +71,6 @@ local function arm(hand: Vector3, elbow: Vector3, parts: { PartSpec })
 	table.insert(parts, box(Vector3.new(0.3, 0.3, 0.34), hand, COLORS.Glove))
 	local wrist = hand + (elbow - hand).Unit * 0.2
 	table.insert(parts, segment(wrist, elbow, 0.34, COLORS.Sleeve))
-	-- Faixa na cor da equipe perto do pulso (guia: "manga com a faixa na COR DA EQUIPE")
-	local bandFrom = hand + (elbow - hand).Unit * 0.45
-	local bandTo = hand + (elbow - hand).Unit * 0.7
-	table.insert(parts, segment(bandFrom, bandTo, 0.37, COLORS.Sleeve, true))
 end
 
 local function gunShape(category: Types.WeaponCategory): Shape
@@ -159,14 +153,6 @@ end
 
 -- Construção -------------------------------------------------------------------------------------
 
-local function teamColor(): Color3
-	local teamId = player:GetAttribute(CombatNames.Attr.TeamId)
-	if typeof(teamId) == "string" and Theme.Team[teamId :: Types.TeamColorId] then
-		return TeamColors.getColor(teamId :: Types.TeamColorId)
-	end
-	return COLORS.Sleeve
-end
-
 local function destroyModel()
 	if model then
 		model:Destroy()
@@ -190,13 +176,12 @@ local function build(kind: string, shape: Shape)
 	root.Parent = newModel
 	newModel.PrimaryPart = root
 
-	local team = teamColor()
 	for _, spec in shape.parts do
 		local part = Instance.new("Part")
-		part.Name = if spec.team then CombatNames.TeamBandName else "Piece"
+		part.Name = "Piece"
 		part.Size = spec.size
 		part.CFrame = spec.cframe
-		part.Color = if spec.team then team else spec.color
+		part.Color = spec.color
 		part.Material = Enum.Material.SmoothPlastic
 		part.Anchored = true
 		part.CanCollide = false
@@ -332,20 +317,6 @@ end
 
 function ViewModel.Start()
 	RunService:BindToRenderStep("ViewModel", Enum.RenderPriority.Camera.Value + 3, update)
-
-	-- Cor da equipe mudou (painel de teste): repinta a faixa.
-	player:GetAttributeChangedSignal(CombatNames.Attr.TeamId):Connect(function()
-		local m = model
-		if m == nil then
-			return
-		end
-		local color = teamColor()
-		for _, part in m:GetChildren() do
-			if part:IsA("BasePart") and part.Name == CombatNames.TeamBandName then
-				part.Color = color
-			end
-		end
-	end)
 
 	-- Trocou entre celular e PC: refaz no tamanho certo.
 	InputDevice.onChanged(function()

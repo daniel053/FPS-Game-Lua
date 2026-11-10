@@ -1,6 +1,7 @@
 --!strict
--- Personagem base (GDD 3.2 e 3.3): todos com o mesmo corpo de blocos, sem o avatar do jogador,
--- hitbox única em cápsula (sem cabeça), cor da equipe numa faixa em cada braço e no capacete.
+-- Personagem (GDD 3.2): o avatar do Roblox de cada jogador, com o tamanho do corpo igualado,
+-- e a mesma hitbox em cápsula (sem cabeça) para todos. Sem cor de equipe no corpo: aliado e
+-- inimigo são marcados no cliente (GDD 7.6). Jogadores de teste e falhas usam o corpo base.
 -- Também cuida de aparecer, ser derrubado e voltar (na arena de teste da F2).
 
 local Players = game:GetService("Players")
@@ -11,7 +12,6 @@ local Shared = ReplicatedStorage.Shared
 local CharacterConfig = require(Shared.Config.CharacterConfig)
 local CombatConfig = require(Shared.Config.CombatConfig)
 local CombatNames = require(Shared.Combat.CombatNames)
-local TeamColors = require(Shared.Config.TeamColors)
 local Theme = require(Shared.Config.Theme)
 
 local Combatants = require(script.Parent.Combatants)
@@ -19,7 +19,7 @@ local TeamService = require(script.Parent.TeamService)
 
 local GROUPS = CombatNames.Groups
 local HITBOX = CombatConfig.Hitbox
-local BODY = CharacterConfig.BaseBody
+local AVATAR = CharacterConfig.Avatar
 
 type SpawnedCallback = (player: Player, character: Model) -> ()
 type SpawnProvider = (teamId: string) -> CFrame
@@ -55,6 +55,7 @@ local function setupCollisionGroups()
 end
 
 -- Corpo base: blocos padrão do Roblox, cinza claro com pernas escuras. Nenhum acessório nem roupa.
+-- Usado pelos jogadores de teste e quando o avatar do jogador não carrega.
 function CharacterService.baseDescription(bodyColor: Color3?): HumanoidDescription
 	local description = Instance.new("HumanoidDescription")
 	local body = bodyColor or Theme.Combat.BodyNeutral
@@ -67,68 +68,34 @@ function CharacterService.baseDescription(bodyColor: Color3?): HumanoidDescripti
 	return description
 end
 
-local function firstPart(model: Model, names: { string }): BasePart?
-	for _, name in names do
-		local part = model:FindFirstChild(name)
-		if part and part:IsA("BasePart") then
-			return part
-		end
+-- Avatar do jogador (GDD 3.2) com o tamanho do corpo igualado (CharacterConfig.Avatar).
+-- Guardado por jogador: o Roblox só é consultado uma vez por sessão no servidor.
+local avatarCache: { [number]: HumanoidDescription } = {}
+
+local function avatarDescription(player: Player): HumanoidDescription
+	if not AVATAR.UseRobloxAvatar or player.UserId <= 0 then
+		return CharacterService.baseDescription()
 	end
-	return nil
-end
-
-local function makeColorPart(name: string, size: Vector3, cframe: CFrame, anchor: BasePart, color: Color3): Part
-	local part = Instance.new("Part")
-	part.Name = name
-	part.Size = size
-	part.CFrame = cframe
-	part.Color = color
-	part.Material = Enum.Material.SmoothPlastic
-	part.CanCollide = false
-	part.CanQuery = false
-	part.CanTouch = false
-	part.Massless = true
-	part.CastShadow = false
-	part.CollisionGroup = GROUPS.Body
-	local weld = Instance.new("WeldConstraint")
-	weld.Part0 = anchor
-	weld.Part1 = part
-	weld.Parent = part
-	return part
-end
-
--- Faixa nos dois braços + capacete na cor da equipe [DECIDIDO]. Atualiza a cor se já existirem.
-function CharacterService.applyTeamColor(model: Model, color: Color3)
-	local existing = model:FindFirstChild(CombatNames.TeamBandName)
-	if existing then
-		for _, part in existing:GetChildren() do
-			if part:IsA("BasePart") then
-				part.Color = color
-			end
-		end
-		return
+	local cached: HumanoidDescription? = avatarCache[player.UserId]
+	if cached then
+		return cached:Clone()
 	end
-
-	local folder = Instance.new("Model")
-	folder.Name = CombatNames.TeamBandName
-
-	for _, names in { { "RightUpperArm", "Right Arm" }, { "LeftUpperArm", "Left Arm" } } do
-		local arm = firstPart(model, names)
-		if arm then
-			local size = Vector3.new(arm.Size.X + 0.08, BODY.ArmBandHeight, arm.Size.Z + 0.08)
-			local offset = arm.Size.Y / 2 - BODY.ArmBandHeight / 2 - 0.1
-			makeColorPart("ArmBand", size, arm.CFrame * CFrame.new(0, offset, 0), arm, color).Parent = folder
-		end
+	local ok, result = pcall(function(): HumanoidDescription
+		return Players:GetHumanoidDescriptionFromUserId(player.UserId)
+	end)
+	if not ok or typeof(result) ~= "Instance" then
+		warn(`[Personagem] Avatar de {player.Name} não carregou; usando o corpo base: {result}`)
+		return CharacterService.baseDescription()
 	end
-
-	local head = firstPart(model, { "Head" })
-	if head then
-		local size = Vector3.new(head.Size.X + 0.12, BODY.HelmetHeight, head.Size.Z + 0.12)
-		local offset = head.Size.Y / 2 - BODY.HelmetHeight / 2 + 0.12
-		makeColorPart("Helmet", size, head.CFrame * CFrame.new(0, offset, 0), head, color).Parent = folder
-	end
-
-	folder.Parent = model
+	local description = result :: HumanoidDescription
+	description.HeightScale = AVATAR.HeightScale
+	description.WidthScale = AVATAR.WidthScale
+	description.DepthScale = AVATAR.DepthScale
+	description.HeadScale = AVATAR.HeadScale
+	description.BodyTypeScale = AVATAR.BodyTypeScale
+	description.ProportionScale = AVATAR.ProportionScale
+	avatarCache[player.UserId] = description
+	return description:Clone()
 end
 
 -- Hitbox única em cápsula (cilindro em pé), igual para todos, presa ao HumanoidRootPart.
@@ -206,7 +173,7 @@ end
 -- Cria o personagem base do jogador (sem colocar no mundo nem registrar para combate).
 local function createCharacter(player: Player): Model?
 	local ok, err = pcall(function()
-		player:LoadCharacterWithHumanoidDescriptionAsync(CharacterService.baseDescription())
+		player:LoadCharacterWithHumanoidDescriptionAsync(avatarDescription(player))
 	end)
 	if not ok then
 		warn(`[Personagem] Falha ao criar o personagem de {player.Name}: {err}`)
@@ -219,10 +186,6 @@ local function createCharacter(player: Player): Model?
 	end
 	setupHumanoid(humanoid)
 	CharacterService.setBodyGroup(character)
-	local teamId = TeamService.get(player)
-	if teamId then
-		CharacterService.applyTeamColor(character, TeamColors.getColor(teamId))
-	end
 	if CharacterService.attachHitbox(character) == nil then
 		warn(`[Personagem] Personagem de {player.Name} sem HumanoidRootPart`)
 		return nil
@@ -271,7 +234,6 @@ local function spawnPlayer(player: Player)
 	if character == nil then
 		return
 	end
-	CharacterService.applyTeamColor(character, TeamColors.getColor(teamId))
 	character:PivotTo(spawnProvider(teamId))
 	registerCombatant(player, character, { teamId = teamId, island = nil, protectSeconds = nil })
 	for _, callback in spawnedCallbacks do
@@ -376,7 +338,6 @@ function CharacterService.spawnBot(name: string, teamId: string, island: number,
 	-- `cframe` vem 3 studs acima do chão (ponto de nascer): apoia os pés no chão
 	model:PivotTo(cframe * CFrame.new(0, feetToRoot - 3, 0))
 	CharacterService.setBodyGroup(model)
-	CharacterService.applyTeamColor(model, TeamColors.getColor(teamId))
 	local hitbox = CharacterService.attachHitbox(model)
 	if hitbox == nil then
 		model:Destroy()
@@ -434,7 +395,6 @@ function CharacterService.Start()
 		if character == nil or teamId == nil then
 			return
 		end
-		CharacterService.applyTeamColor(character, TeamColors.getColor(teamId))
 		local combatant = Combatants.get(character)
 		if combatant then
 			Combatants.setTeam(combatant, teamId)
@@ -449,6 +409,7 @@ function CharacterService.Start()
 	end
 	Players.PlayerRemoving:Connect(function(player: Player)
 		pendingRespawn[player] = nil
+		avatarCache[player.UserId] = nil
 	end)
 end
 

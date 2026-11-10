@@ -127,13 +127,16 @@ Este documento é a fonte da verdade do jogo. Ele é escrito para ser lido por q
 
 ### 3.2 Personagem
 
-- Todos usam o **mesmo personagem base**, low poly, proporções cartoon. `[DECIDIDO]`
-- O avatar padrão do Roblox do jogador **não** é usado em combate, para manter hitbox igual e visual consistente. `[PROPOSTA]`
+- Cada jogador aparece com o **próprio avatar do Roblox**, com o tamanho do corpo igualado (escalas padrão), para todos terem a mesma altura. `[DECIDIDO]` (F6; antes era um corpo base igual para todos, sem avatar)
+- Jogadores de teste e avatares que não carregam usam o corpo base de blocos.
+- Risco aceito: roupas vermelhas do avatar não podem ser controladas pelo jogo; o contorno e a barra do inimigo (seção 7.6) continuam sendo a identificação principal.
 - Hitbox: cápsula única, igual para todos. Não existe região de cabeça com dano extra. `[DECIDIDO]`
 
 ### 3.3 Cor da equipe `[DECIDIDO]`
 
-- Cada dupla tem uma cor na partida, aplicada em partes do personagem que nenhuma skin pode esconder: **uma faixa em cada braço e o capacete** `[DECIDIDO]`. A faixa do braço também aparece na manga da visão em primeira pessoa.
+- Cada dupla tem uma cor na partida. Ela **não** fica no corpo do personagem (a faixa nos braços e o capacete saíram na F6): dentro da ilha, aliado e inimigo são reconhecidos pela marcação verde e vermelha (seção 7.6). `[DECIDIDO]`
+- A cor da equipe aparece no **HUD e no placar** e, só para quem assiste do **mirante**, no nome sobre cada jogador que está duelando. `[DECIDIDO]`
+- A manga da arma em primeira pessoa é neutra (sem cor de equipe).
 
 | Time | Hex de referência |
 |---|---|
@@ -526,18 +529,27 @@ Toda arma precisa ser igualmente jogável com toque, mouse e controle.
 - Configuráveis no tutorial e nas configurações (seção 5.2).
 - A retícula é personalizada só para o próprio jogador.
 
-### 7.6 Marcação de jogadores `[DECIDIDO]`
+### 7.6 Marcação de jogadores `[DECIDIDO]` (revista na F6, conforme o guia visual do dono do projeto)
 
-| Quem | Quando aparece o contorno | Cor |
-|---|---|---|
-| **Inimigo** | Sempre que estiver **visível** na tela. **Não** aparece através de paredes. | Vermelho |
-| **Parceiro (aliado)** | **Somente quando o corpo inteiro** estiver escondido atrás de parede ou obstáculo. Se qualquer parte estiver visível (ex.: só o braço aparecendo), **não** mostra contorno. | Cor da equipe |
-| Parceiro visível | Sem contorno. Identificado pela cor da equipe e pelo nome sobre a cabeça. | — |
+| Situação | Contorno | Barra de vida sobre a cabeça | Nome |
+|---|---|---|---|
+| **Inimigo à vista** (qualquer parte do corpo visível) | **Vermelho**, pulsando devagar, só no que aparece (não atravessa paredes) | **Vermelha** | — |
+| Inimigo atrás de parede ou de Nuvem | — (nada) | — | — |
+| **Aliado à vista** | Nenhum (visual limpo) | **Verde** | Branco |
+| **Aliado com o corpo inteiro escondido** | **Silhueta verde fluorescente** através da parede | — | — |
+| Quem assiste do mirante | — | — | Nome de quem duela, na cor da equipe |
+
+- **Barra:** a vida preenche a barra na cor da marcação (vermelha ou verde); uma **linha azul fina** em cima mostra o escudo. `[DECIDIDO]`
+- A cor de acessibilidade do inimigo (vermelho, amarelo ou magenta; ESTILO 5) vale para o contorno e para a barra.
+- Com "reduzir efeitos" ligado, o contorno do inimigo não pulsa.
+- **Minimapa** (ponto verde do aliado fora de alcance; inimigo só quando visto ou marcado): entra com o minimapa do HUD, na F7.
+- Só entre jogadores da mesma ilha. Quem foi derrubado e assiste ao parceiro não vê marcações.
 
 Notas de implementação:
 
-- Contorno do inimigo: destaque que não atravessa paredes (só desenha o que está visível).
-- Contorno do parceiro: checagem no cliente a cada ~0,1 s, lançando raios da câmera até vários pontos do corpo do parceiro (cabeça, tronco, mãos, pés). Se **todos** estiverem bloqueados, mostra o contorno através da parede; se **algum** estiver livre, esconde.
+- Checagem no cliente a cada ~0,1 s, lançando raios da câmera até 6 pontos do corpo (cabeça, tronco, mãos, pés). **Algum** livre = à vista; **todos** bloqueados = escondido.
+- Contorno do inimigo: destaque que não atravessa paredes (só desenha o que está visível). Silhueta do aliado: destaque que atravessa paredes.
+- Regra pura em `Shared/Combat/MarkerRules`; números em `CombatConfig.Markers`; cores em `Theme.Marker` e `Theme.EnemyOutline`.
 - O vermelho do inimigo nunca pode ser usado em skins de forma que confunda.
 
 ### 7.7 Feedback de dano, abate e sons `[DECIDIDO]`
@@ -778,7 +790,7 @@ Na primeira versão as moedas compram **só skins** (não há loja de cartas, se
 ## 11. Skins
 
 - Tipos: roupa, chapéu/acessório, skin de arma, efeito de vitória, emote. `[PROPOSTA]`
-- Uma skin **nunca**: esconde a cor da equipe, usa vermelho de forma que pareça o contorno de inimigo, muda a hitbox, ou tem neon.
+- Uma skin **nunca**: esconde a marcação de aliado ou inimigo (seção 7.6), usa vermelho de forma que pareça o contorno de inimigo, muda a hitbox, ou tem neon.
 - Em primeira pessoa, o jogador vê principalmente **os próprios braços e a arma**: skins de arma e de luva/manga têm prioridade de produção. `[PROPOSTA]`
 
 ---
@@ -1009,7 +1021,7 @@ src/
     server/PostMatchService.luau    -- assistir / nova partida / seguir com amigo
     client/WeaponController.luau
     client/CardController.luau
-    client/HighlightController.luau -- contornos (seção 7.6)
+    client/TeamMarkers.luau         -- marcação de aliado e inimigo (seção 7.6)
     client/HUDController.luau       -- inclui aviso "N KILL"
     client/SpectateController.luau
   common/
@@ -1055,7 +1067,7 @@ Ordem resumida: F0 Base → F1 Dados do jogador → F2 Combate → F3 Loop da pa
 8. Quais mapas são maiores e quais menores?
 8. Ferramentas de ADM além do elo visual.
 9. Câmeras cinematográficas (cerimônia de campeão) também em primeira pessoa?
-10. ~~Onde fica a cor da equipe no personagem?~~ Respondida: faixa nos dois braços + capacete (seção 3.3).
+10. ~~Onde fica a cor da equipe no personagem?~~ Respondida na F6: não fica no personagem; marcação verde/vermelha na ilha (seções 3.3 e 7.6).
 11. ~~Final melhor de 3: sim ou não?~~ Respondida: sim, e na final as vidas param de contar (seção 4.7).
 12. Preços em Robux e passe VIP.
 13. Plantas baixas dos 4 mapas e paletas.
@@ -1133,7 +1145,7 @@ Detalhes de implementação decididos durante o desenvolvimento (não são regra
 | **Recuo:** sobe e balança sempre no mesmo padrão; ao parar de atirar, volta à mira original. **Espalhamento** cresce a cada tiro seguido e ao andar/pular. Valores por arma em `WeaponConfig`. | GDD 7.2.6: recuo simples e previsível. |
 | **Assistência de mira** (toque e controle, se ligada no perfil): freia a mira perto do inimigo (×0,6) e puxa 4°/s só enquanto o jogador se mexe. **Tiro automático** (toque, se ligado no perfil) conforme o tipo de arma do GDD 7.2.6. | GDD 7.2.6 e 13.1. |
 | **Moedor atravessa** uma cobertura de até 1,5 stud de espessura, com 50% do dano. | "Dano reduzido" do GDD 7.2.4. |
-| **Contornos:** `Highlight` com profundidade "Occluded" no inimigo (só o que aparece) e "AlwaysOnTop" no parceiro, ligado só quando os 6 pontos do corpo estão escondidos (checagem a cada 0,1 s). Nomes em cima da cabeça só para o parceiro. | GDD 7.6. |
+| **Contornos:** `Highlight` com profundidade "Occluded" no inimigo (só o que aparece) e "AlwaysOnTop" no parceiro, ligado só quando os 6 pontos do corpo estão escondidos (checagem a cada 0,1 s). Nomes em cima da cabeça só para o parceiro. *(Substituído na F6: ver "Marcação de aliado e inimigo".)* | GDD 7.6. |
 | **Arma em primeira pessoa:** modelo de blocos só no cliente, preso à câmera, com as posições do guia por categoria (`CombatConfig.ViewModel`). No celular, 10% menor e mais baixa. Some com a mira de sniper aberta (luneta redonda no HUD). | Guia da arma em primeira pessoa. Modelos finais na F10. |
 | **Sons provisórios** da biblioteca que vem com o Roblox (`rbxasset://sounds`), com tom diferente por arma. | Originais (não são de outro jogo); os finais são da F10. |
 | **Arena de teste** montada por código ao iniciar o servidor (`TestArenaService`, nada salvo no place): bases das duas duplas, coberturas cheias e de meia altura, cobertura fina, parede para o contorno do parceiro, estande com alvos a 10–100 studs e alvos que andam. Desligada na F3 (`CombatConfig.TestArena.Enabled`). | FASES F2. |
@@ -1201,3 +1213,10 @@ Detalhes de implementação decididos durante o desenvolvimento (não são regra
 | **Lobby simples** (`LobbyScreen`): dupla à esquerda, cartão do modo com JOGAR / "Procurando partida… 5/7" / CANCELAR à direita, moedas no topo, janela de convite e convite recebido. PC: `[Enter]` jogar/cancelar, `[G]` convidar, `[Y]`/`[N]` aceitar/recusar, chips visíveis. Controle: X e Y, seleção pelos botões. **No PC o mouse fica livre no lobby** (é um menu); a câmera continua em primeira pessoa. | ESTILO T3 e 3. Visual final na F7. |
 | As peças de interface provisórias (`MatchUi`) foram para `Shared/Ui/ProvisionalUi`, usadas pela partida e pelo lobby. | Evitar duas cópias até os componentes finais da F7. |
 | Partida vinda da fila: começa quando todos chegam ou 20 s depois do primeiro; segue com 2 ou mais (`MatchConfig.Start.MinArrived`). Quem não estava na composição volta ao lobby (fora de `DEV_`). A composição vale só para a primeira partida do servidor. Sem composição (teleporte de teste), vale a regra da F3. | GDD 4.1 e 4.9 (decisões da F5). |
+
+### F6 · Tutorial (e revisão da marcação de times)
+
+| Decisão | Por quê |
+|---|---|
+| **Marcação de aliado e inimigo** (`TeamMarkers` no cliente, regra pura em `Shared/Combat/MarkerRules`): a cada 0,1 s, raios da câmera até 6 pontos do corpo. Inimigo à vista: `Highlight` "Occluded" vermelho, com a transparência do contorno pulsando em seno (`CombatConfig.Markers`), e barra vermelha. Aliado à vista: barra verde e nome. Aliado todo escondido: `Highlight` "AlwaysOnTop" verde com preenchimento. A barra é um `BillboardGui` de tamanho fixo na tela, ligado só quando a regra manda (por isso pode ficar "por cima de tudo"). | GDD 7.6 revisto pelo dono do projeto (guia visual de marcação). |
+| **Avatar do Roblox** carregado no servidor (`GetHumanoidDescriptionFromUserId`, uma vez por sessão), com as escalas do corpo zeradas para o padrão (`CharacterConfig.Avatar`). Falhou ou UserId de teste (≤ 0, como os jogadores do Studio): corpo base. Acessórios ficam no grupo de colisão do corpo (tiros e visão atravessam). | GDD 3.2. A hitbox continua a mesma para todos. |

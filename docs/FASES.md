@@ -38,7 +38,7 @@
 | F3 | Loop da partida | Partida completa em arenas cinza | ✅ |
 | F4 | Cartas | 4 cartas funcionando | ✅ |
 | ⭐ | **Marco: primeiro jogável** | Teste interno com amigos | ✅ |
-| F5 | Lobby e fila | Entrar na fila e cair na partida com amigos | 🔶 em teste |
+| F5 | Lobby e fila | Entrar na fila e cair na partida com amigos | ✅ |
 | F6 | Tutorial | Primeira entrada guiada | ☐ |
 | F7 | Interface final | Telas T1–T6 no estilo definitivo | ☐ |
 | F8 | Social e voz | Dupla se comunica e continua junta | ☐ |
@@ -116,7 +116,7 @@ Por que essa ordem:
 - Tiro instantâneo validado no servidor (cadência, munição, distância, linha de visão).
 - Perda de dano com a distância, recuo simples, espalhamento.
 - Controles do GDD 7.2.6: toque, mouse e controle; tiro automático por tipo de arma; assistência de mira.
-- Contornos do GDD 7.6: inimigo vermelho só visível; parceiro só com corpo inteiro escondido.
+- Contornos do GDD 7.6: inimigo vermelho só visível; parceiro só com corpo inteiro escondido. *(Revisto na F6: contorno e barra vermelhos no inimigo, barra verde e silhueta verde no aliado.)*
 - Feedback do GDD 7.7: sem sangue, número de dano, marcador de acerto, aviso `N KILL`, sons provisórios.
 - Retícula e sensibilidade lidas do perfil.
 - Arena de teste cinza com alvos e coberturas.
@@ -336,7 +336,7 @@ Só seguir para a F5 quando a partida for divertida em blocos cinza.
 - 4 ilhas de duelo: Praça, Fábrica, Porto, Torre (GDD seção 15), com zonas nomeadas e pontos de escudo.
 - Mirante final (plano, sem torre) e céu/nuvens.
 - Lobby 3D final.
-- Personagem base low poly, braços e armas em primeira pessoa, cor da equipe.
+- Braços e armas em primeira pessoa (o personagem é o avatar do jogador desde a F6, GDD 3.2).
 - Modelos das 18 armas + corpo a corpo.
 - Efeitos finais das 4 cartas (únicos com brilho, junto com a carta Celestial).
 - Sons finais (tiro macio, "crack" de abate) — aprovação do dono do projeto.

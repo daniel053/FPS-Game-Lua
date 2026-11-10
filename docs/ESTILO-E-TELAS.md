@@ -131,7 +131,7 @@ Proibido em todo o resto: fundos, textos, ícones, barras, botões comuns, HUD.
 - Abrir modal: sobe 24 px e aparece em 0,2 s.
 - Trocar aba: transição de 0,15 s.
 - Seleção de item: leve aumento de escala (1,04) em 0,1 s.
-- Nada pisca rápido. Nada de animação contínua fora da carta Celestial e do botão Girar.
+- Nada pisca rápido. Nada de animação contínua fora da carta Celestial, do botão Girar e do contorno do inimigo em jogo (pulso lento de ~1,2 s, GDD 7.6; desligado com "reduzir efeitos").
 
 ---
 

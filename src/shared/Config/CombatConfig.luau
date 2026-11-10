@@ -100,9 +100,20 @@ local CombatConfig = {
 		PullDegreesPerSecond = 4, -- puxa a mira devagar para o inimigo, só enquanto o jogador se mexe
 	},
 
-	-- Contornos (GDD 7.6) [DECIDIDO]
-	Outline = {
-		PartnerCheckSeconds = 0.1, -- frequência da checagem "corpo inteiro escondido"
+	-- Marcação de aliado e inimigo (GDD 7.6) [DECIDIDO]; números [PROPOSTA]. Cores no Theme.Marker.
+	Markers = {
+		CheckSeconds = 0.1, -- frequência da checagem de visibilidade (raios até 6 pontos do corpo)
+		EnemyPulseSeconds = 1.2, -- ciclo do pulso do contorno do inimigo (devagar; sem pulso com "reduzir efeitos")
+		EnemyOutlineTransparencyMin = 0, -- contorno do inimigo: varia entre estes dois valores
+		EnemyOutlineTransparencyMax = 0.45,
+		EnemyFillTransparency = 0.82, -- leve brilho vermelho por cima do corpo
+		AllySilhouetteFillTransparency = 0.35, -- silhueta verde do aliado atrás da parede
+		BarWidth = 64, -- barra sobre a cabeça, em pixels (tamanho fixo na tela)
+		BarHeight = 7,
+		ShieldLineHeight = 3, -- linha fina do escudo, em cima da barra
+		BarGap = 2, -- espaço entre a linha do escudo e a barra
+		BarOffsetStuds = 1.4, -- acima do topo da cabeça
+		BarMaxDistance = 300, -- além disso, a barra some (studs)
 	},
 
 	-- Movimento ao andar (para espalhamento): velocidade acima disto conta como "andando"

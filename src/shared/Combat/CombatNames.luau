@@ -20,7 +20,6 @@ return {
 
 	-- Peça invisível que recebe os tiros (uma por personagem).
 	HitboxName = "Hitbox",
-	TeamBandName = "TeamColor", -- faixas dos braços e capacete
 
 	-- Grupos de colisão (o servidor registra; os raios do cliente usam os mesmos nomes)
 	Groups = {

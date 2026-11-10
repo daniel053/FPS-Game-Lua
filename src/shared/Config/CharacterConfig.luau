@@ -28,11 +28,17 @@ local CharacterConfig = {
 		MaxPitchDegrees = 80, -- quanto dá para olhar para cima e para baixo
 	},
 
-	-- Personagem base (GDD 3.2): o mesmo para todos, sem o avatar do jogador [PROPOSTA].
-	-- A cor da equipe vai numa faixa em cada braço e no capacete (GDD 3.3) [DECIDIDO].
-	BaseBody = {
-		ArmBandHeight = 0.35, -- altura da faixa na parte de cima de cada braço
-		HelmetHeight = 0.45,
+	-- Personagem (GDD 3.2) [DECIDIDO]: o avatar do Roblox de cada jogador, com o tamanho do corpo
+	-- igualado (escalas padrão do Roblox), para todos terem a mesma altura. A hitbox é sempre a mesma.
+	-- Sem cor de equipe no corpo (GDD 3.3 e 7.6).
+	Avatar = {
+		UseRobloxAvatar = true, -- false = todos com o corpo base de blocos
+		HeightScale = 1,
+		WidthScale = 1,
+		DepthScale = 1,
+		HeadScale = 1,
+		BodyTypeScale = 0,
+		ProportionScale = 0,
 	},
 
 	-- Altura do personagem em studs (KIT-MODULAR seção 1)

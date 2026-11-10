@@ -1,7 +1,7 @@
 --!strict
 -- Nuvens da carta Nuvem no mundo (criadas pelo servidor, tag CardSmoke). A nuvem quase opaca já
 -- esconde o corpo; aqui fica a conta "a linha de A até B passa por alguma nuvem?", usada para:
---   * não mostrar o contorno do inimigo através da nuvem (HighlightController);
+--   * não mostrar o contorno do inimigo através da nuvem (TeamMarkers);
 --   * tiro automático e assistência de mira não "enxergarem" através dela (WeaponController).
 -- Atirar através da nuvem continua valendo: ela bloqueia a visão, não as balas.
 

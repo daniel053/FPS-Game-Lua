@@ -61,7 +61,19 @@ local Theme = {
 		Ciano = hex("#2BA8B8"),
 	} :: { [Types.TeamColorId]: Color3 },
 
-	-- Contorno do inimigo (GDD 7.6) e opções para daltônicos (ESTILO 5). Escolha salva em settings.enemyOutlineColor.
+	-- Marcação de aliado (GDD 7.6) [DECIDIDO]: verde fluorescente na silhueta atrás da parede e
+	-- verde na barra de vida. Não é material Neon (ESTILO 2.6): é cor de Highlight e de interface.
+	Marker = {
+		AllySilhouette = hex("#3DFF6E"),
+		AllyBar = hex("#4ADE80"),
+		BarBack = hex("#141A2E"),
+		BarBorder = hex("#0B0F1E"),
+		ShieldLine = hex("#4FA8FF"),
+		AllyName = hex("#FFFFFF"),
+	},
+	MarkerBarBackTransparency = 0.25,
+
+	-- Contorno e barra do inimigo (GDD 7.6) e opções para daltônicos (ESTILO 5). Escolha salva em settings.enemyOutlineColor.
 	EnemyOutline = {
 		red = hex("#FF3B4E"),
 		yellow = hex("#FFD23F"),
