@@ -10,13 +10,13 @@ local DataConfig = require(Shared.Config.DataConfig)
 local PlayerData = require(Shared.Types.PlayerData)
 local Strings = require(Shared.Config.Strings)
 local Theme = require(Shared.Config.Theme)
-local TutorialConfig = require(Shared.Config.TutorialConfig)
-local Ui = require(Shared.Ui.ProvisionalUi)
+local UiConfig = require(Shared.Config.UiConfig)
+local Ui = require(Shared.Ui.Ui)
 
-local AimCamera = require(script.Parent.Parent.Common.AimCamera)
-local InputDevice = require(script.Parent.Parent.Common.InputDevice)
-local PlayerDataClient = require(script.Parent.Parent.Common.PlayerDataClient)
-local Slider = require(script.Parent.Slider)
+local AimCamera = require(script.Parent.Parent.AimCamera)
+local InputDevice = require(script.Parent.Parent.InputDevice)
+local PlayerDataClient = require(script.Parent.Parent.PlayerDataClient)
+local Widgets = require(script.Parent.Parent.Ui.Widgets)
 
 local S = Strings.Tutorial.Sensitivity
 local LIMITS = DataConfig.Limits
@@ -52,12 +52,12 @@ function SensitivityPanel.open(container: GuiObject): Panel
 		AimCamera.setPreview(working)
 	end
 
-	local main = Slider.new(
+	local main = Widgets.slider(
 		container,
 		S.Device[device] or S.Device.KeyboardMouse,
 		LIMITS.Sensitivity.Min,
 		LIMITS.Sensitivity.Max,
-		TutorialConfig.Settings.SliderStep,
+		UiConfig.Settings.SliderStep,
 		(working :: any)[field],
 		format,
 		function(v: number)
@@ -67,12 +67,12 @@ function SensitivityPanel.open(container: GuiObject): Panel
 	)
 	main.frame.LayoutOrder = 2
 
-	local scoped = Slider.new(
+	local scoped = Widgets.slider(
 		container,
 		S.Scoped,
 		LIMITS.ScopedMultiplier.Min,
 		LIMITS.ScopedMultiplier.Max,
-		TutorialConfig.Settings.SliderStep,
+		UiConfig.Settings.SliderStep,
 		working.scopedMultiplier,
 		format,
 		function(v: number)
@@ -87,6 +87,13 @@ function SensitivityPanel.open(container: GuiObject): Panel
 		commit = function()
 			local patch: { [string]: any } = { scopedMultiplier = working.scopedMultiplier }
 			patch[field] = (working :: any)[field]
+			if
+				working.scopedMultiplier == saved.scopedMultiplier
+				and (working :: any)[field] == (saved :: any)[field]
+			then
+				AimCamera.setPreview(nil) -- nada mudou
+				return
+			end
 			PlayerDataClient.requestSettings({ sensitivity = patch })
 			-- A prévia sai quando o perfil salvo chegar (com os mesmos valores)
 			task.delay(3, function()

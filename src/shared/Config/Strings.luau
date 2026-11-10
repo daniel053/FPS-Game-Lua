@@ -93,11 +93,102 @@ local Strings = {
 		GamepadUlt = "RB",
 	},
 
-	Rarities = {
-		Comum = "Comum",
-		Epica = "Épica",
-		Lendaria = "Lendária",
-		Celestial = "Celestial",
+	-- Raridades (ESTILO 2.2): sempre nome + ícone, nunca só a cor
+	Rarity = {
+		Comum = { name = "Comum", icon = "◆" },
+		Epica = { name = "Épica", icon = "★" },
+		Lendaria = { name = "Lendária", icon = "♛" },
+		Celestial = { name = "Celestial", icon = "☀" },
+	} :: { [string]: { name: string, icon: string } },
+
+	-- Painel de configurações (P no PC, engrenagem no celular). O jogo não pausa (GDD 13.3).
+	Settings = {
+		Title = "CONFIGURAÇÕES",
+		Hint = "Configurações",
+		Tabs = {
+			Crosshair = "Retícula",
+			Sensitivity = "Sensibilidade",
+			Audio = "Áudio",
+			Voice = "Voz",
+			Accessibility = "Acessibilidade",
+			Buttons = "Botões",
+		},
+		SavedOnLeave = "As mudanças são salvas ao trocar de aba ou fechar.",
+		AutoFire = "Tiro automático (toque)",
+		AimAssist = "Assistência de mira (toque e controle)",
+		Audio = {
+			Master = "Volume geral",
+			Sfx = "Efeitos",
+			Music = "Música",
+			Voice = "Voz da dupla",
+		},
+		Percent = "%d%%",
+		EnemyColor = "Cor do contorno do inimigo",
+		EnemyColors = {
+			red = "Vermelho",
+			yellow = "Amarelo",
+			magenta = "Magenta",
+		} :: { [string]: string },
+		TextSize = "Tamanho do texto",
+		TextSizes = {
+			["1"] = "100%",
+			["1.15"] = "115%",
+			["1.3"] = "130%",
+		} :: { [string]: string },
+		ReduceEffects = "Reduzir efeitos de tela (tremor e flashes)",
+		Graphics = "Qualidade gráfica: no menu do Roblox (ESC no PC).",
+		Buttons = {
+			Body = "Arraste os botões de combate para onde o seu polegar alcança e ajuste o tamanho.",
+			Edit = "EDITAR BOTÕES",
+			Reset = "RESTAURAR PADRÃO",
+		},
+	},
+
+	-- Editor de botões do celular (F7)
+	LayoutEditor = {
+		Title = "EDITAR BOTÕES",
+		Hint = "Arraste um botão. Toque nele para mudar o tamanho.",
+		Size = "Tamanho: %d%%",
+		Smaller = "−",
+		Bigger = "+",
+		Save = "SALVAR",
+		Cancel = "CANCELAR",
+		Reset = "PADRÃO",
+		Names = {
+			Fire = "ATIRAR",
+			Aim = "MIRA",
+			Switch = "1⇄2",
+			Reload = "RECARREGAR",
+			Q = "Q",
+			E = "E",
+			C = "C",
+			X = "X",
+		} :: { [string]: string },
+	},
+
+	-- Legendas de avisos sonoros importantes (ESTILO 5)
+	Captions = {
+		EnemyCard = "Inimigo usou %s",
+		AllyCard = "Parceiro usou %s",
+		ShieldBroken = "Escudo quebrado",
+		Knocked = "Inimigo derrubado",
+		ZoneClosing = "A zona começou a fechar",
+	},
+
+	-- Símbolos e palavras dos componentes (F7)
+	Ui = {
+		Arrow = "›",
+		Back = "‹",
+		Close = "✕",
+		Gear = "⚙",
+		Minus = "−",
+		Plus = "+",
+		Lock = "🔒",
+		Check = "✓",
+		On = "Ligado",
+		Off = "Desligado",
+		Soon = "Em breve",
+		Coin = "●",
 	},
 
 	Ranks = {
@@ -448,8 +539,6 @@ local Strings = {
 			Thickness = "Espessura",
 			Gap = "Espaço no meio",
 			Outline = "Contorno escuro",
-			On = "LIGADO",
-			Off = "DESLIGADO",
 		},
 		Save = "SALVAR E CONTINUAR",
 		Skip = "PULAR",

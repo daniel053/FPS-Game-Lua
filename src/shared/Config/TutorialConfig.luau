@@ -100,7 +100,6 @@ local TutorialConfig = {
 		Weapon = "weapon_luneta",
 		Secondary = "weapon_bolinha",
 		MovingTargets = 3,
-		SliderStep = 0.05, -- botões − e + do controle deslizante
 	},
 
 	-- Alvos (bonecos parados, inimigos de todos, com contorno e barra vermelhos)

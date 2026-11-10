@@ -25,10 +25,10 @@ local WeaponConfig = require(Shared.Config.WeaponConfig)
 
 local DevPanelController = require(script.Parent.Parent.Common.DevPanelController)
 local InputDevice = require(script.Parent.Parent.Common.InputDevice)
-local CrosshairEditor = require(script.Parent.CrosshairEditor)
-local SensitivityPanel = require(script.Parent.SensitivityPanel)
+local CrosshairEditor = require(script.Parent.Parent.Common.Settings.CrosshairEditor)
+local SensitivityPanel = require(script.Parent.Parent.Common.Settings.SensitivityPanel)
 local TutorialClient = require(script.Parent.TutorialClient)
-local VoicePanel = require(script.Parent.VoicePanel)
+local VoicePanel = require(script.Parent.Parent.Common.Settings.VoicePanel)
 
 type Snapshot = TutorialTypes.Snapshot
 type Panel = { commit: () -> (), close: () -> () }

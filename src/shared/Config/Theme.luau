@@ -174,6 +174,71 @@ local Theme = {
 	SmallCardCornerRadius = 6,
 	ScreenMargin = 16,
 
+	-- Cantos chanfrados (ESTILO 2.5): corte diagonal no canto superior esquerdo e no inferior direito,
+	-- em pixels. Painéis e botões principais; cartões pequenos usam o canto arredondado de 6 px.
+	Chamfer = {
+		Panel = 14,
+		Button = 10,
+		Tab = 6,
+	},
+
+	-- Espaçamentos padrão dos componentes (F7)
+	Space = {
+		Small = 6,
+		Medium = 10,
+		Large = 14,
+		PanelPadding = 16,
+	},
+
+	-- Item selecionado (ESTILO 2.5): borda do acento + brilho discreto em volta (accent.glow)
+	Selected = {
+		BorderThickness = 3,
+		GlowPadding = 4,
+	},
+	DisabledTransparency = 0.45, -- botão desativado ("Em breve")
+
+	-- HUD em partida (ESTILO T6, F7). Tamanhos em pixels de celular; sem neon.
+	Hud = {
+		BarWidth = 220,
+		BarHeight = 12,
+		AmmoTextSize = 34,
+		KillTextSize = 36,
+		TopAvatarSize = 30,
+		TopHeartSize = 18,
+		TimerTextSize = 30,
+		MinimapSize = 132,
+		MinimapSizeSmall = 104,
+		CardTile = 60,
+		HintKeyGap = 14,
+	},
+
+	-- Minimapa (GDD 7.6 e ESTILO T6): ilha cinza, zona roxa, aliado verde, inimigo na cor de acessibilidade
+	Minimap = {
+		Background = hex("#141A2E"),
+		Island = hex("#5A6280"),
+		Cover = hex("#8A90A8"),
+		Zone = hex("#8B5CF6"),
+		Me = hex("#FFFFFF"),
+		Ally = hex("#4ADE80"),
+	},
+	MinimapBackgroundTransparency = 0.15,
+
+	-- Placar (Tab): linha da minha dupla com fundo do acento bem leve
+	ScoreboardMineTransparency = 0.75,
+
+	-- Editor de botões do celular (F7)
+	LayoutEditor = {
+		Ghost = hex("#1E2640"),
+		GhostSelected = hex("#8B5CF6"),
+		Grid = hex("#AEB6D0"),
+	},
+	LayoutEditorGhostTransparency = 0.2,
+
+	-- Lobby (T3): o fundo é o mundo cinza do lobby; o cartão do modo tem uma faixa de cor no topo
+	Lobby = {
+		ModeBanner = hex("#2B3460"),
+	},
+
 	-- Animação (ESTILO 2.7) [PROPOSTA]
 	Animation = {
 		ModalOpenOffset = 24,

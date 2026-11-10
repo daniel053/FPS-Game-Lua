@@ -11,10 +11,10 @@ local DataConfig = require(Shared.Config.DataConfig)
 local PlayerData = require(Shared.Types.PlayerData)
 local Strings = require(Shared.Config.Strings)
 local Theme = require(Shared.Config.Theme)
-local Ui = require(Shared.Ui.ProvisionalUi)
+local Ui = require(Shared.Ui.Ui)
 
-local PlayerDataClient = require(script.Parent.Parent.Common.PlayerDataClient)
-local Slider = require(script.Parent.Slider)
+local PlayerDataClient = require(script.Parent.Parent.PlayerDataClient)
+local Widgets = require(script.Parent.Parent.Ui.Widgets)
 
 local C = Strings.Tutorial.Crosshair
 local LIMITS = DataConfig.Limits
@@ -81,27 +81,15 @@ function CrosshairEditor.open(container: GuiObject): Panel
 	end
 
 	-- Formato
-	local shapeRow = row(container, 2, 20 + 8 + Theme.Touch.MinTarget)
-	caption(shapeRow, C.Shape)
-	local shapeList = Ui.frame("Shapes", shapeRow)
-	shapeList.Position = UDim2.fromOffset(0, 28)
-	shapeList.Size = UDim2.new(1, 0, 0, Theme.Touch.MinTarget)
-	Ui.list(shapeList, Enum.FillDirection.Horizontal, 6)
-	for i, shape in SHAPES do
-		local b = Ui.button("Shape", C.Shapes[shape] or shape, false, shapeList)
-		b.Size = UDim2.new(0.25, -5, 1, 0)
-		b.TextSize = Theme.TextSize.Label
-		b.TextWrapped = true
-		b.LayoutOrder = i
-		b.Modal = true
-		b.Activated:Connect(function()
-			working.shape = shape :: any
-			render()
-		end)
-		table.insert(refreshButtons, function()
-			b.BackgroundColor3 = if working.shape == shape then Theme.Color.Accent else Theme.Color.PanelRaised
-		end)
+	local shapeOptions = {}
+	for _, shape in SHAPES do
+		table.insert(shapeOptions, { id = shape, label = C.Shapes[shape] or shape })
 	end
+	local shapeChoice = Widgets.choice(container, C.Shape, shapeOptions, working.shape, function(id: string)
+		working.shape = id :: any
+		render()
+	end)
+	shapeChoice.frame.LayoutOrder = 2
 
 	-- Cor
 	local colorRow = row(container, 3, 20 + 8 + Theme.Touch.MinTarget)
@@ -133,7 +121,7 @@ function CrosshairEditor.open(container: GuiObject): Panel
 
 	-- Números (inteiros)
 	local function intSlider(order: number, title: string, range: { Min: number, Max: number }, key: string)
-		local s = Slider.new(
+		local s = Widgets.slider(
 			container,
 			title,
 			range.Min,
@@ -155,29 +143,29 @@ function CrosshairEditor.open(container: GuiObject): Panel
 	intSlider(6, C.Gap, LIMITS.CrosshairGap, "gap")
 
 	-- Contorno
-	local outlineRow = row(container, 7, Theme.Touch.MinTarget)
-	local outlineLabel =
-		Ui.label("Caption", Theme.Font.BodyStrong, Theme.TextSize.Body, Theme.Color.TextPrimary, outlineRow)
-	outlineLabel.Size = UDim2.new(1, -150, 1, 0)
-	outlineLabel.TextXAlignment = Enum.TextXAlignment.Left
-	outlineLabel.Text = C.Outline
-	local outlineButton = Ui.button("Outline", "", false, outlineRow)
-	outlineButton.AnchorPoint = Vector2.new(1, 0)
-	outlineButton.Position = UDim2.fromScale(1, 0)
-	outlineButton.Size = UDim2.new(0, 140, 1, 0)
-	outlineButton.TextSize = Theme.TextSize.Body
-	outlineButton.Activated:Connect(function()
-		working.outline = not working.outline
+	local outline = Widgets.toggle(container, C.Outline, working.outline, function(on: boolean)
+		working.outline = on
 		render()
 	end)
-	table.insert(refreshButtons, function()
-		outlineButton.Text = if working.outline then C.On else C.Off
-		outlineButton.BackgroundColor3 = if working.outline then Theme.Color.Accent else Theme.Color.PanelRaised
-	end)
+	outline.frame.LayoutOrder = 7
 
 	render()
 	return {
 		commit = function()
+			-- Só pede se algo mudou (trocar de aba no painel P não gasta o limite de pedidos)
+			local saved = PlayerDataClient.get()
+			local before = if saved then saved.settings.crosshair else nil
+			if before then
+				local changed = false
+				for key, value in working :: any do
+					if (before :: any)[key] ~= value then
+						changed = true
+					end
+				end
+				if not changed then
+					return
+				end
+			end
 			PlayerDataClient.requestSettings({ crosshair = table.clone(working) })
 		end,
 		close = function() end,

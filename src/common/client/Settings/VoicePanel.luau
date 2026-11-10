@@ -12,7 +12,7 @@ local VoiceChatService = game:GetService("VoiceChatService")
 local Shared = ReplicatedStorage.Shared
 local Strings = require(Shared.Config.Strings)
 local Theme = require(Shared.Config.Theme)
-local Ui = require(Shared.Ui.ProvisionalUi)
+local Ui = require(Shared.Ui.Ui)
 
 local V = Strings.Tutorial.Voice
 local METER_GAIN = 4 -- nível do microfone (0..~0,25 falando) para a barra (0..1)
