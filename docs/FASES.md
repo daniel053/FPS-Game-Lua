@@ -39,7 +39,7 @@
 | F4 | Cartas | 4 cartas funcionando | ✅ |
 | ⭐ | **Marco: primeiro jogável** | Teste interno com amigos | ✅ |
 | F5 | Lobby e fila | Entrar na fila e cair na partida com amigos | ✅ |
-| F6 | Tutorial | Primeira entrada guiada | 🔶 em teste |
+| F6 | Tutorial | Primeira entrada guiada | ✅ |
 | F7 | Interface final | Telas T1–T6 no estilo definitivo | ☐ |
 | F8 | Social e voz | Dupla se comunica e continua junta | ☐ |
 | F9 | Elo, economia e arsenal | Progressão completa | ☐ |

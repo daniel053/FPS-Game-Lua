@@ -804,7 +804,7 @@ O Roblox exige verificação de idade para usar o chat e limita conversas a faix
 ### 12.2 Voz
 
 - Incentivada desde o tutorial (seção 5.2).
-- Durante a rodada, a voz deve ser **só da dupla**, independentemente da distância. Entre rodadas, no mirante, voz por proximidade. `[PROPOSTA]` (usar a API de áudio do Roblox para canal de equipe; confirmar viabilidade na fase F6.)
+- Durante a rodada, a voz deve ser **só da dupla**, independentemente da distância. Entre rodadas, no mirante, voz por proximidade. `[PROPOSTA]` (usar a API de áudio do Roblox para canal de equipe; viabilidade verificada na F8.)
 - Quem pode usar voz é decidido pelo Roblox, não pelo jogo.
 
 ### 12.3 Sem voz e sem texto
@@ -1066,13 +1066,13 @@ Ordem resumida: F0 Base → F1 Dados do jogador → F2 Combate → F3 Loop da pa
 6. Raridade da carta muda o poder dela ou só a dificuldade de conseguir?
 7. O diamante roxo que aparece no lobby do mockup é uma segunda moeda (comprada com Robux)? Se sim, ela não pode ser usada para girar cartas (seção 8.9).
 8. Quais mapas são maiores e quais menores?
-8. Ferramentas de ADM além do elo visual.
-9. Câmeras cinematográficas (cerimônia de campeão) também em primeira pessoa?
-10. ~~Onde fica a cor da equipe no personagem?~~ Respondida na F6: não fica no personagem; marcação verde/vermelha na ilha (seções 3.3 e 7.6).
-11. ~~Final melhor de 3: sim ou não?~~ Respondida: sim, e na final as vidas param de contar (seção 4.7).
-12. Preços em Robux e passe VIP.
-13. Plantas baixas dos 4 mapas e paletas.
-14. Temas das primeiras skins.
+9. Ferramentas de ADM além do elo visual.
+10. Câmeras cinematográficas (cerimônia de campeão) também em primeira pessoa?
+11. ~~Onde fica a cor da equipe no personagem?~~ Respondida na F6: não fica no personagem; marcação verde/vermelha na ilha (seções 3.3 e 7.6).
+12. ~~Final melhor de 3: sim ou não?~~ Respondida: sim, e na final as vidas param de contar (seção 4.7).
+13. Preços em Robux e passe VIP.
+14. Plantas baixas dos 4 mapas e paletas.
+15. Temas das primeiras skins.
 
 ---
 
