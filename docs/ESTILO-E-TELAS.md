@@ -147,6 +147,7 @@ Proibido em todo o resto: fundos, textos, ícones, barras, botões comuns, HUD.
 | Placar | botão no topo | tecla **Tab** |
 | Menu do Roblox | — | **ESC (reservado pelo Roblox, não usar)** |
 
+- **Controle (F7):** direcional → configurações, ↓ habilidades, ← placar; X confirma no modal de preparação. Select e Start são do Roblox. Detalhes em GDD 20 (F7).
 - Toda tela é desenhada primeiro para celular deitado (paisagem) e depois ajustada para PC.
 - Usar escala relativa e respeitar a área segura (entalhe da câmera).
 - Alvo de toque mínimo: 44 px; botões de ação em combate: 64 px; botão de atirar: 80 px.

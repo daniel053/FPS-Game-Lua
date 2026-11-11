@@ -105,6 +105,35 @@ No mesmo painel **TESTE**, seção **DADOS DO JOGADOR**:
 
 Para simular falha do DataStore: no Studio, selecione o **ServerStorage**, adicione o atributo booleano `DEV_SimulateLoadFailure` marcado e aperte Play. O jogador deve ser expulso com a mensagem de falha, sem perder nada. Apague o atributo depois.
 
+## Testar a interface final (F7)
+
+Todas as telas usam os componentes de `src/shared/Ui` (peças básicas) e `src/common/client/Ui` (botões, abas, cartões, modal…), com cores do `Theme` e textos do `Strings`.
+
+| Onde | O que olhar |
+|---|---|
+| **Lobby** (T3) | logo provisória + LOBBY, moedas e engrenagem no topo; dupla com avatares à esquerda; DUELO EM DUPLA com JOGAR à direita; navegação embaixo (Ranking e Loja "Em breve"); ilhas cinza flutuando ao fundo |
+| **Lobby › CARTAS** (T1) | carrossel (arrastar, setas ← →, roda do mouse), filtros com nome e ícone, tecla, descrição, GIRAR desativado |
+| **Lobby › MAPAS** (T4) | mirante e as 4 ilhas vistas de cima; tocar numa ilha mostra a descrição |
+| **Lobby › ARSENAL** (T5) | abas, armas em 3D, detalhe girando, skin Padrão equipada; no celular o detalhe abre por cima da grade |
+| **Partida › preparação** (T2) | modal sobre o mapa, etapas como abas, armas em 3D, barras, parceiro em tempo real, REPETIR ÚLTIMA, CONFIRMAR (Enter / X); no celular uma aba por categoria |
+| **Partida › HUD** (T6) | duplas com avatares, vidas e tempo no topo; minimapa; dicas [B] [P] [Tab] no PC; munição "25 | ∞"; aviso N KILL; legendas "Inimigo usou …" |
+| **Tab** (PC) / **←** (controle) / **PLACAR** (celular) | placar com todas as duplas; a lista de jogadores do Roblox some |
+| **P** (PC) / **→** (controle) / **engrenagem** (celular) | configurações em qualquer place, sem pausar; salva ao trocar de aba ou fechar |
+| **Configurações › Botões** (só celular) | EDITAR BOTÕES: arrastar, − / +, PADRÃO, SALVAR; na partida os botões ficam onde você deixou |
+| **Configurações › Acessibilidade** | cor do inimigo (contorno, barra e minimapa), tamanho do texto 100/115/130%, reduzir efeitos |
+
+### Checklist (ESTILO seção 6), em cada tela
+
+Testar no emulador do Studio (aba Teste › Dispositivo) em **celular pequeno**, **celular grande** e **tablet**, num **celular de verdade** e no **PC** (e com controle, se tiver):
+
+- [ ] Funciona com o celular deitado, com o polegar alcançando os botões.
+- [ ] No PC, sem botões de toque e com os atalhos visíveis.
+- [ ] Nenhum vermelho fora de perigo/inimigo/Celestial e nenhum neon fora da logo e do item selecionado.
+- [ ] Nenhum modal com fundo preto opaco (o jogo aparece atrás).
+- [ ] Textos legíveis (contraste conferido nos testes automáticos) e sem nomes de outros jogos.
+
+Para montar uma partida com um cliente só: painel **TESTE › PARTIDA › +7 JOGADORES DE TESTE** e **COMEÇAR AGORA**; **DADOS › DAR AS 4 CARTAS** antes, para ver a etapa da carta.
+
 ## Testar o tutorial (F6)
 
 No place **Tutorial** (porta **34873**). Ao dar Play, o servidor monta a arena cinza do tutorial (7 estações lado a lado, no alto) e leva o jogador pelas 8 etapas: boas-vindas, movimento, armas (6 lições), cartas (Impulso, Nuvem, Tremor e Renascer, cada uma com um desafio), voz, sensibilidade, retícula e final.

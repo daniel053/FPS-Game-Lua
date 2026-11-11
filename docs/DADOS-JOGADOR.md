@@ -89,6 +89,9 @@ export type SensitivitySettings = {
 	scopedMultiplier: number,    -- multiplicador quando a mira de sniper está aberta
 }
 
+-- Chave: botão de combate ("Fire", "Aim", "Switch", "Reload", "Q", "E", "C", "X").
+-- x, y: centro do botão, relativo (0 a 1) à área segura da tela; scale: sobre o tamanho padrão.
+-- Botão ausente = posição e tamanho padrão (editor de botões do painel de configurações, F7).
 export type MobileButtonLayout = {
 	[string]: { x: number, y: number, scale: number },  -- posição relativa (0 a 1) e escala
 }
