@@ -222,11 +222,22 @@ function Ui.panel(name: string, parent: Instance?, padding: number?, cut: number
 end
 
 -- Painel que cresce com o conteúdo (AutomaticSize Y): o conteúdo define a altura.
+-- A altura do painel acompanha a do conteúdo por código: o AutomaticSize do Roblox somaria as peças
+-- do fundo chanfrado e deixaria uma sobra embaixo.
 function Ui.autoPanel(name: string, parent: Instance?, padding: number?): (Frame, Frame)
 	local f, content = Ui.panel(name, parent, padding)
-	f.AutomaticSize = Enum.AutomaticSize.Y
 	content.AutomaticSize = Enum.AutomaticSize.Y
 	content.Size = UDim2.fromScale(1, 0)
+	local function sync()
+		local size = f.Size
+		local height = content.AbsoluteSize.Y
+		if size.Y.Scale ~= 0 or size.Y.Offset ~= height then
+			f.Size = UDim2.new(size.X.Scale, size.X.Offset, 0, height)
+		end
+	end
+	content:GetPropertyChangedSignal("AbsoluteSize"):Connect(sync)
+	f:GetPropertyChangedSignal("Size"):Connect(sync)
+	sync()
 	return f, content
 end
 

@@ -1,5 +1,5 @@
 --!strict
--- Telas do tutorial (F6), provisórias (visual final na F7), sempre sobre o jogo (nunca fundo opaco):
+-- Telas do tutorial (F6; visual final da F7), sempre sobre o jogo (nunca fundo opaco):
 --   * faixa no topo: etapa, lição/carta, tarefas com progresso e a dica do controle em uso;
 --   * janela no centro: boas-vindas, carta grande, "Você ganhou a carta", fases das armas, final;
 --   * painel à esquerda: voz, sensibilidade e retícula (Salvar/Pular), com o jogo visível ao lado.
@@ -20,11 +20,12 @@ local TextUtil = require(Shared.TextUtil)
 local Theme = require(Shared.Config.Theme)
 local TutorialConfig = require(Shared.Config.TutorialConfig)
 local TutorialTypes = require(Shared.Tutorial.TutorialTypes)
-local Ui = require(Shared.Ui.ProvisionalUi)
+local Ui = require(Shared.Ui.Ui)
 local WeaponConfig = require(Shared.Config.WeaponConfig)
 
 local DevPanelController = require(script.Parent.Parent.Common.DevPanelController)
 local InputDevice = require(script.Parent.Parent.Common.InputDevice)
+local Widgets = require(script.Parent.Parent.Common.Ui.Widgets)
 local CrosshairEditor = require(script.Parent.Parent.Common.Settings.CrosshairEditor)
 local SensitivityPanel = require(script.Parent.Parent.Common.Settings.SensitivityPanel)
 local TutorialClient = require(script.Parent.TutorialClient)
@@ -86,37 +87,31 @@ end
 
 -- Botão principal com o chip "Enter" no PC.
 local function primary(parent: Instance, label: string, onClick: () -> ()): TextButton
-	local button = Ui.button("Primary", TextUtil.upper(label), true, parent)
-	button.Size = UDim2.fromOffset(260, Theme.PrimaryButtonMinHeight)
-	button.Modal = true -- libera o mouse da primeira pessoa (PC)
-	button.Activated:Connect(onClick)
-	if InputDevice.get() == "KeyboardMouse" then
-		local chip = Ui.keyChip(T.ContinueKey, button)
-		chip.AnchorPoint = Vector2.new(1, 0.5)
-		chip.Position = UDim2.new(1, -8, 0.5, 0)
-		chip.Size = UDim2.fromOffset(48, 22)
-	end
+	local button = Widgets.button(parent, label, "primary", {
+		size = UDim2.fromOffset(260, Theme.PrimaryButtonMinHeight),
+		modal = true, -- libera o mouse da primeira pessoa (PC)
+		pc = T.ContinueKey,
+	})
+	button.root.Name = "Primary"
+	button.onClick(onClick)
 	primaryAction = onClick
-	primaryButton = button
-	return button
+	primaryButton = button.root
+	return button.root
 end
 
 local function secondary(parent: Instance, label: string, onClick: () -> ()): TextButton
-	local button = Ui.button("Secondary", TextUtil.upper(label), false, parent)
-	button.Size = UDim2.fromOffset(180, Theme.PrimaryButtonMinHeight)
-	button.Modal = true
-	button.Activated:Connect(onClick)
-	return button
+	local button = Widgets.button(parent, label, "secondary", {
+		size = UDim2.fromOffset(180, Theme.PrimaryButtonMinHeight),
+		modal = true,
+	})
+	button.root.Name = "Secondary"
+	button.onClick(onClick)
+	return button.root
 end
 
--- Animação de abrir (ESTILO 2.7): sobe 24 px e aparece em 0,2 s.
-local function popIn(frame: GuiObject)
-	local final = frame.Position
-	frame.Position = final + UDim2.fromOffset(0, Theme.Animation.ModalOpenOffset)
-	TweenService
-		:Create(frame, TweenInfo.new(Theme.Animation.ModalOpenTime, Enum.EasingStyle.Quad), { Position = final })
-		:Play()
-end
+-- Animação de abrir (ESTILO 2.7): sobe 24 px e aparece em 0,2 s (guarda a posição final, então
+-- abrir duas vezes seguidas não desloca a janela).
+local popIn = Widgets.popIn
 
 -- Faixa do topo -----------------------------------------------------------------------------------
 
@@ -263,13 +258,16 @@ local function bigCard(parent: Frame, cardId: string, animate: boolean)
 	local def = CardConfig.get(cardId)
 	local names = Strings.Cards[cardId]
 	local color = Theme.Cards[cardId] or Theme.Color.Accent
-	local card = Ui.panel("Card", parent)
+	local card = Ui.raised("Card", parent)
 	card.Size = UDim2.fromOffset(240, 190)
 	card.AnchorPoint = Vector2.new(0.5, 0)
 	card.Position = UDim2.fromScale(0.5, 0)
-	card.BackgroundColor3 = Theme.Color.PanelRaised
-	card.BackgroundTransparency = 0
-	Ui.stroke(card, color, 3)
+	local stroke = card:FindFirstChildOfClass("UIStroke")
+	if stroke then
+		stroke.Color = color
+		stroke.Thickness = 3
+	end
+	Ui.corner(card, 10)
 	Ui.padding(card, 12)
 	Ui.list(card, Enum.FillDirection.Vertical, 6).HorizontalAlignment = Enum.HorizontalAlignment.Center
 	local name = text("Name", Theme.Font.Title, Theme.TextSize.Title + 4, color, card, 32)
@@ -455,26 +453,25 @@ local function build()
 	gui = Ui.screen("Tutorial", 25, Enum.ScreenInsets.DeviceSafeInsets)
 
 	-- Faixa do topo
-	banner = Ui.panel("Banner", gui)
+	local bannerContent: Frame
+	banner, bannerContent = Ui.autoPanel("Banner", gui, 10)
 	banner.AnchorPoint = Vector2.new(0.5, 0)
 	banner.Position = UDim2.new(0.5, 0, 0, Theme.ScreenMargin)
 	banner.Size = UDim2.fromOffset(BANNER_WIDTH, 0)
-	banner.AutomaticSize = Enum.AutomaticSize.Y
 	banner.Visible = false
-	Ui.padding(banner, 10)
-	Ui.list(banner, Enum.FillDirection.Vertical, 4)
+	Ui.list(bannerContent, Enum.FillDirection.Vertical, 4)
 	local limit = Instance.new("UISizeConstraint")
 	limit.MaxSize = Vector2.new(BANNER_WIDTH, math.huge)
 	limit.Parent = banner
-	bannerTitle = text("Title", Theme.Font.Title, Theme.TextSize.Title, Theme.Color.TextPrimary, banner, 26)
+	bannerTitle = text("Title", Theme.Font.Title, Theme.TextSize.Title, Theme.Color.TextPrimary, bannerContent, 26)
 	bannerTitle.TextXAlignment = Enum.TextXAlignment.Left
 	bannerTitle.LayoutOrder = 1
-	bannerSub = text("Sub", Theme.Font.BodyStrong, Theme.TextSize.Body, Theme.Color.TextSecondary, banner, 20)
+	bannerSub = text("Sub", Theme.Font.BodyStrong, Theme.TextSize.Body, Theme.Color.TextSecondary, bannerContent, 20)
 	bannerSub.TextXAlignment = Enum.TextXAlignment.Left
 	bannerSub.LayoutOrder = 2
-	taskList = Ui.frame("Tasks", banner)
+	taskList = Ui.frame("Tasks", bannerContent)
 	taskList.LayoutOrder = 3
-	hintLabel = text("Hint", Theme.Font.Body, Theme.TextSize.Label + 1, Theme.Color.TextSecondary, banner, 0)
+	hintLabel = text("Hint", Theme.Font.Body, Theme.TextSize.Label + 1, Theme.Color.TextSecondary, bannerContent, 0)
 	hintLabel.AutomaticSize = Enum.AutomaticSize.Y
 	hintLabel.TextXAlignment = Enum.TextXAlignment.Left
 	hintLabel.LayoutOrder = 4
@@ -486,29 +483,28 @@ local function build()
 	overlay.BackgroundTransparency = Theme.Transparency.Overlay
 	overlay.Visible = false
 	overlay.Active = true
-	modal = Ui.panel("Modal", overlay)
+	local modalInner: Frame
+	modal, modalInner = Ui.autoPanel("Modal", overlay, 20)
 	modal.AnchorPoint = Vector2.new(0.5, 0.5)
 	modal.Position = UDim2.fromScale(0.5, 0.5)
 	modal.Size = UDim2.fromScale(0.9, 0)
-	modal.AutomaticSize = Enum.AutomaticSize.Y
 	local modalLimit = Instance.new("UISizeConstraint")
 	modalLimit.MaxSize = Vector2.new(MODAL_WIDTH, math.huge)
 	modalLimit.Parent = modal
-	Ui.padding(modal, 20)
-	modalContent = Ui.frame("Content", modal)
+	modalContent = Ui.frame("Content", modalInner)
 	modalContent.Size = UDim2.fromScale(1, 0)
 	modalContent.AutomaticSize = Enum.AutomaticSize.Y
 
 	-- Painel da esquerda (o lado direito fica livre para mirar e atirar)
-	side = Ui.panel("Side", gui)
+	local sideInner: Frame
+	side, sideInner = Ui.panel("Side", gui, 14)
 	side.Position = UDim2.fromOffset(Theme.ScreenMargin, Theme.ScreenMargin)
 	side.Size = UDim2.new(0.46, 0, 1, -2 * Theme.ScreenMargin)
 	side.Visible = false
 	local sideLimit = Instance.new("UISizeConstraint")
 	sideLimit.MaxSize = Vector2.new(PANEL_WIDTH, math.huge)
 	sideLimit.Parent = side
-	Ui.padding(side, 14)
-	sideTitle = text("Title", Theme.Font.Title, Theme.TextSize.Title, Theme.Color.TextPrimary, side, 30)
+	sideTitle = text("Title", Theme.Font.Title, Theme.TextSize.Title, Theme.Color.TextPrimary, sideInner, 30)
 	sideTitle.TextXAlignment = Enum.TextXAlignment.Left
 	sideContent = Instance.new("ScrollingFrame")
 	sideContent.Name = "Content"
@@ -520,24 +516,25 @@ local function build()
 	sideContent.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	sideContent.ScrollBarThickness = 4
 	sideContent.ScrollingDirection = Enum.ScrollingDirection.Y
-	sideContent.Parent = side
+	sideContent.Parent = sideInner
 	Ui.list(sideContent, Enum.FillDirection.Vertical, 12)
-	sideFooter = Ui.frame("Footer", side)
+	sideFooter = Ui.frame("Footer", sideInner)
 	sideFooter.AnchorPoint = Vector2.new(0, 1)
 	sideFooter.Position = UDim2.fromScale(0, 1)
 	sideFooter.Size = UDim2.new(1, 0, 0, Theme.PrimaryButtonMinHeight)
 
 	-- Modo TESTAR (sensibilidade): dica para voltar
-	backHint = Ui.panel("BackHint", gui)
+	local backInner: Frame
+	backHint, backInner = Ui.panel("BackHint", gui, nil, Theme.Chamfer.Tab)
 	backHint.AnchorPoint = Vector2.new(0, 0)
 	backHint.Position = UDim2.fromOffset(Theme.ScreenMargin, Theme.ScreenMargin)
 	backHint.Size = UDim2.fromOffset(260, 40)
 	backHint.Visible = false
-	local chip = Ui.keyChip(T.Sensitivity.BackKey, backHint)
+	local chip = Ui.keyChip(T.Sensitivity.BackKey, backInner)
 	chip.Name = "Chip"
 	chip.AnchorPoint = Vector2.new(0, 0.5)
 	chip.Position = UDim2.new(0, 10, 0.5, 0)
-	local backText = Ui.label("Text", Theme.Font.BodyStrong, Theme.TextSize.Body, Theme.Color.TextPrimary, backHint)
+	local backText = Ui.label("Text", Theme.Font.BodyStrong, Theme.TextSize.Body, Theme.Color.TextPrimary, backInner)
 	backText.Position = UDim2.fromOffset(42, 0)
 	backText.Size = UDim2.new(1, -50, 1, 0)
 	backText.TextXAlignment = Enum.TextXAlignment.Left
@@ -550,7 +547,7 @@ function TutorialScreen.Start()
 	build()
 	TutorialClient.onChanged(render)
 	InputDevice.onChanged(function(device: InputDevice.Device)
-		local chip = backHint:FindFirstChild("Chip")
+		local chip = backHint:FindFirstChild("Chip", true)
 		if chip and chip:IsA("TextLabel") then
 			chip.Text = if device == "Gamepad" then "B" else T.Sensitivity.BackKey
 		end
