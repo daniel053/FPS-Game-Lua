@@ -46,7 +46,7 @@ local Theme = {
 		Epica = { color = hex("#A855F7"), borderThickness = 3, glow = "leve", icon = "estrela" },
 		Lendaria = { color = hex("#F5B700"), borderThickness = 3, glow = "medio", icon = "coroa" },
 		Celestial = { color = hex("#FF1F3D"), borderThickness = 4, glow = "neon", icon = "sol" },
-	} :: { [Types.Rarity]: RarityStyle },
+	} :: { [string]: RarityStyle }, -- chave: Types.Rarity (string por causa do verificador de tipos)
 	CelestialPulseSeconds = 2,
 
 	-- Cores de equipe (GDD 3.3) [DECIDIDO]

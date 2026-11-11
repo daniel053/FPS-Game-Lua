@@ -1,9 +1,12 @@
 --!strict
--- Tela do lobby, versão SIMPLES da F5 (ESTILO T3; visual final na F7):
---   * esquerda: a dupla (nome, elo, Pronto/Esperando), + CONVIDAR e SAIR DA DUPLA;
+-- Tela do lobby (ESTILO T3, visual final da F7):
+--   * topo esquerdo: logo provisória + "LOBBY"; topo direito: moedas (a segunda moeda é [ABERTO] e
+--     não aparece) e a engrenagem (painel de configurações; P no PC);
+--   * esquerda: a dupla (avatar, nome, elo, Pronto/Esperando), + CONVIDAR AMIGOS e SAIR DA DUPLA;
 --   * direita: cartão "Duelo em dupla", x/2 prontos e o botão JOGAR, que vira
 --     "Procurando partida… 5/7" com CANCELAR;
---   * topo direito: moedas (segunda moeda é [ABERTO], não aparece);
+--   * centro: o cenário (ilhas cinza flutuantes, LobbyBackdrop), livre;
+--   * embaixo: navegação JOGAR, ARSENAL (T5), CARTAS (T1), MAPAS (T4), RANKING e LOJA (em breve: F9/F11);
 --   * janela de convite (jogadores do servidor + convite nativo do Roblox) e convite recebido.
 -- Celular: só toque. PC: atalhos sempre visíveis ([Enter] jogar/cancelar, [G] convidar,
 -- [Y]/[N] aceitar/recusar). Controle: X jogar/cancelar, Y convidar, seleção pelos botões.
@@ -22,14 +25,28 @@ local QueueConfig = require(Shared.Config.QueueConfig)
 local Remotes = require(Shared.Remotes)
 local Strings = require(Shared.Config.Strings)
 local Theme = require(Shared.Config.Theme)
-local Ui = require(Shared.Ui.ProvisionalUi)
+local Ui = require(Shared.Ui.Ui)
 
 local InputDevice = require(script.Parent.Parent.Common.InputDevice)
 local PlayerDataClient = require(script.Parent.Parent.Common.PlayerDataClient)
+local SettingsController = require(script.Parent.Parent.Common.SettingsController)
+local Avatars = require(script.Parent.Parent.Common.Ui.Avatars)
+local Logo = require(script.Parent.Parent.Common.Ui.Logo)
+local Widgets = require(script.Parent.Parent.Common.Ui.Widgets)
+local ArsenalScreen = require(script.Parent.ArsenalScreen)
+local CardsScreen = require(script.Parent.CardsScreen)
+local MapsScreen = require(script.Parent.MapsScreen)
 
 local S = Strings.Lobby
+local U = Strings.Ui
 local NOTICE_SECONDS = 4
 local PANEL_WIDTH = 280
+local MEMBER_HEIGHT = 52
+local COMPACT_MEMBER_HEIGHT = 44
+local COMPACT_BELOW_HEIGHT = 440 -- telas mais baixas (celular deitado): modo compacto
+local PANEL_TOP = 64 -- abaixo da logo e das moedas
+
+type MemberRow = { root: Frame, avatar: Avatars.Avatar, name: TextLabel, state: TextLabel }
 
 local LobbyScreen = {}
 
@@ -39,23 +56,24 @@ local snapshot: LobbyTypes.Snapshot? = nil
 
 local gui: ScreenGui
 local coinsLabel: TextLabel
-local memberRows: { TextLabel } = {}
-local inviteButton: TextButton
-local leaveButton: TextButton
+local memberRows: { MemberRow } = {}
+local inviteButton: Widgets.Button
+local leaveButton: Widgets.Button
 local readyLabel: TextLabel
 local searchLabel: TextLabel
-local playButton: TextButton
-local cancelButton: TextButton
-local invitePanel: Frame
+local playButton: Widgets.Button
+local cancelButton: Widgets.Button
+local invite: Widgets.Modal
 local inviteList: ScrollingFrame
 local inviteEmpty: TextLabel
 local incomingCard: Frame
 local incomingText: TextLabel
-local acceptButton: TextButton
-local declineButton: TextButton
+local acceptButton: Widgets.Button
+local declineButton: Widgets.Button
 local noticeLabel: TextLabel
 local noticeUntil = 0
-local keyChips: { TextLabel } = {}
+local modeBanner: Frame
+local modeSubtitle: TextLabel
 
 local function request(kind: LobbyTypes.RequestName, arg: any?)
 	requestEvent:FireServer(kind, arg)
@@ -71,34 +89,6 @@ local function notice(text: string)
 	noticeUntil = os.clock() + NOTICE_SECONDS
 end
 
--- Chip de tecla ao lado de um botão (só aparece no teclado ou no controle).
-local function attachChip(button: GuiObject, key: string, gamepadKey: string?)
-	local chip = Ui.keyChip(key, button)
-	chip.AnchorPoint = Vector2.new(1, 0.5)
-	chip.Position = UDim2.new(1, -8, 0.5, 0)
-	chip.Size = UDim2.fromOffset(if #key > 1 then 52 else 22, 22)
-	chip:SetAttribute("Key", key)
-	chip:SetAttribute("GamepadKey", gamepadKey)
-	table.insert(keyChips, chip)
-end
-
-local function refreshChips()
-	local device = InputDevice.get()
-	for _, label in keyChips do
-		local key = label:GetAttribute("Key")
-		local gamepadKey = label:GetAttribute("GamepadKey")
-		if device == "KeyboardMouse" and typeof(key) == "string" then
-			label.Visible = true
-			label.Text = key
-		elseif device == "Gamepad" and typeof(gamepadKey) == "string" then
-			label.Visible = true
-			label.Text = gamepadKey
-		else
-			label.Visible = false
-		end
-	end
-end
-
 -- Estado na tela -----------------------------------------------------------------------------------
 
 local function myReady(snap: LobbyTypes.Snapshot): boolean
@@ -107,33 +97,33 @@ local function myReady(snap: LobbyTypes.Snapshot): boolean
 end
 
 local function refreshInviteList(snap: LobbyTypes.Snapshot)
-	for _, child in inviteList:GetChildren() do
-		if child:IsA("GuiObject") then
-			child:Destroy()
-		end
-	end
+	Ui.clear(inviteList)
 	inviteEmpty.Visible = #snap.available == 0
 	for i, ref in snap.available do
 		local row = Ui.frame("Row", inviteList)
 		row.LayoutOrder = i
 		row.Size = UDim2.new(1, -8, 0, Theme.Touch.MinTarget)
+		local avatar = Avatars.new(row, Theme.Touch.MinTarget - 8)
+		avatar.root.Position = UDim2.fromOffset(0, 4)
+		Avatars.set(avatar, ref.userId, ref.name, Theme.Color.PanelBorder)
 		local name = Ui.label("Name", Theme.Font.BodyStrong, Theme.TextSize.Body, Theme.Color.TextPrimary, row)
-		name.Size = UDim2.new(1, -150, 1, 0)
+		name.Position = UDim2.fromOffset(Theme.Touch.MinTarget, 0)
+		name.Size = UDim2.new(1, -150 - Theme.Touch.MinTarget, 1, 0)
 		name.TextXAlignment = Enum.TextXAlignment.Left
 		name.TextTruncate = Enum.TextTruncate.AtEnd
 		name.Text = ref.name
 		local invited = table.find(snap.invitedOut, ref.userId) ~= nil
-		local button = Ui.button("Invite", if invited then S.Invited else S.InviteButton, not invited, row)
-		button.AnchorPoint = Vector2.new(1, 0.5)
-		button.Position = UDim2.fromScale(1, 0.5)
-		button.Size = UDim2.fromOffset(140, Theme.Touch.MinTarget)
-		button.TextSize = Theme.TextSize.Body
-		button.Modal = true
-		button.Active = not invited
-		button.Activated:Connect(function()
-			if not invited then
-				request("Invite", ref.userId)
-			end
+		local button = Widgets.button(row, if invited then S.Invited else S.InviteButton, "primary", {
+			size = UDim2.fromOffset(140, Theme.Touch.MinTarget),
+			textSize = Theme.TextSize.Body,
+			arrow = false,
+			modal = true,
+		})
+		button.root.AnchorPoint = Vector2.new(1, 0.5)
+		button.root.Position = UDim2.fromScale(1, 0.5)
+		button.setEnabled(not invited)
+		button.onClick(function()
+			request("Invite", ref.userId)
 		end)
 	end
 end
@@ -154,45 +144,54 @@ local function render()
 			if member.ready then
 				readyCount += 1
 			end
+			Avatars.set(
+				row.avatar,
+				member.userId,
+				member.name,
+				if member.ready then Theme.Color.Success else Theme.Color.PanelBorder
+			)
 			local name = if i == 1 then string.format(S.You, member.name) else member.name
-			row.Text = string.format(S.MemberLine, name, rankName(member.rankTier))
-				.. "\n"
-				.. (if member.ready then S.Ready else S.NotReady)
-			row.TextColor3 = if member.ready then Theme.Color.Success else Theme.Color.TextPrimary
+			row.name.Text = string.format(S.MemberLine, name, rankName(member.rankTier))
+			row.name.TextColor3 = Theme.Color.TextPrimary
+			row.state.Text = if member.ready then S.Ready else S.NotReady
+			row.state.TextColor3 = if member.ready then Theme.Color.Success else Theme.Color.TextSecondary
+			row.avatar.root.Visible = true
 		else
-			row.Text = S.EmptySlot
-			row.TextColor3 = Theme.Color.TextSecondary
+			row.avatar.root.Visible = false
+			row.name.Text = S.EmptySlot
+			row.name.TextColor3 = Theme.Color.TextSecondary
+			row.state.Text = ""
 		end
 	end
 	local idle = snap.state == "Idle"
-	inviteButton.Visible = #snap.members < partySize and idle
-	leaveButton.Visible = #snap.members > 1 and snap.state ~= "Teleporting"
+	inviteButton.root.Visible = #snap.members < partySize and idle
+	leaveButton.root.Visible = #snap.members > 1 and snap.state ~= "Teleporting"
 	readyLabel.Text = string.format(S.ReadyCount, readyCount, #snap.members)
 
 	-- Fila
 	if snap.state == "Queued" then
 		local q = snap.queue
 		searchLabel.Text = if q then string.format(S.Searching, q.count, q.target) else ""
-		playButton.Text = string.format(S.Searching, if q then q.count else 1, if q then q.target else 7)
-		playButton.BackgroundColor3 = Theme.Color.PanelRaised
-		cancelButton.Visible = true
+		playButton.setText(string.format(S.Searching, if q then q.count else 1, if q then q.target else 7))
+		playButton.setKind("secondary")
+		cancelButton.root.Visible = true
 	elseif snap.state == "Teleporting" then
 		searchLabel.Text = S.Teleporting
-		playButton.Text = S.MatchFound
-		playButton.BackgroundColor3 = Theme.Color.PanelRaised
-		cancelButton.Visible = false
+		playButton.setText(S.MatchFound)
+		playButton.setKind("secondary")
+		cancelButton.root.Visible = false
 	else
 		searchLabel.Text = ""
 		local waiting = myReady(snap)
-		playButton.Text = if waiting then S.WaitingPartner else S.Play
-		playButton.BackgroundColor3 = if waiting then Theme.Color.PanelRaised else Theme.Color.Accent
-		cancelButton.Visible = waiting
+		playButton.setText(if waiting then S.WaitingPartner else S.Play)
+		playButton.setKind(if waiting then "secondary" else "primary")
+		cancelButton.root.Visible = waiting
 	end
 
 	-- Convites
-	if invitePanel.Visible then
-		if not inviteButton.Visible then
-			invitePanel.Visible = false
+	if invite.isOpen() then
+		if not inviteButton.root.Visible then
+			invite.close()
 		else
 			refreshInviteList(snap)
 		end
@@ -219,12 +218,13 @@ local function primaryAction()
 end
 
 local function setInvitePanel(open: boolean)
-	invitePanel.Visible = open
-	if open and snapshot then
-		refreshInviteList(snapshot :: LobbyTypes.Snapshot)
-	end
-	if InputDevice.get() == "Gamepad" then
-		GuiService.SelectedObject = if open then inviteButton else playButton
+	if open then
+		invite.open()
+		if snapshot then
+			refreshInviteList(snapshot :: LobbyTypes.Snapshot)
+		end
+	else
+		invite.close()
 	end
 end
 
@@ -251,214 +251,318 @@ end
 
 -- Montagem -----------------------------------------------------------------------------------------
 
-local function build()
-	gui = Ui.screen("LobbyScreen", 10, Enum.ScreenInsets.CoreUISafeInsets)
+local function buildTop()
+	local margin = Theme.ScreenMargin
+	local logo = Logo.new(gui, 40, S.Title)
+	logo.Position = UDim2.fromOffset(margin, margin / 2)
 
-	local title = Ui.label("Title", Theme.Font.Title, Theme.TextSize.Title, Theme.Color.TextPrimary, gui)
-	title.Position = UDim2.fromOffset(Theme.ScreenMargin, Theme.ScreenMargin)
-	title.Size = UDim2.fromOffset(200, 30)
-	title.TextXAlignment = Enum.TextXAlignment.Left
-	title.Text = S.Title
-	Ui.outlineText(title)
+	-- Moedas e engrenagem (topo direito)
+	local right = Ui.frame("TopRight", gui)
+	right.AnchorPoint = Vector2.new(1, 0)
+	right.Position = UDim2.new(1, -margin, 0, margin / 2)
+	right.Size = UDim2.fromOffset(0, Theme.Touch.MinTarget)
+	right.AutomaticSize = Enum.AutomaticSize.X
+	local layout = Ui.list(right, Enum.FillDirection.Horizontal, Theme.Space.Medium)
+	layout.VerticalAlignment = Enum.VerticalAlignment.Center
 
-	coinsLabel = Ui.label("Coins", Theme.Font.Number, Theme.TextSize.Title, Theme.Color.Coin, gui)
-	coinsLabel.AnchorPoint = Vector2.new(1, 0)
-	coinsLabel.Position = UDim2.new(1, -Theme.ScreenMargin, 0, Theme.ScreenMargin)
-	coinsLabel.Size = UDim2.fromOffset(200, 30)
+	local coinPlate = Ui.panel("Coins", right, nil, Theme.Chamfer.Tab)
+	coinPlate.Size = UDim2.fromOffset(130, Theme.Touch.MinTarget)
+	coinPlate.LayoutOrder = 1
+	coinsLabel = Ui.label("Value", Theme.Font.Number, Theme.TextSize.Title, Theme.Color.TextPrimary, coinPlate)
+	coinsLabel.Position = UDim2.fromOffset(34, 0)
+	coinsLabel.Size = UDim2.new(1, -44, 1, 0)
 	coinsLabel.TextXAlignment = Enum.TextXAlignment.Right
-	Ui.outlineText(coinsLabel)
+	coinsLabel.ZIndex = 2
+	local coinIcon = Ui.label("Icon", Theme.Font.Title, Theme.TextSize.Title, Theme.Color.Coin, coinPlate)
+	coinIcon.Position = UDim2.fromOffset(10, 0)
+	coinIcon.Size = UDim2.fromOffset(24, Theme.Touch.MinTarget)
+	coinIcon.Text = U.Coin
+	coinIcon.ZIndex = 2
 
-	-- Esquerda: a dupla
-	local party = Ui.panel("Party", gui)
-	party.AnchorPoint = Vector2.new(0, 0.5)
-	party.Position = UDim2.new(0, Theme.ScreenMargin, 0.55, 0)
-	party.Size = UDim2.fromScale(0.32, 0)
-	party.AutomaticSize = Enum.AutomaticSize.Y
-	local partyLimit = Instance.new("UISizeConstraint")
-	partyLimit.MaxSize = Vector2.new(PANEL_WIDTH, math.huge)
-	partyLimit.Parent = party
-	Ui.padding(party, 12)
-	Ui.list(party, Enum.FillDirection.Vertical, 8)
+	local gearHolder = Ui.frame("Gear", right)
+	gearHolder.Size = UDim2.fromOffset(Theme.Touch.MinTarget, Theme.Touch.MinTarget)
+	gearHolder.LayoutOrder = 2
+	local gear = Widgets.iconButton(gearHolder, U.Gear, SettingsController.toggle)
+	gear.Modal = true -- o lobby é um menu: mouse livre no PC
+	local chip = Widgets.keyChip(gearHolder, "P", nil)
+	chip.AnchorPoint = Vector2.new(0.5, 0)
+	chip.Position = UDim2.new(0.5, 0, 1, 2)
+end
 
-	local partyTitle = Ui.label("Title", Theme.Font.Title, Theme.TextSize.PrimaryButton, Theme.Color.TextPrimary, party)
-	partyTitle.Size = UDim2.new(1, 0, 0, 24)
-	partyTitle.TextXAlignment = Enum.TextXAlignment.Left
-	partyTitle.Text = S.PartyTitle
-	partyTitle.LayoutOrder = 0
+local function buildParty()
+	local party, content = Ui.autoPanel("Party", gui, 12)
+	party.Position = UDim2.fromOffset(Theme.ScreenMargin, PANEL_TOP)
+	party.Size = UDim2.fromScale(0.3, 0)
+	Ui.sizeLimit(party, nil, Vector2.new(PANEL_WIDTH, math.huge))
+	Ui.list(content, Enum.FillDirection.Vertical, 8)
+
+	Widgets.sectionTitle(content, S.PartyTitle, 0)
 	for i = 1, QueueConfig.PartySize do
-		local row = Ui.label(`Member{i}`, Theme.Font.BodyStrong, Theme.TextSize.Body, Theme.Color.TextPrimary, party)
-		row.Size = UDim2.new(1, 0, 0, 40)
-		row.TextXAlignment = Enum.TextXAlignment.Left
-		row.TextYAlignment = Enum.TextYAlignment.Top
-		row.TextWrapped = true
+		local row = Ui.frame(`Member{i}`, content)
+		row.Size = UDim2.new(1, 0, 0, MEMBER_HEIGHT)
 		row.LayoutOrder = i
-		memberRows[i] = row
+		local avatar = Avatars.new(row, MEMBER_HEIGHT - 8)
+		avatar.root.Position = UDim2.fromOffset(0, 4)
+		local name = Ui.label("Name", Theme.Font.BodyStrong, Theme.TextSize.Body, Theme.Color.TextPrimary, row)
+		name.Position = UDim2.fromOffset(MEMBER_HEIGHT + 2, 6)
+		name.Size = UDim2.new(1, -(MEMBER_HEIGHT + 2), 0, 20)
+		name.TextXAlignment = Enum.TextXAlignment.Left
+		name.TextTruncate = Enum.TextTruncate.AtEnd
+		local state = Ui.label("State", Theme.Font.BodyStrong, Theme.TextSize.Label, Theme.Color.TextSecondary, row)
+		state.Position = UDim2.fromOffset(MEMBER_HEIGHT + 2, 28)
+		state.Size = UDim2.new(1, -(MEMBER_HEIGHT + 2), 0, 16)
+		state.TextXAlignment = Enum.TextXAlignment.Left
+		memberRows[i] = { root = row, avatar = avatar, name = name, state = state }
 	end
-	inviteButton = Ui.button("Invite", S.Invite, false, party)
-	inviteButton.Size = UDim2.new(1, 0, 0, Theme.Touch.MinTarget)
-	inviteButton.LayoutOrder = 10
-	inviteButton.Modal = true
-	inviteButton.Activated:Connect(function()
-		setInvitePanel(not invitePanel.Visible)
+	inviteButton = Widgets.button(content, S.Invite, "secondary", {
+		size = UDim2.new(1, 0, 0, Theme.Touch.MinTarget),
+		textSize = Theme.TextSize.Body,
+		order = 10,
+		pc = "G",
+		pad = "Y",
+		modal = true,
+	})
+	inviteButton.onClick(function()
+		setInvitePanel(not invite.isOpen())
 	end)
-	attachChip(inviteButton, "G", "Y")
-	leaveButton = Ui.button("Leave", S.LeaveParty, false, party)
-	leaveButton.Size = UDim2.new(1, 0, 0, Theme.Touch.MinTarget)
-	leaveButton.LayoutOrder = 11
-	leaveButton.Visible = false
-	leaveButton.Activated:Connect(function()
+	leaveButton = Widgets.button(content, S.LeaveParty, "secondary", {
+		size = UDim2.new(1, 0, 0, Theme.Touch.MinTarget),
+		textSize = Theme.TextSize.Body,
+		order = 11,
+	})
+	leaveButton.root.Visible = false
+	leaveButton.onClick(function()
 		request("LeaveParty")
 	end)
+end
 
-	-- Direita: o modo e o JOGAR
-	local mode = Ui.panel("Mode", gui)
-	mode.AnchorPoint = Vector2.new(1, 0.5)
-	mode.Position = UDim2.new(1, -Theme.ScreenMargin, 0.55, 0)
-	mode.Size = UDim2.fromScale(0.34, 0)
-	mode.AutomaticSize = Enum.AutomaticSize.Y
-	local modeLimit = Instance.new("UISizeConstraint")
-	modeLimit.MaxSize = Vector2.new(PANEL_WIDTH + 20, math.huge)
-	modeLimit.Parent = mode
-	Ui.padding(mode, 12)
-	Ui.list(mode, Enum.FillDirection.Vertical, 8)
+local function buildMode()
+	local mode, content = Ui.autoPanel("Mode", gui, 12)
+	mode.AnchorPoint = Vector2.new(1, 0)
+	mode.Position = UDim2.new(1, -Theme.ScreenMargin, 0, PANEL_TOP)
+	mode.Size = UDim2.fromScale(0.3, 0)
+	Ui.sizeLimit(mode, nil, Vector2.new(PANEL_WIDTH + 20, math.huge))
+	Ui.list(content, Enum.FillDirection.Vertical, 8)
 
-	local modeTitle = Ui.label("Title", Theme.Font.Title, Theme.TextSize.Title, Theme.Color.TextPrimary, mode)
-	modeTitle.Size = UDim2.new(1, 0, 0, 28)
-	modeTitle.TextXAlignment = Enum.TextXAlignment.Left
-	modeTitle.Text = S.ModeTitle
-	modeTitle.LayoutOrder = 1
-	local subtitle = Ui.label("Subtitle", Theme.Font.Body, Theme.TextSize.Body, Theme.Color.TextSecondary, mode)
-	subtitle.Size = UDim2.new(1, 0, 0, 20)
-	subtitle.TextXAlignment = Enum.TextXAlignment.Left
-	subtitle.TextWrapped = true
+	local title = Ui.label("Title", Theme.Font.Title, Theme.TextSize.Title, Theme.Color.TextPrimary, content)
+	title.Size = UDim2.new(1, 0, 0, 28)
+	title.TextXAlignment = Enum.TextXAlignment.Left
+	title.Text = S.ModeTitle
+	title.LayoutOrder = 1
+
+	-- "Imagem" do modo: faixa com o mirante e as 4 ilhas desenhados em blocos (arte final na F10)
+	local banner = Ui.raised("Banner", content)
+	modeBanner = banner
+	banner.BackgroundColor3 = Theme.Lobby.ModeBanner
+	banner.Size = UDim2.new(1, 0, 0, 74)
+	banner.LayoutOrder = 2
+	for i, offset in
+		{ Vector2.new(-0.28, 0.3), Vector2.new(0.28, 0.3), Vector2.new(-0.28, 0.72), Vector2.new(0.28, 0.72) }
+	do
+		local island = Ui.frame(`Island{i}`, banner)
+		island.AnchorPoint = Vector2.new(0.5, 0.5)
+		island.Position = UDim2.fromScale(0.5 + offset.X, offset.Y)
+		island.Size = UDim2.fromOffset(34, 14)
+		island.BackgroundTransparency = 0
+		island.BackgroundColor3 = Theme.Match.IslandFloor
+		Ui.corner(island, 4)
+	end
+	local center = Ui.frame("Mirante", banner)
+	center.AnchorPoint = Vector2.new(0.5, 0.5)
+	center.Position = UDim2.fromScale(0.5, 0.4)
+	center.Size = UDim2.fromOffset(40, 40)
+	center.Rotation = 45
+	center.BackgroundTransparency = 0
+	center.BackgroundColor3 = Theme.Match.MiranteFloor
+	local vs = Ui.label("Vs", Theme.Font.Title, Theme.TextSize.Label, Theme.Color.TextPrimary, banner)
+	vs.AnchorPoint = Vector2.new(0.5, 1)
+	vs.Position = UDim2.new(0.5, 0, 1, -4)
+	vs.Size = UDim2.new(1, 0, 0, 16)
+	vs.Text = S.ModeBanner
+	Ui.outlineText(vs)
+
+	local subtitle = Ui.paragraph("Subtitle", Theme.Font.Body, Theme.TextSize.Body, Theme.Color.TextSecondary, content)
 	subtitle.Text = S.ModeSubtitle
-	subtitle.LayoutOrder = 2
-	readyLabel = Ui.label("Ready", Theme.Font.BodyStrong, Theme.TextSize.Body, Theme.Color.Success, mode)
+	subtitle.LayoutOrder = 3
+	modeSubtitle = subtitle
+	readyLabel = Ui.label("Ready", Theme.Font.BodyStrong, Theme.TextSize.Body, Theme.Color.Success, content)
 	readyLabel.Size = UDim2.new(1, 0, 0, 20)
 	readyLabel.TextXAlignment = Enum.TextXAlignment.Left
-	readyLabel.LayoutOrder = 3
-	searchLabel = Ui.label("Search", Theme.Font.BodyStrong, Theme.TextSize.Body, Theme.Color.TextPrimary, mode)
+	readyLabel.LayoutOrder = 4
+	searchLabel = Ui.label("Search", Theme.Font.BodyStrong, Theme.TextSize.Body, Theme.Color.TextPrimary, content)
 	searchLabel.Size = UDim2.new(1, 0, 0, 20)
 	searchLabel.TextXAlignment = Enum.TextXAlignment.Left
-	searchLabel.LayoutOrder = 4
+	searchLabel.LayoutOrder = 5
 
-	playButton = Ui.button("Play", S.Play, true, mode)
-	playButton.Size = UDim2.new(1, 0, 0, Theme.PrimaryButtonMinHeight)
-	playButton.LayoutOrder = 5
-	playButton.Modal = true -- o lobby é um menu: mouse livre no PC
-	playButton.TextScaled = false
-	playButton.TextWrapped = true
-	playButton.Activated:Connect(primaryAction)
-	attachChip(playButton, "Enter", "X")
-	cancelButton = Ui.button("Cancel", S.Cancel, false, mode)
-	cancelButton.Size = UDim2.new(1, 0, 0, Theme.Touch.MinTarget)
-	cancelButton.LayoutOrder = 6
-	cancelButton.Visible = false
-	cancelButton.Activated:Connect(function()
+	playButton = Widgets.button(content, S.Play, "primary", {
+		size = UDim2.new(1, 0, 0, Theme.PrimaryButtonMinHeight),
+		order = 6,
+		pc = "Enter",
+		pad = "X",
+		modal = true, -- o lobby é um menu: mouse livre no PC
+	})
+	playButton.onClick(primaryAction)
+	cancelButton = Widgets.button(content, S.Cancel, "secondary", {
+		size = UDim2.new(1, 0, 0, Theme.Touch.MinTarget),
+		textSize = Theme.TextSize.Body,
+		order = 7,
+	})
+	cancelButton.root.Visible = false
+	cancelButton.onClick(function()
 		request("Cancel")
 	end)
+end
 
-	-- Janela de convite (sobre o jogo, fundo do painel, nunca preto opaco)
-	invitePanel = Ui.panel("InvitePanel", gui)
-	invitePanel.AnchorPoint = Vector2.new(0.5, 0.5)
-	invitePanel.Position = UDim2.fromScale(0.5, 0.55)
-	invitePanel.Size = UDim2.fromScale(0.42, 0.62)
-	invitePanel.Visible = false
-	invitePanel.ZIndex = 5
-	local inviteLimit = Instance.new("UISizeConstraint")
-	inviteLimit.MinSize = Vector2.new(300, 220)
-	inviteLimit.MaxSize = Vector2.new(440, 420)
-	inviteLimit.Parent = invitePanel
-	Ui.padding(invitePanel, 12)
+local function buildNav()
+	local nav = Ui.frame("Nav", gui)
+	nav.AnchorPoint = Vector2.new(0.5, 1)
+	nav.Position = UDim2.new(0.5, 0, 1, -Theme.ScreenMargin)
+	nav.Size = UDim2.new(1, -2 * Theme.ScreenMargin, 0, Theme.Touch.MinTarget)
+	local layout = Ui.list(nav, Enum.FillDirection.Horizontal, Theme.Space.Small)
+	layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	local N = S.Nav
+	local entries: { { label: string, action: (() -> ())? } } = {
+		{ label = N.Play, action = nil },
+		{ label = N.Arsenal, action = ArsenalScreen.open },
+		{ label = N.Cards, action = CardsScreen.open },
+		{ label = N.Maps, action = MapsScreen.open },
+		{ label = N.Ranking, action = nil },
+		{ label = N.Shop, action = nil },
+	}
+	for i, entry in entries do
+		local isPlay = i == 1
+		local button = Widgets.button(nav, entry.label, if isPlay then "primary" else "secondary", {
+			size = UDim2.new(1 / #entries, -Theme.Space.Small, 1, 0),
+			textSize = Theme.TextSize.Body,
+			arrow = false,
+			order = i,
+			modal = true,
+		})
+		local action = entry.action
+		if isPlay then
+			-- Já está no lobby: leva a seleção para o JOGAR
+			button.onClick(function()
+				if InputDevice.get() == "Gamepad" then
+					GuiService.SelectedObject = playButton.root
+				end
+			end)
+		elseif action then
+			button.onClick(action)
+		else
+			-- Ranking (F9) e Loja (F11) ainda não existem
+			button.setEnabled(false)
+			button.setText(entry.label .. " · " .. U.Soon)
+		end
+	end
+end
 
-	local inviteTitle =
-		Ui.label("Title", Theme.Font.Title, Theme.TextSize.PrimaryButton, Theme.Color.TextPrimary, invitePanel)
-	inviteTitle.Size = UDim2.new(1, 0, 0, 24)
-	inviteTitle.TextXAlignment = Enum.TextXAlignment.Left
-	inviteTitle.Text = S.InviteTitle
-	local hint = Ui.label("Hint", Theme.Font.Body, Theme.TextSize.Label, Theme.Color.TextSecondary, invitePanel)
-	hint.Position = UDim2.fromOffset(0, 26)
+local function buildInvite()
+	invite = Widgets.modal("LobbyInvite", 30, {
+		title = S.InviteTitle,
+		size = UDim2.fromScale(0.46, 0.66),
+		maxSize = Vector2.new(480, 440),
+	})
+	local body = invite.body
+	local hint = Ui.label("Hint", Theme.Font.Body, Theme.TextSize.Label, Theme.Color.TextSecondary, body)
 	hint.Size = UDim2.new(1, 0, 0, 18)
 	hint.TextXAlignment = Enum.TextXAlignment.Left
 	hint.Text = S.InviteHint
 
-	inviteList = Instance.new("ScrollingFrame")
-	inviteList.Name = "List"
-	inviteList.BackgroundTransparency = 1
-	inviteList.BorderSizePixel = 0
-	inviteList.Position = UDim2.fromOffset(0, 48)
-	inviteList.Size = UDim2.new(1, 0, 1, -48 - Theme.Touch.MinTarget - 8)
-	inviteList.CanvasSize = UDim2.new()
-	inviteList.AutomaticCanvasSize = Enum.AutomaticSize.Y
-	inviteList.ScrollBarThickness = 4
-	inviteList.Parent = invitePanel
+	inviteList = Ui.scroll("List", Enum.ScrollingDirection.Y, body)
+	inviteList.Position = UDim2.fromOffset(0, 24)
+	inviteList.Size = UDim2.new(1, 0, 1, -24 - Theme.Touch.MinTarget - 10)
 	Ui.list(inviteList, Enum.FillDirection.Vertical, 6)
-	inviteEmpty = Ui.label("Empty", Theme.Font.Body, Theme.TextSize.Body, Theme.Color.TextSecondary, invitePanel)
-	inviteEmpty.Position = UDim2.fromOffset(0, 56)
+	inviteEmpty = Ui.label("Empty", Theme.Font.Body, Theme.TextSize.Body, Theme.Color.TextSecondary, body)
+	inviteEmpty.Position = UDim2.fromOffset(0, 32)
 	inviteEmpty.Size = UDim2.new(1, 0, 0, 40)
 	inviteEmpty.TextWrapped = true
 	inviteEmpty.Text = S.NobodyToInvite
 
-	local inviteButtons = Ui.frame("Buttons", invitePanel)
-	inviteButtons.AnchorPoint = Vector2.new(0, 1)
-	inviteButtons.Position = UDim2.fromScale(0, 1)
-	inviteButtons.Size = UDim2.new(1, 0, 0, Theme.Touch.MinTarget)
-	local friends = Ui.button("Friends", S.RobloxFriends, true, inviteButtons)
-	friends.Size = UDim2.new(0.6, -4, 1, 0)
-	friends.TextSize = Theme.TextSize.Body
-	friends.Modal = true
-	friends.Activated:Connect(promptRobloxInvite)
-	local close = Ui.button("Close", S.Close, false, inviteButtons)
-	close.AnchorPoint = Vector2.new(1, 0)
-	close.Position = UDim2.fromScale(1, 0)
-	close.Size = UDim2.new(0.4, -4, 1, 0)
-	close.TextSize = Theme.TextSize.Body
-	close.Activated:Connect(function()
-		setInvitePanel(false)
-	end)
+	local friends = Widgets.button(body, S.RobloxFriends, "primary", {
+		size = UDim2.new(1, 0, 0, Theme.Touch.MinTarget),
+		textSize = Theme.TextSize.Body,
+		modal = true,
+	})
+	friends.root.AnchorPoint = Vector2.new(0, 1)
+	friends.root.Position = UDim2.fromScale(0, 1)
+	friends.onClick(promptRobloxInvite)
+	invite.gui.Parent = player:WaitForChild("PlayerGui")
+end
 
-	-- Convite recebido (topo, no meio)
-	incomingCard = Ui.panel("Incoming", gui)
+local function buildIncoming()
+	local content: Frame
+	incomingCard, content = Ui.panel("Incoming", gui, 10)
 	incomingCard.AnchorPoint = Vector2.new(0.5, 0)
-	incomingCard.Position = UDim2.new(0.5, 0, 0, Theme.ScreenMargin + 36)
-	incomingCard.Size = UDim2.new(0.46, 0, 0, 104)
+	incomingCard.Position = UDim2.new(0.5, 0, 0, Theme.ScreenMargin + 52)
+	incomingCard.Size = UDim2.new(0.46, 0, 0, 108)
 	incomingCard.Visible = false
-	local incomingLimit = Instance.new("UISizeConstraint")
-	incomingLimit.MinSize = Vector2.new(300, 104)
-	incomingLimit.MaxSize = Vector2.new(460, 104)
-	incomingLimit.Parent = incomingCard
-	Ui.padding(incomingCard, 10)
-	incomingText = Ui.label("Text", Theme.Font.BodyStrong, Theme.TextSize.Body, Theme.Color.TextPrimary, incomingCard)
+	Ui.sizeLimit(incomingCard, Vector2.new(300, 108), Vector2.new(460, 108))
+	incomingText = Ui.label("Text", Theme.Font.BodyStrong, Theme.TextSize.Body, Theme.Color.TextPrimary, content)
 	incomingText.Size = UDim2.new(1, 0, 0, 36)
 	incomingText.TextWrapped = true
-	acceptButton = Ui.button("Accept", S.Accept, true, incomingCard)
-	acceptButton.AnchorPoint = Vector2.new(0, 1)
-	acceptButton.Position = UDim2.fromScale(0, 1)
-	acceptButton.Size = UDim2.new(0.5, -4, 0, Theme.Touch.MinTarget)
-	acceptButton.TextSize = Theme.TextSize.Body
-	acceptButton.Modal = true
-	acceptButton.Activated:Connect(function()
+	acceptButton = Widgets.button(content, S.Accept, "primary", {
+		size = UDim2.new(0.5, -4, 0, Theme.Touch.MinTarget),
+		textSize = Theme.TextSize.Body,
+		arrow = false,
+		pc = "Y",
+		modal = true,
+	})
+	acceptButton.root.AnchorPoint = Vector2.new(0, 1)
+	acceptButton.root.Position = UDim2.fromScale(0, 1)
+	acceptButton.onClick(function()
 		answerInvite(true)
 	end)
-	attachChip(acceptButton, "Y")
-	declineButton = Ui.button("Decline", S.Decline, false, incomingCard)
-	declineButton.AnchorPoint = Vector2.new(1, 1)
-	declineButton.Position = UDim2.fromScale(1, 1)
-	declineButton.Size = UDim2.new(0.5, -4, 0, Theme.Touch.MinTarget)
-	declineButton.TextSize = Theme.TextSize.Body
-	declineButton.Activated:Connect(function()
+	declineButton = Widgets.button(content, S.Decline, "secondary", {
+		size = UDim2.new(0.5, -4, 0, Theme.Touch.MinTarget),
+		textSize = Theme.TextSize.Body,
+		pc = "N",
+	})
+	declineButton.root.AnchorPoint = Vector2.new(1, 1)
+	declineButton.root.Position = UDim2.fromScale(1, 1)
+	declineButton.onClick(function()
 		answerInvite(false)
 	end)
-	attachChip(declineButton, "N")
+end
+
+-- Celular deitado: sem a faixa e a frase do modo, linhas da dupla menores. Os botões continuam com
+-- o alvo de toque mínimo (ESTILO 3).
+local function applyCompact()
+	local camera = workspace.CurrentCamera
+	local height = if camera then camera.ViewportSize.Y else 720
+	local compact = height < COMPACT_BELOW_HEIGHT
+	modeBanner.Visible = not compact
+	modeSubtitle.Visible = not compact
+	local memberHeight = if compact then COMPACT_MEMBER_HEIGHT else MEMBER_HEIGHT
+	for _, row in memberRows do
+		row.root.Size = UDim2.new(1, 0, 0, memberHeight)
+		row.avatar.root.Size = UDim2.fromOffset(memberHeight - 8, memberHeight - 8)
+		row.name.Position = UDim2.fromOffset(memberHeight + 2, if compact then 2 else 6)
+		row.state.Position = UDim2.fromOffset(memberHeight + 2, if compact then 22 else 28)
+	end
+end
+
+local function build()
+	gui = Ui.screen("LobbyScreen", 10, Enum.ScreenInsets.CoreUISafeInsets)
+	buildTop()
+	buildParty()
+	buildMode()
+	buildNav()
+	buildInvite()
+	buildIncoming()
 
 	noticeLabel = Ui.label("Notice", Theme.Font.BodyStrong, Theme.TextSize.Body, Theme.Color.TextPrimary, gui)
 	noticeLabel.AnchorPoint = Vector2.new(0.5, 1)
-	noticeLabel.Position = UDim2.new(0.5, 0, 1, -Theme.ScreenMargin)
+	noticeLabel.Position = UDim2.new(0.5, 0, 1, -Theme.ScreenMargin - Theme.Touch.MinTarget - 10)
 	noticeLabel.Size = UDim2.new(0.9, 0, 0, 22)
 	noticeLabel.TextWrapped = true
 	noticeLabel.Visible = false
 	Ui.outlineText(noticeLabel)
 
+	applyCompact()
+	local camera = workspace.CurrentCamera
+	if camera then
+		camera:GetPropertyChangedSignal("ViewportSize"):Connect(applyCompact)
+	end
 	gui.Parent = player:WaitForChild("PlayerGui")
 end
 
@@ -472,8 +576,8 @@ local function bindKeys()
 		if name == "LobbyPlay" then
 			primaryAction()
 		elseif name == "LobbyInvite" then
-			if inviteButton.Visible then
-				setInvitePanel(not invitePanel.Visible)
+			if inviteButton.root.Visible then
+				setInvitePanel(not invite.isOpen())
 			end
 		elseif name == "LobbyAccept" then
 			if not incomingCard.Visible then
@@ -494,21 +598,26 @@ local function bindKeys()
 	ContextActionService:BindAction("LobbyDecline", onAction, false, Enum.KeyCode.N)
 end
 
+local function showCoins(profile: any)
+	-- "2.350" (milhar com ponto)
+	local text = tostring(profile.coins)
+	local formatted = string.reverse((string.gsub(string.reverse(text), "(%d%d%d)", "%1.")))
+	if string.sub(formatted, 1, 1) == "." then
+		formatted = string.sub(formatted, 2)
+	end
+	coinsLabel.Text = formatted
+end
+
 function LobbyScreen.Start()
 	requestEvent = Remotes.event("LobbyRequest")
 	build()
 	bindKeys()
-	refreshChips()
 	InputDevice.onChanged(function(device: InputDevice.Device)
-		refreshChips()
 		if device == "Gamepad" and GuiService.SelectedObject == nil then
-			GuiService.SelectedObject = playButton
+			GuiService.SelectedObject = playButton.root
 		end
 	end)
 
-	local function showCoins(profile: any)
-		coinsLabel.Text = "● " .. tostring(profile.coins)
-	end
 	local profile = PlayerDataClient.get()
 	if profile then
 		showCoins(profile)
@@ -521,7 +630,7 @@ function LobbyScreen.Start()
 		render()
 		-- Convite novo: no controle, já seleciona ACEITAR
 		if InputDevice.get() == "Gamepad" and #snap.invitesIn > 0 and (before == nil or #before.invitesIn == 0) then
-			GuiService.SelectedObject = acceptButton
+			GuiService.SelectedObject = acceptButton.root
 		end
 	end)
 	Remotes.event("LobbyEvent").OnClientEvent:Connect(function(kind: string, data: { key: string, name: string? })
@@ -536,6 +645,7 @@ function LobbyScreen.Start()
 
 	RunService.RenderStepped:Connect(function()
 		noticeLabel.Visible = os.clock() < noticeUntil
+		searchLabel.Visible = searchLabel.Text ~= ""
 		local snap = snapshot
 		local q = snap and snap.queue
 		if snap and snap.state == "Queued" and q and q.startsAt then

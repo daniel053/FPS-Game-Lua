@@ -14,7 +14,6 @@ local Shared = ReplicatedStorage.Shared
 local Strings = require(Shared.Config.Strings)
 local TextUtil = require(Shared.TextUtil)
 local Theme = require(Shared.Config.Theme)
-local Types = require(Shared.Types)
 local TextScale = require(Shared.Ui.TextScale)
 local Ui = require(Shared.Ui.Ui)
 
@@ -482,7 +481,7 @@ function Widgets.itemCard(parent: Instance, title: string, size: UDim2, order: n
 end
 
 -- Raridade (ESTILO 2.2): nunca só a cor — sempre o nome e o ícone. Neon forte só na Celestial.
-function Widgets.rarityTag(parent: Instance, rarity: Types.Rarity): TextLabel
+function Widgets.rarityTag(parent: Instance, rarity: string): TextLabel
 	local style = Theme.Rarity[rarity]
 	local info = Strings.Rarity[rarity]
 	local tag = Ui.label("Rarity", Theme.Font.Title, Theme.TextSize.Label, style.color, parent)
@@ -493,7 +492,7 @@ function Widgets.rarityTag(parent: Instance, rarity: Types.Rarity): TextLabel
 end
 
 -- Moldura de raridade num cartão: borda na cor da raridade. A Celestial pulsa devagar (~2 s).
-function Widgets.rarityFrame(card: ItemCard, rarity: Types.Rarity)
+function Widgets.rarityFrame(card: ItemCard, rarity: string)
 	local style = Theme.Rarity[rarity]
 	card.setBorder(style.color, style.borderThickness)
 	if style.glow == "neon" then

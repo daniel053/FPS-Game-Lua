@@ -101,6 +101,79 @@ local Strings = {
 		Celestial = { name = "Celestial", icon = "☀" },
 	} :: { [string]: { name: string, icon: string } },
 
+	-- Logo provisória (ESTILO 2.4 [ABERTO]): símbolo de carta com a seta de girar
+	Logo = {
+		Symbol = "⟳",
+	},
+
+	-- Tela de Cartas (T1)
+	CardsScreen = {
+		Title = "CARTAS",
+		All = "Todas",
+		KeyLine = "Tecla %s",
+		NoRarity = "Raridade a definir",
+		Owned = "Na sua coleção",
+		Locked = "Você ainda não tem esta carta",
+		Empty = "Nenhuma carta com esta raridade ainda.",
+		Spin = "⟳ GIRAR",
+		SpinSoon = "Girar cartas: em breve",
+	},
+
+	-- Tela de mapas (T4): as ilhas da partida, com nome e descrição curta (GDD 15)
+	MapsScreen = {
+		Title = "MAPAS DE DUELO",
+		CentralTitle = "ILHA CENTRAL",
+		DuelTitle = "ILHAS DE DUELO",
+		Descriptions = {
+			mirante = "O mirante: plano e mais alto que tudo. Daqui se assiste aos 4 duelos.",
+			map_praca = "Praça de cidade pequena, com coreto e casinhas. Aberta e fácil de entender.",
+			map_fabrica = "Esteiras em movimento levam quem pisa nelas; caixas viram cobertura que anda.",
+			map_porto = "Contêineres, guindaste e píer. Cair na água volta à base.",
+			map_torre = "Castelinho em ruínas: o mapa mais vertical, com disputa pelo alto da torre.",
+		} :: { [string]: string },
+		Gray = "Visual provisório: a arte das ilhas chega depois.",
+	},
+
+	-- Arsenal (T5): ver as armas e escolher a skin (a loja vem depois)
+	Arsenal = {
+		Title = "ARSENAL",
+		Tabs = {
+			All = "Todas",
+			Primary = "Primária",
+			Secondary = "Secundária",
+			Melee = "Corpo a corpo",
+			Ability = "Habilidade",
+		},
+		Skins = "SKINS",
+		DefaultSkin = "Padrão",
+		Equip = "EQUIPAR",
+		Equipped = "EQUIPADA",
+		MoreSkinsSoon = "Mais skins: em breve",
+		AbilityHint = "As cartas e as skins de efeito ficam na tela de Cartas.",
+		OpenCards = "VER CARTAS",
+		Descriptions = {
+			weapon_bolinha = "A pistola de começo, fácil. O modo alternativo dispara rajada de 3.",
+			weapon_chumbinho = "Só funciona colado: de longe os bagos se espalham.",
+			weapon_zumbido = "Pistola automática: forte de perto, fraca de longe.",
+			weapon_precisa = "A pistola de média distância, com pouca perda de dano.",
+			weapon_tambor = "Poucos tiros e muito dano: recompensa a calma.",
+			weapon_ferrao = "A mais rápida de perto; espalha muito em tiro contínuo.",
+			weapon_vespa = "A mais equilibrada: dá para atirar andando com precisão.",
+			weapon_balde = "Um tiro forte por vez; o modo alternativo concentra os bagos.",
+			weapon_varredor = "Escopeta automática, ótima para defender cantos e portas.",
+			weapon_tatico = "Automático; mirando, dispara rajadas precisas.",
+			weapon_atirador = "Semiautomático com mira curta, para média e longa distância.",
+			weapon_martelo = "Pente grande; demora um pouco para chegar ao ritmo máximo.",
+			weapon_moedor = "Pente enorme; atravessa coberturas finas com dano menor.",
+			weapon_rajada = "O fuzil fácil: pouco recuo e rastro discreto.",
+			weapon_trovao = "O fuzil difícil: mais dano, sem perda com a distância, recuo forte.",
+			weapon_matapato = "Sniper leve, rápida de manusear.",
+			weapon_gemea = "Dois tiros seguidos; termine com a pistola.",
+			weapon_luneta = "A sniper pesada: nunca derruba vida cheia com um tiro.",
+			weapon_bastao = "Corpo a corpo: deixa você mais rápido entre coberturas.",
+		} :: { [string]: string },
+	},
+
 	-- Painel de configurações (P no PC, engrenagem no celular). O jogo não pausa (GDD 13.3).
 	Settings = {
 		Title = "CONFIGURAÇÕES",
@@ -376,10 +449,19 @@ local Strings = {
 		Ready = "Pronto",
 		NotReady = "Esperando",
 		EmptySlot = "Vaga livre",
-		Invite = "+ CONVIDAR",
+		Invite = "+ CONVIDAR AMIGOS",
 		LeaveParty = "SAIR DA DUPLA",
 		ModeTitle = "DUELO EM DUPLA",
 		ModeSubtitle = "Mirante central + 4 ilhas de duelo",
+		ModeBanner = "2 CONTRA 2",
+		Nav = {
+			Play = "Jogar",
+			Arsenal = "Arsenal",
+			Cards = "Cartas",
+			Maps = "Mapas",
+			Ranking = "Ranking",
+			Shop = "Loja",
+		},
 		ReadyCount = "✓ %d/%d prontos",
 		Play = "JOGAR",
 		WaitingPartner = "ESPERANDO O PARCEIRO…",
