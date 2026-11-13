@@ -14,7 +14,8 @@ local WeaponConfig = require(Shared.Config.WeaponConfig)
 
 local COLORS = Theme.Combat
 
-export type PartSpec = { size: Vector3, cframe: CFrame, color: Color3, cylinder: boolean? }
+-- cylinder: peça redonda (deitada no eixo X do Roblox); wedge: cunha (rampa), para chanfros.
+export type PartSpec = { size: Vector3, cframe: CFrame, color: Color3, cylinder: boolean?, wedge: boolean? }
 
 export type Shape = {
 	parts: { PartSpec },
@@ -22,7 +23,7 @@ export type Shape = {
 	leftHand: Vector3?, -- nil = uma mão só
 }
 
-type Look = { body: Color3, dark: Color3, light: Color3, accent: Color3 }
+type Look = { body: Color3, dark: Color3, light: Color3, accent: Color3, metal: Color3, lens: Color3 }
 
 local WeaponShapes = {}
 
@@ -46,6 +47,14 @@ local function cyl(length: number, diameter: number, center: Vector3, color: Col
 	}
 end
 
+-- Cunha: a face reta fica atrás (+Z) e embaixo; a rampa desce para a frente. `rotation` gira em volta
+-- do centro (ex.: CFrame.Angles(0, math.pi, 0) vira a rampa para trás).
+local function wedge(size: Vector3, position: Vector3, color: Color3, rotation: CFrame?): PartSpec
+	local spec = box(size, position, color, rotation)
+	spec.wedge = true
+	return spec
+end
+
 -- Segmento (braço) entre dois pontos.
 local function segment(from: Vector3, to: Vector3, thickness: number, color: Color3): PartSpec
 	local length = (to - from).Magnitude
@@ -65,11 +74,14 @@ end
 local function lookOf(id: string?): Look
 	local look = if id then Theme.WeaponLook[id] else nil
 	local body = if look then look.body else COLORS.WeaponBody
+	local accent = if look then look.accent else COLORS.WeaponLight
 	return {
 		body = body,
 		dark = if look then look.dark else COLORS.WeaponDark,
 		light = body:Lerp(Color3.new(1, 1, 1), 0.25),
-		accent = if look then look.accent else COLORS.WeaponLight,
+		accent = accent,
+		metal = (if look then look.metal else nil) or COLORS.WeaponLight,
+		lens = (if look then look.lens else nil) or accent,
 	}
 end
 
@@ -176,16 +188,6 @@ local EXTRAS: { [string]: (c: Look, parts: { PartSpec }) -> () } = {
 		table.insert(parts, cyl(0.24, 0.52, Vector3.new(0, -0.28, -0.55), c.dark, "X")) -- carregador de tambor
 		table.insert(parts, cyl(0.26, 0.2, Vector3.new(0, -0.28, -0.55), c.accent, "X"))
 	end,
-	weapon_tatico = function(c, parts)
-		table.insert(parts, box(Vector3.new(0.14, 0.14, 0.22), Vector3.new(0, 0.45, -0.35), c.dark)) -- mira
-		table.insert(parts, box(Vector3.new(0.08, 0.06, 0.02), Vector3.new(0, 0.48, -0.47), c.accent))
-		band(parts, 0.24, 0.12, -0.6, -0.4, c.accent)
-	end,
-	weapon_atirador = function(c, parts)
-		table.insert(parts, cyl(0.7, 0.17, Vector3.new(0, 0.52, -0.4), c.dark)) -- luneta curta
-		table.insert(parts, cyl(0.05, 0.2, Vector3.new(0, 0.52, -0.75), c.accent))
-		table.insert(parts, cyl(0.45, 0.1, Vector3.new(0, 0.22, -2.35), c.dark)) -- cano mais longo
-	end,
 	weapon_rajada = function(c, parts)
 		band(parts, 0.34, 0.31, -0.85, 0.18, c.accent)
 		band(parts, 0.34, 0.31, -1.15, 0.18, c.accent)
@@ -229,6 +231,154 @@ local EXTRAS: { [string]: (c: Look, parts: { PartSpec }) -> () } = {
 	end,
 }
 
+-- Modelos detalhados (peça por peça) ------------------------------------------------------------------
+-- Substituem a forma base + peças próprias. Referência: docs/referencias/ref-tatico-atirador.webp.
+-- Devolvem (boca do cano, mão esquerda).
+
+-- Trilho picatinny: barra com os dentes em cima.
+local function rail(parts: { PartSpec }, zBack: number, zFront: number, y: number, color: Color3)
+	local length = zBack - zFront
+	table.insert(parts, box(Vector3.new(0.12, 0.05, length), Vector3.new(0, y, (zBack + zFront) / 2), color))
+	local teeth = math.floor(length / 0.11)
+	for i = 0, teeth - 1 do
+		local z = zBack - 0.06 - i * 0.11
+		table.insert(parts, box(Vector3.new(0.15, 0.03, 0.05), Vector3.new(0, y + 0.035, z), color))
+	end
+end
+
+-- Onde a mão direita segura nos modelos detalhados (a empunhadura deles fica mais atrás).
+local CUSTOM_GRIP = Vector3.new(0, -0.2, 0.27)
+
+-- Empunhadura, gatilho e guarda-mato (iguais nos dois fuzis).
+local function lowerGroup(parts: { PartSpec }, c: Look, capColor: Color3)
+	local tilt = CFrame.Angles(math.rad(-18), 0, 0)
+	table.insert(parts, box(Vector3.new(0.15, 0.36, 0.17), Vector3.new(0, -0.21, 0.27), c.dark, tilt))
+	table.insert(parts, box(Vector3.new(0.16, 0.05, 0.19), Vector3.new(0, -0.39, 0.33), capColor, tilt))
+	table.insert(parts, box(Vector3.new(0.04, 0.03, 0.24), Vector3.new(0, -0.15, 0.12), c.dark)) -- guarda-mato
+	table.insert(parts, box(Vector3.new(0.03, 0.09, 0.03), Vector3.new(0, -0.08, 0.1), c.metal)) -- gatilho
+end
+
+local CUSTOM: { [string]: (c: Look, parts: { PartSpec }) -> (Vector3, Vector3?) } = {
+	-- (empunhadura dos dois: CUSTOM_GRIP, onde a mão direita segura na primeira pessoa)
+	-- Tático: AR compacto cor de areia e preto, mira holográfica laranja, pente curvo, freio de boca.
+	weapon_tatico = function(c, parts)
+		local tan, black, metal = c.body, c.dark, c.metal
+		-- Coronha
+		table.insert(parts, box(Vector3.new(0.25, 0.48, 0.07), Vector3.new(0, 0.02, 1.15), black)) -- soleira
+		table.insert(parts, box(Vector3.new(0.2, 0.13, 0.5), Vector3.new(0, 0.2, 0.86), tan)) -- barra de cima
+		table.insert(parts, box(Vector3.new(0.2, 0.4, 0.09), Vector3.new(0, 0.0, 1.07), tan)) -- placa de trás
+		-- apoio diagonal (do pé da coronha até o tubo)
+		table.insert(
+			parts,
+			box(Vector3.new(0.2, 0.09, 0.5), Vector3.new(0, -0.03, 0.86), tan, CFrame.Angles(math.rad(34), 0, 0))
+		)
+		table.insert(parts, cyl(0.42, 0.13, Vector3.new(0, 0.17, 0.5), black)) -- tubo
+		-- Receptores
+		table.insert(parts, box(Vector3.new(0.2, 0.2, 0.55), Vector3.new(0, 0.0, 0.05), tan)) -- inferior
+		table.insert(parts, box(Vector3.new(0.2, 0.16, 0.22), Vector3.new(0, -0.15, -0.18), tan)) -- encaixe do pente
+		table.insert(parts, box(Vector3.new(0.22, 0.18, 0.8), Vector3.new(0, 0.19, -0.05), black)) -- superior
+		table.insert(parts, box(Vector3.new(0.225, 0.07, 0.2), Vector3.new(0, 0.17, 0.02), metal)) -- janela de ejeção
+		table.insert(parts, cyl(0.12, 0.08, Vector3.new(0.11, 0.24, 0.26), black)) -- assistente
+		table.insert(parts, box(Vector3.new(0.14, 0.04, 0.08), Vector3.new(0, 0.29, 0.33), black)) -- manobra
+		lowerGroup(parts, c, tan)
+		-- Pente curvo
+		table.insert(
+			parts,
+			box(Vector3.new(0.15, 0.28, 0.2), Vector3.new(0, -0.36, -0.2), black, CFrame.Angles(math.rad(-8), 0, 0))
+		)
+		table.insert(
+			parts,
+			box(Vector3.new(0.15, 0.24, 0.2), Vector3.new(0, -0.6, -0.15), black, CFrame.Angles(math.rad(-18), 0, 0))
+		)
+		table.insert(
+			parts,
+			box(Vector3.new(0.17, 0.04, 0.22), Vector3.new(0, -0.72, -0.11), metal, CFrame.Angles(math.rad(-18), 0, 0))
+		)
+		-- Guarda-mão cor de areia com fendas e o painel preto da frente
+		table.insert(parts, box(Vector3.new(0.27, 0.27, 0.78), Vector3.new(0, 0.19, -0.84), tan))
+		for _, z in { -0.6, -0.74, -0.88 } do
+			table.insert(parts, box(Vector3.new(0.275, 0.05, 0.09), Vector3.new(0, 0.25, z), black))
+		end
+		table.insert(parts, box(Vector3.new(0.28, 0.13, 0.42), Vector3.new(0, 0.11, -1.0), black))
+		for _, z in { -0.88, -1.0, -1.12 } do
+			table.insert(parts, box(Vector3.new(0.285, 0.05, 0.05), Vector3.new(0, 0.11, z), metal))
+		end
+		table.insert(parts, wedge(Vector3.new(0.27, 0.27, 0.08), Vector3.new(0, 0.19, -1.27), tan))
+		-- Trilho, mira holográfica e alças
+		rail(parts, 0.38, -1.18, 0.33, black)
+		table.insert(parts, box(Vector3.new(0.17, 0.06, 0.26), Vector3.new(0, 0.39, -0.12), black)) -- base da mira
+		table.insert(parts, box(Vector3.new(0.23, 0.24, 0.2), Vector3.new(0, 0.53, -0.12), black)) -- caixa
+		table.insert(parts, box(Vector3.new(0.25, 0.04, 0.26), Vector3.new(0, 0.67, -0.12), black)) -- capuz
+		table.insert(parts, box(Vector3.new(0.17, 0.16, 0.02), Vector3.new(0, 0.53, -0.225), c.lens)) -- lentes
+		table.insert(parts, box(Vector3.new(0.17, 0.16, 0.02), Vector3.new(0, 0.53, -0.015), c.lens))
+		table.insert(parts, box(Vector3.new(0.235, 0.13, 0.12), Vector3.new(0, 0.55, -0.12), c.lens)) -- vidro visto do lado
+		table.insert(parts, cyl(0.06, 0.07, Vector3.new(0.13, 0.45, -0.12), metal, "X")) -- botão
+		table.insert(parts, box(Vector3.new(0.12, 0.12, 0.06), Vector3.new(0, 0.43, 0.3), black)) -- alça traseira
+		table.insert(parts, box(Vector3.new(0.14, 0.08, 0.1), Vector3.new(0, 0.38, -1.13), black)) -- base da massa
+		table.insert(parts, box(Vector3.new(0.05, 0.18, 0.05), Vector3.new(0, 0.5, -1.13), black)) -- massa de mira
+		-- Cano e freio de boca
+		table.insert(parts, cyl(0.42, 0.1, Vector3.new(0, 0.2, -1.5), black))
+		table.insert(parts, cyl(0.24, 0.16, Vector3.new(0, 0.2, -1.8), black))
+		for _, z in { -1.75, -1.85 } do
+			table.insert(parts, box(Vector3.new(0.165, 0.04, 0.04), Vector3.new(0, 0.2, z), metal))
+		end
+		return Vector3.new(0, 0.2, -1.94), Vector3.new(0, 0.0, -0.95)
+	end,
+
+	-- Atirador: DMR verde-oliva comprido, coronha esqueletada, luneta grande com lente azul, cano longo.
+	weapon_atirador = function(c, parts)
+		local green, black, metal = c.body, c.dark, c.metal
+		-- Coronha esqueletada (vão no meio)
+		table.insert(parts, box(Vector3.new(0.25, 0.46, 0.07), Vector3.new(0, 0.02, 1.22), black)) -- soleira
+		table.insert(parts, box(Vector3.new(0.22, 0.13, 0.52), Vector3.new(0, 0.18, 0.95), green))
+		table.insert(parts, box(Vector3.new(0.22, 0.12, 0.52), Vector3.new(0, -0.14, 0.95), green))
+		table.insert(parts, box(Vector3.new(0.22, 0.32, 0.1), Vector3.new(0, 0.02, 0.72), green))
+		table.insert(parts, box(Vector3.new(0.18, 0.06, 0.3), Vector3.new(0, 0.27, 1.0), black)) -- apoio do rosto
+		-- Chassi e receptor
+		table.insert(parts, box(Vector3.new(0.24, 0.24, 0.9), Vector3.new(0, 0.09, 0.2), green))
+		table.insert(parts, box(Vector3.new(0.22, 0.16, 0.72), Vector3.new(0, 0.26, -0.05), black))
+		table.insert(parts, box(Vector3.new(0.225, 0.06, 0.18), Vector3.new(0, 0.24, 0.08), metal)) -- ferrolho
+		table.insert(parts, box(Vector3.new(0.21, 0.16, 0.22), Vector3.new(0, -0.08, -0.18), green)) -- encaixe do pente
+		lowerGroup(parts, c, black)
+		-- Pente reto
+		table.insert(
+			parts,
+			box(Vector3.new(0.15, 0.42, 0.2), Vector3.new(0, -0.35, -0.2), black, CFrame.Angles(math.rad(-6), 0, 0))
+		)
+		table.insert(
+			parts,
+			box(Vector3.new(0.17, 0.04, 0.22), Vector3.new(0, -0.57, -0.18), metal, CFrame.Angles(math.rad(-6), 0, 0))
+		)
+		-- Guarda-mão longo com fendas compridas
+		table.insert(parts, box(Vector3.new(0.26, 0.24, 1.1), Vector3.new(0, 0.18, -0.92), green))
+		for _, z in { -0.66, -0.94, -1.22 } do
+			table.insert(parts, box(Vector3.new(0.265, 0.05, 0.2), Vector3.new(0, 0.2, z), black))
+		end
+		table.insert(parts, wedge(Vector3.new(0.26, 0.24, 0.1), Vector3.new(0, 0.18, -1.52), green))
+		rail(parts, 0.38, -1.45, 0.325, black)
+		-- Luneta grande
+		table.insert(parts, box(Vector3.new(0.14, 0.2, 0.08), Vector3.new(0, 0.44, 0.05), black)) -- suportes
+		table.insert(parts, box(Vector3.new(0.14, 0.2, 0.08), Vector3.new(0, 0.44, -0.55), black))
+		table.insert(parts, cyl(0.1, 0.18, Vector3.new(0, 0.6, 0.05), black)) -- anéis
+		table.insert(parts, cyl(0.1, 0.18, Vector3.new(0, 0.6, -0.55), black))
+		table.insert(parts, cyl(1.0, 0.13, Vector3.new(0, 0.6, -0.25), black)) -- tubo
+		table.insert(parts, cyl(0.12, 0.16, Vector3.new(0, 0.6, -0.25), black)) -- corpo das torres
+		table.insert(parts, cyl(0.1, 0.13, Vector3.new(0, 0.72, -0.25), metal, "Y")) -- torre de cima
+		table.insert(parts, cyl(0.1, 0.13, Vector3.new(0.12, 0.6, -0.25), metal, "X")) -- torre do lado
+		table.insert(parts, cyl(0.32, 0.26, Vector3.new(0, 0.6, -0.9), black)) -- objetiva
+		table.insert(parts, cyl(0.02, 0.21, Vector3.new(0, 0.6, -1.065), c.lens))
+		table.insert(parts, cyl(0.24, 0.2, Vector3.new(0, 0.6, 0.35), black)) -- ocular
+		table.insert(parts, cyl(0.02, 0.15, Vector3.new(0, 0.6, 0.475), c.lens))
+		-- Cano longo e freio de boca
+		table.insert(parts, cyl(0.9, 0.1, Vector3.new(0, 0.2, -1.95), black))
+		table.insert(parts, cyl(0.26, 0.16, Vector3.new(0, 0.2, -2.5), black))
+		for _, z in { -2.45, -2.55 } do
+			table.insert(parts, box(Vector3.new(0.165, 0.04, 0.04), Vector3.new(0, 0.2, z), metal))
+		end
+		return Vector3.new(0, 0.2, -2.65), Vector3.new(0, 0.0, -1.0)
+	end,
+}
+
 -- API ------------------------------------------------------------------------------------------------
 
 -- Arma de fogo de uma categoria. withArms = mãos e mangas (primeira pessoa); sem = só a arma (vitrine).
@@ -236,13 +386,21 @@ local EXTRAS: { [string]: (c: Look, parts: { PartSpec }) -> () } = {
 function WeaponShapes.gun(category: Types.WeaponCategory, withArms: boolean, id: string?): Shape
 	local look = lookOf(id)
 	local parts: { PartSpec } = {}
-	local muzzle, leftHand = base(category, look, parts)
-	local extras = if id then EXTRAS[id] else nil
-	if extras then
-		extras(look, parts)
+	local custom = if id then CUSTOM[id] else nil
+	local muzzle, leftHand
+	local grip = GRIP
+	if custom then
+		muzzle, leftHand = custom(look, parts)
+		grip = CUSTOM_GRIP
+	else
+		muzzle, leftHand = base(category, look, parts)
+		local extras = if id then EXTRAS[id] else nil
+		if extras then
+			extras(look, parts)
+		end
 	end
 	if withArms then
-		arm(GRIP + Vector3.new(0, -0.05, 0.05), Vector3.new(0.3, -1.3, 0.8), parts)
+		arm(grip + Vector3.new(0, -0.05, 0.05), Vector3.new(0.3, -1.3, 0.8), parts)
 		if leftHand then
 			arm(leftHand, Vector3.new(-0.7, -1.3, 0.1), parts)
 		end
@@ -288,12 +446,18 @@ function WeaponShapes.forId(id: string, withArms: boolean): Shape
 end
 
 -- Uma peça solta (sem física) a partir da descrição.
-function WeaponShapes.makePart(spec: PartSpec): Part
-	local part = Instance.new("Part")
-	part.Name = "Piece"
-	if spec.cylinder then
-		part.Shape = Enum.PartType.Cylinder
+function WeaponShapes.makePart(spec: PartSpec): BasePart
+	local part: BasePart
+	if spec.wedge then
+		part = Instance.new("WedgePart")
+	else
+		local p = Instance.new("Part")
+		if spec.cylinder then
+			p.Shape = Enum.PartType.Cylinder
+		end
+		part = p
 	end
+	part.Name = "Piece"
 	part.Size = spec.size
 	part.CFrame = spec.cframe
 	part.Color = spec.color

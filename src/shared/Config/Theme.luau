@@ -195,8 +195,21 @@ local Theme = {
 		weapon_vespa = { body = hex("#3A3F55"), dark = hex("#24283A"), accent = hex("#F5C542") },
 		weapon_balde = { body = hex("#3A3F55"), dark = hex("#24283A"), accent = hex("#F28C38") },
 		weapon_varredor = { body = hex("#5C6B3A"), dark = hex("#2E3322"), accent = hex("#C7D36B") },
-		weapon_tatico = { body = hex("#B79B72"), dark = hex("#3A3528"), accent = hex("#F5C542") },
-		weapon_atirador = { body = hex("#6A7A44"), dark = hex("#2E3322"), accent = hex("#7CE38B") },
+		-- Tático e Atirador: modelos detalhados (referência docs/referencias/ref-tatico-atirador.webp)
+		weapon_tatico = {
+			body = hex("#C9A266"),
+			dark = hex("#2B2D33"),
+			accent = hex("#F5A623"),
+			metal = hex("#7E8494"),
+			lens = hex("#F28C28"),
+		},
+		weapon_atirador = {
+			body = hex("#7A8B3A"),
+			dark = hex("#2B2D33"),
+			accent = hex("#7CE38B"),
+			metal = hex("#7E8494"),
+			lens = hex("#2BA8B8"),
+		},
 		weapon_rajada = { body = hex("#3A3F55"), dark = hex("#24283A"), accent = hex("#F28C38") },
 		weapon_trovao = { body = hex("#3B6FD8"), dark = hex("#24283A"), accent = hex("#9FD0FF") },
 		weapon_matapato = { body = hex("#5FA34A"), dark = hex("#2B3A28"), accent = hex("#B7F28A") },
@@ -205,7 +218,7 @@ local Theme = {
 		weapon_martelo = { body = hex("#3A3F55"), dark = hex("#1E2130"), accent = hex("#A970FF") },
 		weapon_moedor = { body = hex("#C9CDD8"), dark = hex("#2B2F40"), accent = hex("#AEB6D0") },
 		weapon_bastao = { body = hex("#C98A4B"), dark = hex("#2B2F40"), accent = hex("#F28C38") },
-	} :: { [string]: { body: Color3, dark: Color3, accent: Color3 } },
+	} :: { [string]: { body: Color3, dark: Color3, accent: Color3, metal: Color3?, lens: Color3? } },
 
 	-- Sombreado dos menus [DECIDIDO] (F7, dono do projeto; referência docs/referencias/ref-menus-armas.webp):
 	-- todo fundo (painel, botão, aba, cartão) tem a cor cheia em cima e escurece até ShadeBottom × a cor
