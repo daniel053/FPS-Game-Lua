@@ -112,9 +112,9 @@ Todas as telas usam os componentes de `src/shared/Ui` (peças básicas) e `src/c
 | Onde | O que olhar |
 |---|---|
 | **Lobby** (T3) | logo provisória + LOBBY, moedas e engrenagem no topo; dupla com avatares à esquerda; DUELO EM DUPLA com JOGAR à direita; navegação embaixo (Ranking e Loja "Em breve"); ilhas cinza flutuando ao fundo |
-| **Lobby › CARTAS** (T1) | carrossel (arrastar, setas ← →, roda do mouse), filtros com nome e ícone, tecla, descrição, GIRAR desativado |
+| **Lobby › CARTAS** (T1) | filtros TODAS / tecla C Q E X / raridade (filtro sem carta fica apagado), carrossel em ordem de tecla (arrastar, setas ← →, roda do mouse), selo de raridade, atributos, EQUIPADA, GIRAR desativado |
 | **Lobby › MAPAS** (T4) | mirante e as 4 ilhas vistas de cima; tocar numa ilha mostra a descrição |
-| **Lobby › ARSENAL** (T5) | abas, armas em 3D, detalhe girando, skin Padrão equipada; no celular o detalhe abre por cima da grade |
+| **Lobby › ARSENAL** (T5) | todas as armas numa tela, sem abas e sem rolagem, agrupadas por categoria; detalhe com a arma girando, barras, EQUIPAR e a fila de skins embaixo |
 | **Partida › preparação** (T2) | modal sobre o mapa, etapas como abas, armas em 3D, barras, parceiro em tempo real, REPETIR ÚLTIMA, CONFIRMAR (Enter / X); no celular uma aba por categoria |
 | **Partida › HUD** (T6) | duplas com avatares, vidas e tempo no topo; minimapa; dicas [B] [P] [Tab] no PC; munição "25 | ∞"; aviso N KILL; legendas "Inimigo usou …" |
 | **Tab** (PC) / **←** (controle) / **PLACAR** (celular) | placar com todas as duplas; a lista de jogadores do Roblox some |

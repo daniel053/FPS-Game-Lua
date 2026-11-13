@@ -110,13 +110,30 @@ local Strings = {
 	CardsScreen = {
 		Title = "CARTAS",
 		All = "Todas",
-		KeyLine = "Tecla %s",
+		KeyFilter = "Tecla %s",
 		NoRarity = "Raridade a definir",
 		Owned = "Na sua coleção",
 		Locked = "Você ainda não tem esta carta",
-		Empty = "Nenhuma carta com esta raridade ainda.",
+		Empty = "Nenhuma carta com este filtro.",
+		Equip = "EQUIPAR",
+		Equipped = "EQUIPADA",
+		LockedButton = "BLOQUEADA",
 		Spin = "⟳ GIRAR",
-		SpinSoon = "Girar cartas: em breve",
+		Soon = "Em breve",
+		CardSkins = "Skins de cartas / versos",
+		-- Linha de atributos de cada carta (números do CardConfig)
+		Stats = {
+			Duration = "⏱ Duração: %d s",
+			Charges = "◉ Cargas: %d",
+			Radius = "◎ Raio: %d",
+			Height = "⇡ Altura: %d",
+			Cooldown = "⟳ Recarga: %d s",
+			Slow = "⇣ Lentidão: %d%%",
+			Effect = "⏱ Efeito: %d s",
+			Window = "⏱ Janela: %d s",
+			UsesPerRound = "◉ %d por rodada",
+			Unlocks = "🔒 Libera na %dª rodada",
+		},
 	},
 
 	-- Tela de mapas (T4): as ilhas da partida, com nome e descrição curta (GDD 15)
@@ -137,20 +154,18 @@ local Strings = {
 	-- Arsenal (T5): ver as armas e escolher a skin (a loja vem depois)
 	Arsenal = {
 		Title = "ARSENAL",
-		Tabs = {
-			All = "Todas",
-			Primary = "Primária",
-			Secondary = "Secundária",
-			Melee = "Corpo a corpo",
-			Ability = "Habilidade",
+		Melee = "Corpo a corpo",
+		Stats = {
+			Damage = "Dano",
+			FireRate = "Cadência",
+			Range = "Alcance",
+			Mobility = "Mobilidade",
 		},
 		Skins = "SKINS",
 		DefaultSkin = "Padrão",
 		Equip = "EQUIPAR",
 		Equipped = "EQUIPADA",
 		MoreSkinsSoon = "Mais skins: em breve",
-		AbilityHint = "As cartas e as skins de efeito ficam na tela de Cartas.",
-		OpenCards = "VER CARTAS",
 		Descriptions = {
 			weapon_bolinha = "A pistola de começo, fácil. O modo alternativo dispara rajada de 3.",
 			weapon_chumbinho = "Só funciona colado: de longe os bagos se espalham.",

@@ -29,6 +29,7 @@ local TextUtil = require(Shared.TextUtil)
 local Theme = require(Shared.Config.Theme)
 local Ui = require(Shared.Ui.Ui)
 local WeaponConfig = require(Shared.Config.WeaponConfig)
+local WeaponStats = require(Shared.Combat.WeaponStats)
 
 local InputDevice = require(script.Parent.Parent.Common.InputDevice)
 local PlayerDataClient = require(script.Parent.Parent.Common.PlayerDataClient)
@@ -90,17 +91,6 @@ local touchCategory: string? = nil
 local tabsKey = ""
 local syncingTabs = false
 
--- Atributos (0 a 1) para as barras da arma escolhida.
-local function weaponStats(def: WeaponConfig.WeaponDef): { number }
-	local damage = math.clamp(def.damage * def.pellets / WeaponConfig.MaxSingleShotDamage, 0.05, 1)
-	local rate = math.clamp(def.fireRate / 13, 0.05, 1)
-	local reach = if def.falloff then def.falloff.finish else def.range
-	if def.effectiveRange then
-		reach = def.effectiveRange
-	end
-	return { damage, rate, math.clamp(reach / 120, 0.05, 1) }
-end
-
 local function selectedId(): string?
 	if step == "primary" then
 		return chosen.primary
@@ -112,8 +102,8 @@ end
 
 local function refreshStats()
 	local id = if step ~= "card" then selectedId() else nil
-	local def = if id then WeaponConfig.get(id) else nil
-	stats.set(if def then weaponStats(def) else nil)
+	local values = if id then WeaponStats.get(id) else nil
+	stats.set(if values then { values.damage, values.fireRate, values.range } else nil)
 end
 
 local function refreshSelection()

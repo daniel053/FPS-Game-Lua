@@ -33,7 +33,7 @@
 
 - Organização geral do Lobby (grupo à esquerda, modo de jogo e botão de jogar à direita, cenário 3D no centro, moedas e engrenagem no topo direito).
 - Ilha central com 4 ilhas de duelo em volta.
-- Organização do Arsenal (abas no topo, grade de armas por categoria, painel de detalhe à direita, botão Equipar).
+- Organização do Arsenal (grade de armas por categoria, painel de detalhe à direita, botão Equipar). As abas do mockup saíram na F7 (seção T5).
 - Carrossel de cartas com molduras por raridade e botão Girar.
 - Disposição do HUD (placar e tempo no topo, minimapa no canto, vida e escudo embaixo à esquerda, cartas embaixo no centro, munição embaixo à direita, controles de toque).
 - Painéis escuros, títulos em caixa alta, cantos chanfrados.
@@ -160,24 +160,34 @@ Proibido em todo o resto: fundos, textos, ícones, barras, botões comuns, HUD.
 
 **Função:** ver as cartas, ver raridades, girar cartas.
 
+**Referência visual** `[DECIDIDO]` (F7, dono do projeto): `docs/referencias/ref-t1-cartas.webp` (mesmo cuidado da seção 1: é uma ideia de layout; as cores de raridade e as regras de neon deste guia continuam valendo).
+
 **Layout (paisagem):**
 ```
-┌─────────────────────────────────────────────────────────┐
-│ ‹ CARTAS                  ◆COMUM ◆ÉPICA ◆LENDÁRIA ☀CELESTIAL │
-│                                                         │
-│     [carta]   [ CARTA EM DESTAQUE ]   [carta] [carta]   │
-│        ‹                                      ›          │
-│              Nome da carta · Tecla C                    │
-│              Uma frase do que ela faz                   │
-│                   [ ⟳ GIRAR ]                           │
-└─────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│ ‹ CARTAS                                                 │
+│ [TODAS] | [C][Q][E][X] | [◆COMUM][★ÉPICA][♛LENDÁRIA][☀CELESTIAL] │
+│ ──────────────────────────────────────────────────────── │
+│   ‹    [carta]  [ CARTA EM DESTAQUE ]  [carta]    ›      │
+│ ──────────────────────────────────────────────────────── │
+│              NUVEM  [◆ COMUM]                            │
+│        Uma frase do que ela faz                          │
+│   ⏱ Duração: 7 s  |  ◉ Cargas: 2  |  ◎ Raio: 8           │
+│        [ EQUIPAR ]   [ ⟳ GIRAR ]                         │
+│            ✓ NA SUA COLEÇÃO                              │
+│          [ Skins de cartas / versos ]                    │
+└──────────────────────────────────────────────────────────┘
 ```
 
-- Carrossel com a carta selecionada no centro, maior; as outras ao lado, menores e levemente inclinadas.
-- No topo, filtros por raridade (com nome e ícone, não só cor).
-- Painel de informação: nome, tecla fixa (chip), raridade, descrição de uma frase.
-- **Botão GIRAR** sempre visível embaixo da carta. Comportamento: GDD seção 8.9 `[ABERTO]` (sorteio ou visualização). Se for sorteio: mostrar custo e chances **antes** de girar.
-- Cartas que o jogador não tem: silhueta escura com cadeado.
+- **Filtros numa linha** `[DECIDIDO]`: TODAS, **por tecla** (C, Q, E, X) e por raridade. A coleção vai crescer e cada carta tem tecla fixa, então organizar por tecla é o principal. Os dois filtros se combinam; um filtro sem nenhuma carta fica apagado (não some).
+- Carrossel em ordem de tecla, com a carta selecionada no centro, maior e com brilho discreto; as outras ao lado, menores e levemente inclinadas.
+- Raridade sempre com nome e ícone (nunca só cor), num selo ao lado do nome.
+- Linha de atributos da carta (duração, cargas, alcance, recarga…), lidos do `CardConfig`.
+- **EQUIPAR** embaixo da carta. Na primeira versão (uma carta por tecla, GDD 8.3) a carta da coleção já é a da tecla dela: o botão mostra "EQUIPADA".
+- **Botão GIRAR** sempre visível embaixo da carta. Comportamento: GDD seção 8.9 `[ABERTO]` (sorteio ou visualização); até decidir, fica desativado. Se for sorteio: mostrar custo e chances **antes** de girar.
+- Aba **Skins de cartas / versos** no rodapé (F9).
+- Cartas que o jogador não tem: escurecidas com cadeado.
+- Arte das cartas: F10. Até lá, fundo na cor da carta e a tecla grande no meio.
 - Celular: arrastar para os lados troca a carta. PC: setas ou roda do mouse.
 
 ### T2 · Modal de preparação (carta + arma)
@@ -259,29 +269,33 @@ Proibido em todo o resto: fundos, textos, ícones, barras, botões comuns, HUD.
 
 ### T5 · Arsenal
 
-**Função:** ver todas as armas e **escolher a skin** de cada uma. Não serve para escolher a arma da partida (isso é na T2).
+**Função:** ver todas as armas e **escolher a skin** de cada uma. Não serve para escolher a arma da partida (isso é na T2). As armas são as mesmas para todos; o que muda é a skin.
+
+**Referência visual** `[DECIDIDO]` (F7, dono do projeto): `docs/referencias/ref-t5-arsenal.png`.
 
 **Layout (paisagem):**
 ```
-┌─────────────────────────────────────────────────────────┐
-│ ‹ ARSENAL   [TODAS][PRIMÁRIA][SECUNDÁRIA][CORPO A CORPO][HABILIDADE] │
-│ ┌────┐┌────┐┌────┐┌────┐┌────┐      ┌───────────────────┐ │
-│ │    ││    ││    ││    ││    │      │  (arma em 3D,     │ │
-│ └────┘└────┘└────┘└────┘└────┘      │   girando devagar) │ │
-│ ┌────┐┌────┐┌────┐┌────┐┌────┐      │ BOLINHA           │ │
-│ │    ││    ││    ││    ││    │      │ Pistola confiável. │ │
-│ └────┘└────┘└────┘└────┘└────┘      │ SKINS:            │ │
-│ ┌────┐┌────┐┌────┐┌────┐┌────┐      │ [■][■][■][🔒][🔒]  │ │
-│ │    ││    ││    ││    ││    │      │ [ EQUIPAR › ]     │ │
-│ └────┘└────┘└────┘└────┘└────┘      └───────────────────┘ │
-└─────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│ ‹ ARSENAL                                                │
+│ PISTOLAS                                 ┌──────────────┐ │
+│ [■][■][■][■][■]                           │ (arma em 3D) │ │
+│ SUBMETRALH.  ESCOPETAS  CORPO A CORPO     │ FERRÃO       │ │
+│ [■][■]       [■][■]     [■]               │ uma frase    │ │
+│ FUZIS LEVES  FUZIS                        │ DANO ▬▬▬▬▬   │ │
+│ [■][■]       [■][■]                       │ CADÊNCIA ▬▬▬ │ │
+│ SNIPERS          METRALHADORAS            │ ALCANCE ▬▬   │ │
+│ [■][■][■]        [■][■]                   │ MOBILIDADE ▬ │ │
+│                                           │ [ EQUIPAR ]  │ │
+│                                           │ SKINS [■][🔒] │ │
+│                                           └──────────────┘ │
+└──────────────────────────────────────────────────────────┘
 ```
 
-- **Abas:** Todas, Primária, Secundária, Corpo a corpo, Habilidade. `[DECIDIDO]`
-- **Grade:** cartões de arma com a skin equipada e o nome próprio do jogo. Na aba Todas, agrupar por categoria.
-- **Painel de detalhe:** arma em 3D girando devagar, nome, descrição de uma frase, **fila de skins** (miniaturas com moldura de raridade; as que o jogador não tem ficam com cadeado e preço), botão **Equipar**. `[DECIDIDO]`
-- Aba **Habilidade:** mostra as cartas com suas skins de efeito (futuro) e leva à T1.
-- Celular: o painel de detalhe abre por cima da grade (ocupando metade direita da tela).
+- **Tudo numa tela, sem abas e sem rolagem** `[DECIDIDO]` (F7; antes eram abas Todas/Primária/Secundária/Corpo a corpo/Habilidade): as 18 armas e o corpo a corpo agrupados por categoria, com o título da categoria acima de cada grupo. Os cartões se ajustam ao tamanho da tela.
+- **Painel de detalhe** à direita `[DECIDIDO]`: arma em 3D girando devagar, nome, categoria, descrição de uma frase, **barras de atributo** (dano, cadência, alcance, mobilidade), botão **Equipar** e, **logo abaixo, a fila de skins** (miniaturas com moldura de raridade; as que o jogador não tem ficam com cadeado e preço). O espaço das skins já existe desde a F7; o catálogo e a compra são da F9.
+- Barras de atributo no acento roxo (sem vermelho: é cor de inimigo e perigo).
+- As cartas e as skins de efeito ficam na tela de Cartas (T1).
+- Celular: mesmo layout; o painel de detalhe rola sozinho se a tela for baixa, a grade nunca.
 
 ### T6 · HUD em partida (primeira pessoa)
 

@@ -530,6 +530,7 @@ export type Modal = {
 export type ModalOptions = {
 	title: string,
 	size: UDim2?, -- padrão: 70% × 75% (no celular, 92% × 86%)
+	touchSize: UDim2?, -- tamanho no celular quando a tela precisa de mais espaço
 	maxSize: Vector2?,
 	minSize: Vector2?,
 	overlay: boolean?, -- escurecer o jogo atrás (padrão: sim)
@@ -583,9 +584,11 @@ function Widgets.modal(name: string, order: number, options: ModalOptions): Moda
 	body.Size = UDim2.new(1, -2 * pad, 1, -(2 * pad + Theme.Touch.MinTarget + 6))
 
 	local function fit()
-		if options.size == nil then
-			local touch = InputDevice.get() == "Touch"
-			panel.Size = if touch then UDim2.fromScale(0.92, 0.86) else UDim2.fromScale(0.7, 0.75)
+		local touch = InputDevice.get() == "Touch"
+		if touch then
+			panel.Size = options.touchSize or options.size or UDim2.fromScale(0.92, 0.86)
+		else
+			panel.Size = options.size or UDim2.fromScale(0.7, 0.75)
 		end
 	end
 
