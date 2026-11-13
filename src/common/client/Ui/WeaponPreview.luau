@@ -83,7 +83,7 @@ function WeaponPreview.new(parent: Instance, spin: boolean): Preview
 		model = m
 		-- Vista de lado (o cano aponta para -Z): câmera no +X, longe o bastante para caber a arma
 		local radius = size.Magnitude / 2
-		local distance = radius / math.tan(math.rad(camera.FieldOfView / 2)) * 1.1
+		local distance = radius / math.tan(math.rad(camera.FieldOfView / 2)) * 0.85
 		camera.CFrame = CFrame.lookAt(Vector3.new(distance, radius * 0.25, 0), Vector3.zero)
 		angle = 0
 		place()

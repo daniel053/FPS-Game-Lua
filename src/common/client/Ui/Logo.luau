@@ -1,6 +1,6 @@
 --!strict
 -- Logo PROVISÓRIA (ESTILO 2.4 [ABERTO]): o nome do jogo em Oswald negrito, branco, com um símbolo
--- simples roxo com brilho (carta com a seta de girar). O brilho da logo é uma das exceções de neon
+-- simples roxo com brilho (carta com uma estrela). O brilho da logo é uma das exceções de neon
 -- (ESTILO 2.6). Proibido: letra "V", forma de presa, vermelho.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -20,7 +20,7 @@ function Logo.new(parent: Instance, height: number, subtitle: string?): Frame
 	local layout = Ui.list(root, Enum.FillDirection.Horizontal, 10)
 	layout.VerticalAlignment = Enum.VerticalAlignment.Center
 
-	-- Símbolo: carta inclinada roxa com brilho e a seta de girar
+	-- Símbolo: carta inclinada roxa com brilho e uma estrela
 	local symbolBox = Ui.frame("Symbol", root)
 	symbolBox.Size = UDim2.fromOffset(height, height)
 	local card = Ui.frame("Card", symbolBox)

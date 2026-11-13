@@ -97,13 +97,13 @@ local Strings = {
 	Rarity = {
 		Comum = { name = "Comum", icon = "◆" },
 		Epica = { name = "Épica", icon = "★" },
-		Lendaria = { name = "Lendária", icon = "♛" },
+		Lendaria = { name = "Lendária", icon = "👑" },
 		Celestial = { name = "Celestial", icon = "☀" },
 	} :: { [string]: { name: string, icon: string } },
 
-	-- Logo provisória (ESTILO 2.4 [ABERTO]): símbolo de carta com a seta de girar
+	-- Logo provisória (ESTILO 2.4 [ABERTO]): carta roxa com uma estrela (a fonte não tem a seta de girar)
 	Logo = {
-		Symbol = "⟳",
+		Symbol = "★",
 	},
 
 	-- Tela de Cartas (T1)
@@ -118,7 +118,7 @@ local Strings = {
 		Equip = "EQUIPAR",
 		Equipped = "EQUIPADA",
 		LockedButton = "BLOQUEADA",
-		Spin = "⟳ GIRAR",
+		Spin = "🔄 GIRAR",
 		Soon = "Em breve",
 		CardSkins = "Skins de cartas / versos",
 		-- Linha de atributos de cada carta (números do CardConfig)
@@ -126,9 +126,9 @@ local Strings = {
 			Duration = "⏱ Duração: %d s",
 			Charges = "◉ Cargas: %d",
 			Radius = "◎ Raio: %d",
-			Height = "⇡ Altura: %d",
-			Cooldown = "⟳ Recarga: %d s",
-			Slow = "⇣ Lentidão: %d%%",
+			Height = "▲ Altura: %d",
+			Cooldown = "🔄 Recarga: %d s",
+			Slow = "▼ Lentidão: %d%%",
 			Effect = "⏱ Efeito: %d s",
 			Window = "⏱ Janela: %d s",
 			UsesPerRound = "◉ %d por rodada",
@@ -285,7 +285,6 @@ local Strings = {
 	Ui = {
 		Arrow = "›",
 		Back = "‹",
-		Close = "✕",
 		Gear = "⚙",
 		Minus = "−",
 		Plus = "+",

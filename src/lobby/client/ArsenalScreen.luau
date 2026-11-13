@@ -201,7 +201,7 @@ local function buildDetail(parent: Frame)
 	Ui.list(scroll, Enum.FillDirection.Vertical, 6)
 
 	local previewBox = Ui.frame("Preview", scroll)
-	previewBox.Size = UDim2.new(1, -6, 0, 110)
+	previewBox.Size = UDim2.new(1, -6, 0, 150)
 	previewBox.LayoutOrder = 1
 	detailPreview = WeaponPreview.new(previewBox, true)
 
