@@ -70,18 +70,7 @@ local function build(kind: string, shape: Shape)
 	newModel.PrimaryPart = root
 
 	for _, spec in shape.parts do
-		local part = Instance.new("Part")
-		part.Name = "Piece"
-		part.Size = spec.size
-		part.CFrame = spec.cframe
-		part.Color = spec.color
-		part.Material = Enum.Material.SmoothPlastic
-		part.Anchored = true
-		part.CanCollide = false
-		part.CanQuery = false
-		part.CanTouch = false
-		part.CastShadow = false
-		part.Parent = newModel
+		WeaponShapes.makePart(spec).Parent = newModel
 	end
 	if InputDevice.get() == "Touch" then
 		newModel:ScaleTo(VM.TouchScale)
@@ -93,11 +82,12 @@ end
 
 -- API --------------------------------------------------------------------------------------------
 
--- Troca a arma mostrada. `category` = categoria da arma de fogo, ou "Melee".
-function ViewModel.setWeapon(category: string)
+-- Troca a arma mostrada. `category` = categoria da arma de fogo, ou "Melee" (posição na tela);
+-- `weaponId` = a arma (cores e peças próprias, WeaponShapes).
+function ViewModel.setWeapon(category: string, weaponId: string?)
 	local shape = if category == "Melee"
 		then WeaponShapes.melee(true)
-		else WeaponShapes.gun(category :: Types.WeaponCategory, true)
+		else WeaponShapes.gun(category :: Types.WeaponCategory, true, weaponId)
 	build(category, shape)
 	equipStartedAt = os.clock()
 	reloadUntil = 0

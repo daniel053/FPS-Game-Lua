@@ -144,7 +144,6 @@ end
 
 local function triangle(parent: Instance, position: UDim2, cut: number, rotation: number): Frame
 	local f = piece(parent, position, UDim2.fromOffset(cut, cut))
-	f.Name = "Corner"
 	local gradient = Instance.new("UIGradient")
 	gradient.Rotation = rotation
 	gradient.Transparency = HALF
@@ -158,25 +157,53 @@ local function line(parent: Instance, position: UDim2, size: UDim2): Frame
 	return f
 end
 
--- Fundo chanfrado que ocupa o pai inteiro (fica atrás dos outros filhos: ZIndex 0).
+-- Sombreado (Theme.Shade): a cor escurecida da parte de baixo.
+function Ui.shade(color: Color3): Color3
+	local m = Theme.Shade.Bottom
+	return Color3.new(color.R * m, color.G * m, color.B * m)
+end
+
+local SHADE_SEQUENCE =
+	ColorSequence.new(Color3.new(1, 1, 1), Color3.new(Theme.Shade.Bottom, Theme.Shade.Bottom, Theme.Shade.Bottom))
+
+-- Sombreado vertical em qualquer quadro: o UIGradient multiplica a cor de fundo (branco em cima,
+-- ShadeBottom embaixo), então vale para qualquer cor. Não usar em botões com texto (escurece o texto).
+function Ui.addShade(obj: GuiObject): UIGradient
+	local gradient = obj:FindFirstChild("Shade") :: UIGradient?
+	if gradient then
+		return gradient
+	end
+	local g = Instance.new("UIGradient")
+	g.Name = "Shade"
+	g.Rotation = 90
+	g.Color = SHADE_SEQUENCE
+	g.Parent = obj
+	return g
+end
+
+-- Fundo chanfrado que ocupa o pai inteiro (fica atrás dos outros filhos: ZIndex 0), com o sombreado
+-- do Theme (cor cheia em cima, escura embaixo; as peças se encaixam sem emenda).
 -- Devolve o quadro "Fill"; a cor muda com Ui.setFill.
 function Ui.chamferFill(parent: GuiObject, color: Color3, transparency: number, cut: number): Frame
 	local fill = Ui.frame("Fill", parent)
 	fill.Size = UDim2.fromScale(1, 1)
 	fill.ZIndex = 0
-	piece(fill, UDim2.fromOffset(0, cut), UDim2.new(1, 0, 1, -2 * cut))
-	piece(fill, UDim2.fromOffset(cut, 0), UDim2.new(1, -cut, 0, cut))
-	piece(fill, UDim2.new(0, 0, 1, -cut), UDim2.new(1, -cut, 0, cut))
-	triangle(fill, UDim2.fromOffset(0, 0), cut, 45)
-	triangle(fill, UDim2.new(1, -cut, 1, -cut), cut, 225)
+	piece(fill, UDim2.fromOffset(0, cut), UDim2.new(1, 0, 1, -2 * cut)).Name = "Mid"
+	piece(fill, UDim2.fromOffset(cut, 0), UDim2.new(1, -cut, 0, cut)).Name = "Top"
+	piece(fill, UDim2.new(0, 0, 1, -cut), UDim2.new(1, -cut, 0, cut)).Name = "Bottom"
+	triangle(fill, UDim2.fromOffset(0, 0), cut, 45).Name = "CornerTop"
+	triangle(fill, UDim2.new(1, -cut, 1, -cut), cut, 225).Name = "CornerBottom"
+	Ui.addShade((fill:FindFirstChild("Mid") :: any) :: Frame)
 	Ui.setFill(fill, color, transparency)
 	return fill
 end
 
 function Ui.setFill(fill: Frame, color: Color3, transparency: number?)
+	local dark = Ui.shade(color)
 	for _, child in fill:GetChildren() do
 		if child:IsA("Frame") then
-			child.BackgroundColor3 = color
+			local bottom = child.Name == "Bottom" or child.Name == "CornerBottom"
+			child.BackgroundColor3 = if bottom then dark else color
 			if transparency then
 				child.BackgroundTransparency = transparency
 			end
@@ -210,8 +237,15 @@ end
 function Ui.panel(name: string, parent: Instance?, padding: number?, cut: number?): (Frame, Frame)
 	local f = Ui.frame(name, parent)
 	local c = cut or Theme.Chamfer.Panel
-	Ui.chamferFill(f, Theme.Color.PanelBase, Theme.Transparency.PanelBase, c)
+	Ui.chamferFill(f, Theme.Shade.PanelTop, Theme.Transparency.PanelBase, c)
 	Ui.chamferBorder(f, Theme.Color.PanelBorder, c)
+	-- Filete claro no topo (luz de cima, como na referência)
+	local sheen = Ui.frame("Sheen", f)
+	sheen.Position = UDim2.fromOffset(c, 1)
+	sheen.Size = UDim2.new(1, -c - 2, 0, 1)
+	sheen.BackgroundTransparency = Theme.Shade.HighlightTransparency
+	sheen.BackgroundColor3 = Theme.Shade.Highlight
+	sheen.ZIndex = 0
 	local content = Ui.frame("Content", f)
 	content.Size = UDim2.fromScale(1, 1)
 	content.ZIndex = 1
@@ -245,9 +279,10 @@ end
 function Ui.raised(name: string, parent: Instance?): Frame
 	local f = Ui.frame(name, parent)
 	f.BackgroundTransparency = 0
-	f.BackgroundColor3 = Theme.Color.PanelRaised
+	f.BackgroundColor3 = Theme.Shade.RaisedTop
 	Ui.corner(f)
 	Ui.stroke(f)
+	Ui.addShade(f)
 	return f
 end
 

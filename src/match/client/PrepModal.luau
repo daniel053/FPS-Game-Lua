@@ -200,6 +200,8 @@ end
 local function weaponCard(id: string, order: number, index: number, parent: Instance): Widgets.ItemCard
 	local card = Widgets.itemCard(parent, Strings.Weapons[id] or id, UDim2.fromOffset(CARD_WIDTH, CARD_HEIGHT), order)
 	card.root.Name = id
+	local look = Theme.WeaponLook[id]
+	card.setMarker(if look then look.accent else nil)
 	WeaponPreview.new(card.content, false).set(id)
 	if index <= #NUMBER_KEYS then
 		local chip = Widgets.keyChip(card.root, tostring(index), nil)

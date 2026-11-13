@@ -141,10 +141,11 @@ local function buildGrid(parent: Frame)
 			local ids = idsOf(category)
 			local frame = Ui.frame(category, row)
 			frame.LayoutOrder = g
-			local title = Ui.label("Title", Theme.Font.Title, Theme.TextSize.Label, Theme.Color.TextSecondary, frame)
-			title.Size = UDim2.new(1, 40, 0, TITLE_HEIGHT)
+			local title = Ui.label("Title", Theme.Font.Title, Theme.TextSize.Label, Theme.Color.TextPrimary, frame)
+			title.Size = UDim2.new(1, 60, 0, TITLE_HEIGHT)
 			title.TextXAlignment = Enum.TextXAlignment.Left
-			title.Text = TextUtil.upper(categoryName(category))
+			title.RichText = true
+			title.Text = Widgets.titleText(categoryName(category))
 			local holder = Ui.frame("Cards", frame)
 			holder.Position = UDim2.fromOffset(0, TITLE_HEIGHT + 4)
 			Ui.list(holder, Enum.FillDirection.Horizontal, CARD_GAP)
@@ -152,6 +153,8 @@ local function buildGrid(parent: Frame)
 				local card = Widgets.itemCard(holder, Strings.Weapons[id] or id, UDim2.fromOffset(60, 50), order)
 				card.root.Name = id
 				card.title.TextSize = Theme.TextSize.Label
+				local look = Theme.WeaponLook[id]
+				card.setMarker(if look then look.accent else nil)
 				WeaponPreview.new(card.content, false).set(id)
 				card.root.Activated:Connect(function()
 					showDetail(id)

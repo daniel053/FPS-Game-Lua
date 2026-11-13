@@ -182,6 +182,46 @@ local Theme = {
 		Tab = 6,
 	},
 
+	-- Visual de cada arma (modelos low poly provisórios até a F10; referência ref-menus-armas.webp):
+	-- corpo, partes escuras e cor de destaque. O destaque também é o marcador do cartão no Arsenal e no
+	-- modal de preparação. Nenhum vermelho (GDD 11: vermelho é do contorno de inimigo).
+	WeaponLook = {
+		weapon_bolinha = { body = hex("#4A4F66"), dark = hex("#2B2F40"), accent = hex("#A970FF") },
+		weapon_chumbinho = { body = hex("#8A90A8"), dark = hex("#3A3F55"), accent = hex("#C9CDD8") },
+		weapon_zumbido = { body = hex("#4A4F66"), dark = hex("#2B2F40"), accent = hex("#F2A93B") },
+		weapon_precisa = { body = hex("#6F7690"), dark = hex("#2E3247"), accent = hex("#4DE8FF") },
+		weapon_tambor = { body = hex("#9AA0B8"), dark = hex("#3A3F55"), accent = hex("#5E8CFF") },
+		weapon_ferrao = { body = hex("#3A3F55"), dark = hex("#24283A"), accent = hex("#E0559B") },
+		weapon_vespa = { body = hex("#3A3F55"), dark = hex("#24283A"), accent = hex("#F5C542") },
+		weapon_balde = { body = hex("#3A3F55"), dark = hex("#24283A"), accent = hex("#F28C38") },
+		weapon_varredor = { body = hex("#5C6B3A"), dark = hex("#2E3322"), accent = hex("#C7D36B") },
+		weapon_tatico = { body = hex("#B79B72"), dark = hex("#3A3528"), accent = hex("#F5C542") },
+		weapon_atirador = { body = hex("#6A7A44"), dark = hex("#2E3322"), accent = hex("#7CE38B") },
+		weapon_rajada = { body = hex("#3A3F55"), dark = hex("#24283A"), accent = hex("#F28C38") },
+		weapon_trovao = { body = hex("#3B6FD8"), dark = hex("#24283A"), accent = hex("#9FD0FF") },
+		weapon_matapato = { body = hex("#5FA34A"), dark = hex("#2B3A28"), accent = hex("#B7F28A") },
+		weapon_gemea = { body = hex("#D7DAE4"), dark = hex("#4A4F66"), accent = hex("#4DE8FF") },
+		weapon_luneta = { body = hex("#D9A441"), dark = hex("#3A3528"), accent = hex("#F5C542") },
+		weapon_martelo = { body = hex("#3A3F55"), dark = hex("#1E2130"), accent = hex("#A970FF") },
+		weapon_moedor = { body = hex("#C9CDD8"), dark = hex("#2B2F40"), accent = hex("#AEB6D0") },
+		weapon_bastao = { body = hex("#C98A4B"), dark = hex("#2B2F40"), accent = hex("#F28C38") },
+	} :: { [string]: { body: Color3, dark: Color3, accent: Color3 } },
+
+	-- Sombreado dos menus [DECIDIDO] (F7, dono do projeto; referência docs/referencias/ref-menus-armas.webp):
+	-- todo fundo (painel, botão, aba, cartão) tem a cor cheia em cima e escurece até ShadeBottom × a cor
+	-- embaixo. Degradê suave, de uma cor só (nada de degradê de várias cores). Os painéis usam um tom de
+	-- cima um pouco mais claro que panel.base para o meio do painel ficar igual ao token.
+	Shade = {
+		Bottom = 0.62, -- multiplicador da cor na parte de baixo
+		PanelTop = hex("#1F2845"),
+		RaisedTop = hex("#2A3456"),
+		SelectedTop = hex("#7C4DEB"), -- cartão selecionado: roxo do acento sombreado
+		Spot = hex("#3A4775"), -- "luz" atrás da arma/carta dentro do cartão
+		SpotTransparency = 0.78,
+		Highlight = hex("#FFFFFF"), -- filete claro no topo dos painéis
+		HighlightTransparency = 0.9,
+	},
+
 	-- Espaçamentos padrão dos componentes (F7)
 	Space = {
 		Small = 6,

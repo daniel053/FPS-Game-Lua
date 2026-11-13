@@ -331,7 +331,7 @@ function WeaponController.equip(slot: Slot)
 	else
 		local state = guns[slot]
 		WeaponState.equip(state, t)
-		ViewModel.setWeapon(state.def.category)
+		ViewModel.setWeapon(state.def.category, state.def.id)
 	end
 	send("Equip", t, slot)
 	semiLatched = triggerHeld
@@ -716,7 +716,7 @@ local function onLoadout(data: CombatTypes.LoadoutData)
 	recoilPitch, recoilYaw = 0, 0
 	local state = currentGun()
 	if state then
-		ViewModel.setWeapon(state.def.category)
+		ViewModel.setWeapon(state.def.category, state.def.id)
 	else
 		ViewModel.setWeapon("Melee")
 	end

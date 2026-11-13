@@ -95,6 +95,11 @@ return function(t: any)
 		for id, color in Theme.Cards do
 			t.ok(not isRed(color), `carta {id}`)
 		end
+		for id, look in Theme.WeaponLook do
+			for part, color in look :: { [string]: Color3 } do
+				t.ok(not isRed(color), `arma {id} ({part})`)
+			end
+		end
 		for _, hex in Theme.CrosshairPalette do
 			t.ok(not isRed(Color3.fromHex(hex)), `retícula {hex}`)
 		end

@@ -284,6 +284,7 @@ local Strings = {
 	-- Símbolos e palavras dos componentes (F7)
 	Ui = {
 		Arrow = "›",
+		TitleMark = "//",
 		Back = "‹",
 		Gear = "⚙",
 		Minus = "−",

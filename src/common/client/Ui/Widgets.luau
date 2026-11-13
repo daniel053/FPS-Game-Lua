@@ -208,7 +208,7 @@ function Widgets.button(parent: Instance, text: string, kind: ButtonKind, option
 
 	local function render()
 		local primary = currentKind == "primary"
-		local color = if primary then Theme.Color.Accent else Theme.Color.PanelRaised
+		local color = if primary then Theme.Color.Accent else Theme.Shade.RaisedTop
 		if pressed and enabled then
 			color = if primary then Theme.Color.AccentPressed else Theme.Color.PanelBorder
 		end
@@ -324,9 +324,11 @@ function Widgets.tabs(parent: Instance, items: { TabItem }, onSelect: (id: strin
 	local function paint()
 		for id, button in buttons do
 			local active = id == current
+			local color = if active then Theme.Color.Accent else Theme.Shade.RaisedTop
 			for _, p in fills[id]:GetChildren() do
 				if p:IsA("Frame") then
-					tweenColor(p, if active then Theme.Color.Accent else Theme.Color.PanelRaised)
+					local bottom = p.Name == "Bottom" or p.Name == "CornerBottom"
+					tweenColor(p, if bottom then Ui.shade(color) else color)
 				end
 			end
 			local text = button:FindFirstChild("Label") :: TextLabel?
@@ -348,7 +350,7 @@ function Widgets.tabs(parent: Instance, items: { TabItem }, onSelect: (id: strin
 		local text = TextUtil.upper(item.label)
 		b.Size = UDim2.fromOffset(Ui.textWidth(text, Theme.Font.Title, Theme.TextSize.Body) + 32, h)
 		b.Parent = root
-		fills[item.id] = Ui.chamferFill(b, Theme.Color.PanelRaised, 0, Theme.Chamfer.Tab)
+		fills[item.id] = Ui.chamferFill(b, Theme.Shade.RaisedTop, 0, Theme.Chamfer.Tab)
 		local label = Ui.label("Label", Theme.Font.Title, Theme.TextSize.Body, Theme.Color.TextSecondary, b)
 		label.Size = UDim2.fromScale(1, 1)
 		label.Text = text
@@ -399,20 +401,22 @@ export type ItemCard = {
 	setSelected: (selected: boolean) -> (),
 	setLocked: (locked: boolean, note: string?) -> (),
 	setBorder: (color: Color3, thickness: number) -> (),
+	setMarker: (color: Color3?) -> (),
 }
 
--- panel.raised, imagem no centro, nome em caixa alta embaixo. Selecionado = borda do acento + brilho
--- discreto (accent.glow). Travado = escurecido com cadeado.
+-- Cartão de item (arma, skin, carta), no visual da referência dos menus (F7):
+--   fundo sombreado, uma "luz" atrás da imagem, nome em caixa alta e um marcador colorido embaixo do
+--   nome (cor de identidade do item). Selecionado = roxo do acento sombreado, borda do acento, brilho
+--   discreto em volta (accent.glow) e um ✓ no canto. Travado = escurecido com cadeado.
+-- O botão (root) é transparente; o visual fica no quadro "Card" e o brilho atrás dele.
 function Widgets.itemCard(parent: Instance, title: string, size: UDim2, order: number?): ItemCard
 	local root = Instance.new("TextButton")
 	root.Name = "Item"
 	root.Text = ""
 	root.AutoButtonColor = false
+	root.BackgroundTransparency = 1
 	root.Size = size
 	root.LayoutOrder = order or 0
-	root.BackgroundColor3 = Theme.Color.PanelRaised
-	Ui.corner(root)
-	local stroke = Ui.stroke(root)
 	root.Parent = parent
 
 	local glow = Ui.frame("Glow", root)
@@ -425,37 +429,83 @@ function Widgets.itemCard(parent: Instance, title: string, size: UDim2, order: n
 	glow.Visible = false
 	Ui.corner(glow, Theme.SmallCardCornerRadius + g)
 
+	local card = Ui.frame("Card", root)
+	card.Size = UDim2.fromScale(1, 1)
+	card.BackgroundTransparency = 0
+	card.BackgroundColor3 = Theme.Shade.RaisedTop
+	card.ZIndex = 1
+	Ui.corner(card)
+	Ui.addShade(card)
+	local stroke = Ui.stroke(card)
+
+	-- Luz atrás da imagem (deixa a arma/carta "saltar" do fundo)
+	local spot = Ui.frame("Spot", card)
+	spot.AnchorPoint = Vector2.new(0.5, 0.5)
+	spot.Position = UDim2.new(0.5, 0, 0.5, -10)
+	spot.Size = UDim2.fromScale(0.92, 0.5)
+	spot.BackgroundTransparency = Theme.Shade.SpotTransparency
+	spot.BackgroundColor3 = Theme.Shade.Spot
+	Ui.corner(spot, 999)
+
 	local content = Ui.frame("Content", root)
 	content.Position = UDim2.fromOffset(6, 6)
 	content.Size = UDim2.new(1, -12, 1, -12 - 20)
+	content.ZIndex = 2
 
 	local titleLabel = Ui.label("Title", Theme.Font.Title, Theme.TextSize.Label + 1, Theme.Color.TextPrimary, root)
 	titleLabel.AnchorPoint = Vector2.new(0, 1)
-	titleLabel.Position = UDim2.new(0, 4, 1, -4)
+	titleLabel.Position = UDim2.new(0, 4, 1, -7)
 	titleLabel.Size = UDim2.new(1, -8, 0, 18)
 	titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	titleLabel.Text = TextUtil.upper(title)
+	titleLabel.ZIndex = 2
+	Ui.outlineText(titleLabel)
+
+	local marker = Ui.frame("Marker", root)
+	marker.AnchorPoint = Vector2.new(0.5, 1)
+	marker.Position = UDim2.new(0.5, 0, 1, -3)
+	marker.Size = UDim2.new(0.34, 0, 0, 3)
+	marker.BackgroundTransparency = 0
+	marker.ZIndex = 2
+	marker.Visible = false
+	Ui.corner(marker, 2)
+
+	local check = Ui.label("Check", Theme.Font.Title, Theme.TextSize.Label, Theme.Color.TextPrimary, root)
+	check.AnchorPoint = Vector2.new(1, 0)
+	check.Position = UDim2.new(1, -4, 0, 4)
+	check.Size = UDim2.fromOffset(18, 18)
+	check.BackgroundTransparency = 0
+	check.BackgroundColor3 = Theme.Color.Accent
+	check.Text = U.Check
+	check.ZIndex = 4
+	check.Visible = false
+	Ui.corner(check, 9)
+	Ui.stroke(check, Theme.Color.TextPrimary, 1)
 
 	local cover = Ui.frame("Locked", root)
 	cover.Size = UDim2.fromScale(1, 1)
 	cover.BackgroundColor3 = Theme.Color.Overlay
 	cover.BackgroundTransparency = 0.35
-	cover.ZIndex = 3
+	cover.ZIndex = 5
 	cover.Visible = false
 	Ui.corner(cover)
 	local coverText = Ui.label("Text", Theme.Font.BodyStrong, Theme.TextSize.Label, Theme.Color.TextPrimary, cover)
 	coverText.Size = UDim2.fromScale(1, 1)
 	coverText.TextWrapped = true
-	coverText.ZIndex = 3
+	coverText.ZIndex = 5
 
 	local baseColor = Theme.Color.PanelBorder
 	local baseThickness = 1
 	local selected = false
 
 	local function paint()
-		stroke.Color = if selected then Theme.Color.Accent else baseColor
+		stroke.Color = if selected then Theme.Color.AccentGlow else baseColor
 		stroke.Thickness = if selected then Theme.Selected.BorderThickness else baseThickness
+		card.BackgroundColor3 = if selected then Theme.Shade.SelectedTop else Theme.Shade.RaisedTop
+		spot.BackgroundColor3 = if selected then Theme.Color.AccentGlow else Theme.Shade.Spot
+		spot.BackgroundTransparency = if selected then 0.82 else Theme.Shade.SpotTransparency
 		glow.Visible = selected
+		check.Visible = selected
 	end
 
 	return {
@@ -477,6 +527,12 @@ function Widgets.itemCard(parent: Instance, title: string, size: UDim2, order: n
 			baseColor, baseThickness = color, thickness
 			paint()
 		end,
+		setMarker = function(color: Color3?)
+			marker.Visible = color ~= nil
+			if color then
+				marker.BackgroundColor3 = color
+			end
+		end,
 	}
 end
 
@@ -496,7 +552,8 @@ function Widgets.rarityFrame(card: ItemCard, rarity: string)
 	local style = Theme.Rarity[rarity]
 	card.setBorder(style.color, style.borderThickness)
 	if style.glow == "neon" then
-		local stroke = card.root:FindFirstChildOfClass("UIStroke")
+		local face = card.root:FindFirstChild("Card")
+		local stroke = face and face:FindFirstChildOfClass("UIStroke")
 		if stroke then
 			local info = TweenInfo.new(
 				Theme.CelestialPulseSeconds / 2,
@@ -933,14 +990,25 @@ function Widgets.toggle(parent: Instance, title: string, value: boolean, onChang
 	)
 end
 
--- Título pequeno de seção (caixa alta, text.secondary).
+-- Título de seção no estilo da referência dos menus: "// PISTOLAS" (barras no acento, caixa alta).
 function Widgets.sectionTitle(parent: Instance, text: string, order: number?): TextLabel
-	local l = Ui.label("Section", Theme.Font.Title, Theme.TextSize.Body, Theme.Color.TextSecondary, parent)
+	local l = Ui.label("Section", Theme.Font.Title, Theme.TextSize.Body, Theme.Color.TextPrimary, parent)
 	l.Size = UDim2.new(1, 0, 0, 20)
 	l.TextXAlignment = Enum.TextXAlignment.Left
-	l.Text = TextUtil.upper(text)
+	l.RichText = true
+	l.Text = Widgets.titleText(text)
 	l.LayoutOrder = order or 0
 	return l
+end
+
+-- Texto com as barras "//" no acento antes (para rótulos com RichText ligado).
+function Widgets.titleText(text: string): string
+	return string.format(
+		'<font color="#%s">%s</font> %s',
+		Theme.Color.Accent:ToHex(),
+		U.TitleMark,
+		TextUtil.upper(text)
+	)
 end
 
 -- Fica numa subpasta (o Loader não chama Start aqui): liga a troca de controle ao carregar.

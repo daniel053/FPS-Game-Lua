@@ -112,7 +112,9 @@ Tamanhos mínimos (em escala de tela de celular): texto corrido 14, rótulos 12,
 - **Botão principal:** fundo `accent`, texto branco em caixa alta, seta "›" à direita, altura mín. 56 px no celular.
 - **Botão secundário:** fundo `panel.raised`, borda `panel.border`.
 - **Aba:** texto em caixa alta; a aba ativa tem fundo `accent`; as inativas, fundo `panel.raised`.
-- **Cartão de item** (arma, skin, carta): `panel.raised`, imagem centralizada, nome embaixo em caixa alta. Selecionado = borda `accent` + `accent.glow`.
+- **Cartão de item** (arma, skin, carta) `[DECIDIDO]` (F7, referência `docs/referencias/ref-menus-armas.webp`): fundo `panel.raised` sombreado, uma luz suave atrás da imagem, nome em caixa alta embaixo e um **marcador colorido** (a cor de identidade do item) embaixo do nome. Selecionado = fundo roxo do acento sombreado, borda `accent.glow`, brilho discreto em volta e um ✓ no canto.
+- **Sombreado** `[DECIDIDO]` (F7, dono do projeto): nenhum fundo fica chapado. Painéis, botões, abas e cartões têm a cor cheia em cima e escurecem suavemente para baixo (`Theme.Shade`), e os painéis têm um filete claro no topo. É um degradê de uma cor só, nunca de várias cores.
+- **Títulos de seção:** "// PISTOLAS" — barras no acento e o título em caixa alta.
 - **Chip de tecla:** quadradinho com a letra (C, Q, E, X, B, P), fundo `panel.raised`, borda `text.secondary`. Usado no HUD e nas dicas.
 - **Modal:** `panel.base` sobre `bg.overlay`. Nunca fundo opaco cobrindo a tela inteira.
 

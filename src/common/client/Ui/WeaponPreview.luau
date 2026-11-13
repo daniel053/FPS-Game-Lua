@@ -32,9 +32,10 @@ function WeaponPreview.new(parent: Instance, spin: boolean): Preview
 	viewport.Name = "WeaponPreview"
 	viewport.BackgroundTransparency = 1
 	viewport.Size = UDim2.fromScale(1, 1)
-	viewport.Ambient = Color3.fromRGB(170, 170, 185)
-	viewport.LightColor = Color3.fromRGB(255, 255, 255)
-	viewport.LightDirection = Vector3.new(-0.4, -1, -0.6)
+	-- Luz de cima e de frente, ambiente mais escuro: as faces ficam com sombreado (low poly)
+	viewport.Ambient = Color3.fromRGB(120, 124, 150)
+	viewport.LightColor = Color3.fromRGB(255, 250, 240)
+	viewport.LightDirection = Vector3.new(-0.5, -1, -0.35)
 	viewport.Parent = parent
 
 	local camera = Instance.new("Camera")
@@ -60,10 +61,10 @@ function WeaponPreview.new(parent: Instance, spin: boolean): Preview
 			model = nil
 		end
 		local category = if weaponId then categoryOf(weaponId) else nil
-		if category == nil then
+		if weaponId == nil or category == nil then
 			return
 		end
-		local m = WeaponShapes.buildModel(WeaponShapes.forWeapon(category))
+		local m = WeaponShapes.buildModel(WeaponShapes.forId(weaponId, false))
 		-- Centraliza o modelo na origem
 		local cf, size = m:GetBoundingBox()
 		for _, part in m:GetChildren() do
@@ -84,7 +85,10 @@ function WeaponPreview.new(parent: Instance, spin: boolean): Preview
 		-- Vista de lado (o cano aponta para -Z): câmera no +X, longe o bastante para caber a arma
 		local radius = size.Magnitude / 2
 		local distance = radius / math.tan(math.rad(camera.FieldOfView / 2)) * 0.85
-		camera.CFrame = CFrame.lookAt(Vector3.new(distance, radius * 0.25, 0), Vector3.zero)
+		-- De lado, um pouco de cima e um pouco de frente (3/4), para dar volume às peças
+		local yaw = math.rad(18)
+		camera.CFrame =
+			CFrame.lookAt(Vector3.new(distance * math.cos(yaw), radius * 0.35, -distance * math.sin(yaw)), Vector3.zero)
 		angle = 0
 		place()
 	end
