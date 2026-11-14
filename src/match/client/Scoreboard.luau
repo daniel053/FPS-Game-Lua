@@ -4,7 +4,7 @@
 --     PLACAR no topo, ao lado da engrenagem.
 --   * Todas as duplas: cor (com o nome da cor, nunca só a cor), jogadores com avatar e abates, vidas
 --     (ou vitórias na final) e situação (duelando e onde, folga, mirante, colocação, campeã).
---   * A minha dupla aparece primeiro, com fundo do acento bem leve. O ícone de elo entra na F9.
+--   * A minha dupla aparece primeiro, com fundo do acento bem leve. Ícone do elo antes do nome (F9).
 -- Só mostra; o jogo não pausa e o mouse continua preso.
 
 local Players = game:GetService("Players")
@@ -16,6 +16,7 @@ local Shared = ReplicatedStorage.Shared
 local CombatNames = require(Shared.Combat.CombatNames)
 local MatchConfig = require(Shared.Config.MatchConfig)
 local MatchTypes = require(Shared.Match.MatchTypes)
+local RankRules = require(Shared.Progression.RankRules)
 local Strings = require(Shared.Config.Strings)
 local TeamColors = require(Shared.Config.TeamColors)
 local TextUtil = require(Shared.TextUtil)
@@ -26,6 +27,7 @@ local WorldLayout = require(Shared.Match.WorldLayout)
 
 local InputDevice = require(script.Parent.Parent.Common.InputDevice)
 local Avatars = require(script.Parent.Parent.Common.Ui.Avatars)
+local RankBadge = require(script.Parent.Parent.Common.Ui.RankBadge)
 local Widgets = require(script.Parent.Parent.Common.Ui.Widgets)
 local MatchClient = require(script.Parent.MatchClient)
 local ReportPanel = require(script.Parent.ReportPanel)
@@ -81,6 +83,13 @@ local function livesText(snapshot: MatchTypes.Snapshot, team: MatchTypes.TeamVie
 		return string.format(M.Wins, team.roundWins)
 	end
 	return string.rep(M.Life, team.lives) .. string.rep(M.LifeLost, math.max(0, MatchConfig.MaxLives - team.lives))
+end
+
+-- Elo de cada jogador (atributo RankTier no Player, RankService, F9). Bots e quem saiu: nada.
+local function rankOf(userId: number): string?
+	local p = Players:GetPlayerByUserId(userId)
+	local tier = p and p:GetAttribute(RankRules.Attr.Tier)
+	return if typeof(tier) == "string" then tier else nil
 end
 
 local function killsOf(userId: number): number
@@ -166,7 +175,9 @@ local function teamBlock(snapshot: MatchTypes.Snapshot, team: MatchTypes.TeamVie
 			elseif member.isBot then " · " .. S.Bot
 			elseif not member.connected then " · " .. S.Offline
 			else ""
-		label.Text = member.name .. suffix
+		label.RichText = true
+		local rank = rankOf(member.userId)
+		label.Text = (if rank then RankBadge.richIcon(rank) .. " " else "") .. RankBadge.escape(member.name .. suffix)
 		label.TextColor3 = if faded or not member.connected then Theme.Color.TextSecondary else Theme.Color.TextPrimary
 		local kills = Ui.label("Kills", Theme.Font.Number, Theme.TextSize.Body, Theme.Color.TextPrimary, row)
 		kills.AnchorPoint = Vector2.new(1, 0)

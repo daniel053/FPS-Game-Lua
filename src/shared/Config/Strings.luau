@@ -165,7 +165,23 @@ local Strings = {
 		DefaultSkin = "Padrão",
 		Equip = "EQUIPAR",
 		Equipped = "EQUIPADA",
-		MoreSkinsSoon = "Mais skins: em breve",
+		Buy = "COMPRAR · %s %d", -- ícone da moeda e preço
+		NotForSale = "NÃO ESTÁ À VENDA",
+		SkinLine = "%s · %s", -- nome da skin · raridade
+		SkinPrice = "%s %d",
+		Balance = "Você tem %s %d",
+		-- Respostas do servidor (ShopResult)
+		Results = {
+			Bought = "Skin comprada! Já pode equipar.",
+			Equipped = "Skin equipada.",
+			InsufficientCoins = "Moedas insuficientes.",
+			AlreadyOwned = "Você já tem esta skin.",
+			NotForSale = "Esta skin não está à venda.",
+			NotOwned = "Você ainda não tem esta skin.",
+			TooFast = "Calma! Tente de novo em alguns segundos.",
+			NotLoaded = "Seu perfil ainda está carregando.",
+			Failed = "Não deu certo. Tente de novo.",
+		} :: { [string]: string },
 		Descriptions = {
 			weapon_bolinha = "A pistola de começo, fácil. O modo alternativo dispara rajada de 3.",
 			weapon_chumbinho = "Só funciona colado: de longe os bagos se espalham.",
@@ -371,6 +387,67 @@ local Strings = {
 		Mestre = "Mestre",
 		Deus = "Deus",
 		Adm = "ADM",
+	},
+	-- Ícone de cada elo (F9): sempre junto do nome e da cor (Theme.Rank)
+	RankIcons = {
+		Bronze = "◎",
+		Prata = "◉",
+		Ouro = "★",
+		Platina = "◆",
+		Mestre = "▲",
+		Deus = "☀",
+		Adm = "👑",
+	} :: { [string]: string },
+	RankPoints = "%d PE",
+
+	-- Tela de Ranking (F9, GDD 9.3 e DADOS 8)
+	Ranking = {
+		Title = "RANKING",
+		Subtitle = "Os 100 melhores por pontos de elo (PE). Atualiza a cada 5 minutos.",
+		Loading = "Carregando o ranking…",
+		Unavailable = "O ranking não está disponível agora. Tente de novo daqui a pouco.",
+		Empty = "Ninguém no ranking ainda. Jogue uma partida para aparecer aqui!",
+		You = "Você",
+		YourPosition = "Sua posição: %dº · %s",
+		OutsideTop = "Você está fora dos 100 primeiros · %s",
+		AdminRow = "Dono do jogo",
+		Position = "%dº",
+		UpdatedAgo = "Atualizado há %d min",
+		UpdatedNow = "Atualizado agora",
+	},
+
+	-- Skins (F9, GDD 11): nomes dos temas do catálogo inicial (ShopCatalog.Themes)
+	Skins = {
+		Themes = {
+			areia = "Areia",
+			floresta = "Floresta",
+			oceano = "Oceano",
+			ouro = "Ouro",
+		} :: { [string]: string },
+	},
+
+	-- Recompensas da partida na tela final e na de dupla eliminada (F9, GDD 9 e 10)
+	Rewards = {
+		Coins = "%s +%d", -- ícone da moeda, total
+		RankUp = "+%d PE",
+		RankDown = "−%d PE",
+		RankSame = "±0 PE",
+		Protected = "sem perda (primeiras partidas)",
+		Doubled = "perda dobrada (Mestre ou acima)",
+		Private = "Partida privada: o elo não muda",
+		TierUp = "Subiu para %s!",
+		TierDown = "Caiu para %s",
+		-- Detalhe das moedas (só o que for diferente de zero)
+		Parts = {
+			rounds = "Rodadas %d",
+			wins = "Vitórias %d",
+			kills = "Abates %d",
+			placement = "Colocação %d",
+			partnerBonus = "Mesmo parceiro +%d",
+			firstWin = "1ª vitória do dia +%d",
+			privateCut = "Partida privada −%d",
+		} :: { [string]: string },
+		PartsOrder = { "rounds", "wins", "kills", "placement", "partnerBonus", "firstWin", "privateCut" },
 	},
 
 	Maps = {
@@ -854,6 +931,12 @@ local Strings = {
 
 		GrantCards = "DAR AS 4 CARTAS",
 		ClearCards = "TIRAR AS CARTAS",
+		RankUp = "+%d PE",
+		RankDown = "−%d PE",
+		RankReset = "ZERAR ELO",
+		SimulateMatch = "SIMULAR PARTIDA",
+		ResetFirstWin = "1ª VITÓRIA DO DIA DE NOVO",
+		ClearSkins = "TIRAR AS SKINS",
 		TutorialReset = "REFAZER TUTORIAL",
 		TutorialComplete = "CONCLUIR TUTORIAL (PULAR)",
 		TutorialSkipStep = "TUTORIAL: PULAR ETAPA",
@@ -861,6 +944,11 @@ local Strings = {
 			CoinsAdded = "Moedas adicionadas.",
 			CardsGranted = "Você tem as 4 cartas (Nuvem, Impulso, Tremor, Renascer).",
 			CardsCleared = "Cartas removidas.",
+			RankChanged = "PE alterado (e gravado no ranking).",
+			RankReset = "Elo zerado: as 10 primeiras partidas voltam a não tirar PE.",
+			MatchSimulated = "Partida simulada:",
+			FirstWinReset = "A primeira vitória do dia vale de novo hoje.",
+			SkinsCleared = "Skins removidas.",
 			TutorialReset = "Tutorial pendente desde o começo. Entre no lobby publicado (ou abra o place Tutorial).",
 			TutorialCompleted = "Tutorial marcado como feito, com as 4 cartas.",
 			ProfileReset = "Perfil resetado.",

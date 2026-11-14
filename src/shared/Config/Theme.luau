@@ -306,6 +306,38 @@ local Theme = {
 		ModeBanner = hex("#2B3460"),
 	},
 
+	-- Elo (GDD 9, F9): uma cor por faixa, sempre junto do ícone e do nome (Strings.RankIcons e
+	-- Strings.Ranks), nunca só a cor. Nenhum vermelho; ADM no roxo do acento.
+	Rank = {
+		Bronze = hex("#D08A4E"),
+		Prata = hex("#C9D1E0"),
+		Ouro = hex("#F5B700"),
+		Platina = hex("#4FD1C5"),
+		Mestre = hex("#B98CFF"),
+		Deus = hex("#FFE27A"),
+		Adm = hex("#A970FF"),
+	} :: { [string]: Color3 },
+	RankUp = hex("#4ADE80"), -- ganho de PE na tela final
+	RankDown = hex("#AEB6D0"), -- perda de PE: cinza de apoio (vermelho é só perigo e inimigo)
+
+	-- Skins de arma (GDD 11, F9): cada tema troca só as cores do modelo low poly. Sem vermelho e sem
+	-- neon (o material continua o mesmo das armas padrão). metal/lens ausentes = os da arma.
+	SkinLook = {
+		areia = { body = hex("#D9C29A"), dark = hex("#7A6646"), accent = hex("#F2E3C2") },
+		floresta = { body = hex("#5E7A45"), dark = hex("#2F3B24"), accent = hex("#A8C77A") },
+		oceano = { body = hex("#2D5FA8"), dark = hex("#16294D"), accent = hex("#5CE1F0"), lens = hex("#5CE1F0") },
+		ouro = {
+			body = hex("#E0B23A"),
+			dark = hex("#3A3020"),
+			accent = hex("#FFF1B8"),
+			metal = hex("#C99A2E"),
+			lens = hex("#7FD6FF"),
+		},
+	} :: { [string]: { body: Color3, dark: Color3, accent: Color3, metal: Color3?, lens: Color3? } },
+
+	-- Ranking (F9): linha do jogador e a do ADM com fundo do acento bem leve
+	RankingMeTransparency = 0.82,
+
 	-- Animação (ESTILO 2.7) [PROPOSTA]
 	Animation = {
 		ModalOpenOffset = 24,
@@ -313,6 +345,7 @@ local Theme = {
 		TabSwitchTime = 0.15,
 		SelectScale = 1.04,
 		SelectTime = 0.1,
+		CardFlipTime = 0.5, -- GIRAR na tela de Cartas (F9): fecha e abre, metade cada
 	},
 }
 

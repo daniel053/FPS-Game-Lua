@@ -113,7 +113,7 @@ export type RankData = {
 	points: number,                    -- pontos de elo (PE)
 	matchesPlayed: number,             -- partidas ranqueadas jogadas
 	peakPoints: number,                -- maior PE já alcançado
-	seasonId: number,                  -- temporada atual [ABERTO: existirá temporada?]
+	seasonId: number,                  -- temporada; sem temporadas por enquanto, fica 1 [DECIDIDO] (F9)
 }
 
 export type Stats = {
@@ -164,7 +164,7 @@ export type Profile = {
 	tutorialStep: number,              -- etapa em que parou, para retomar se sair no meio
 
 	coins: number,
-	gems: number,                      -- [ABERTO] segunda moeda; fica 0 até ser decidida
+	gems: number,                      -- segunda moeda: não existe por enquanto, fica 0 [DECIDIDO] (F9)
 
 	cards: {
 		owned: { [CardId]: OwnedCard },
@@ -339,7 +339,9 @@ Nunca dar item de Robux antes de salvar. Nunca responder "concedido" sem ter sal
 
 - Ao fim de cada partida válida, o `RankService` atualiza `rank.points` no perfil **e** escreve o valor no `RankLeaderboard_v1`.
 - O lobby lê os 100 primeiros a cada 5 minutos (não a cada abertura de tela) para não estourar limites de requisição.
-- O elo ADM não aparece no ranking (ou aparece fixo no topo com o selo ADM). `[ABERTO]`
+- O elo ADM não é gravado no ranking: aparece fixo no topo, com o selo ADM, fora da contagem dos 100. `[DECIDIDO]` (F9)
+- Quem grava é o servidor de partida (fim de partida válida e não privada); quem lê é o lobby (`LeaderboardService`).
+- `rank.matchesPlayed` conta só partidas ranqueadas (para a proteção das 10 primeiras); `stats.matchesPlayed` conta todas. (F9)
 
 ---
 
@@ -370,7 +372,7 @@ Nunca dar item de Robux antes de salvar. Nunca responder "concedido" sem ter sal
 
 ## 11. Em aberto
 
-1. Segunda moeda (`gems`): existe? Comprada com Robux?
-2. Haverá temporadas de elo (reset periódico)?
-3. Elo ADM aparece no ranking?
+1. ~~Segunda moeda (`gems`): existe?~~ Respondida na F9: não por enquanto (fica 0).
+2. ~~Haverá temporadas de elo?~~ Respondida na F9: não por enquanto (`seasonId` fica 1).
+3. ~~Elo ADM aparece no ranking?~~ Respondida na F9: fixo no topo com o selo ADM.
 4. Guardar histórico das últimas partidas no perfil (ex.: últimas 10)?

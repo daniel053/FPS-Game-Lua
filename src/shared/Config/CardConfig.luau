@@ -11,7 +11,7 @@ export type CardDef = {
 	id: string,
 	key: Types.CardKey,
 	isUlt: boolean,
-	rarity: Types.Rarity?, -- raridade das 4 cartas iniciais: [ABERTO] (GDD 8.9)
+	rarity: Types.Rarity?, -- as 4 cartas iniciais são Comuns [DECIDIDO] (F9, GDD 8.9); nil = sem raridade
 	charges: number, -- cargas no começo de cada rodada
 	cooldown: number?, -- segundos para uma carga voltar depois de usada (nil = não volta na rodada)
 	minInterval: number, -- intervalo mínimo entre dois usos seguidos (segundos)
@@ -24,7 +24,7 @@ local Cards: { CardDef } = {
 		id = "card_nuvem",
 		key = "C",
 		isUlt = false,
-		rarity = nil,
+		rarity = "Comum",
 		charges = 2,
 		cooldown = nil,
 		minInterval = 0.6,
@@ -44,7 +44,7 @@ local Cards: { CardDef } = {
 		id = "card_impulso",
 		key = "Q",
 		isUlt = false,
-		rarity = nil,
+		rarity = "Comum",
 		charges = 1,
 		cooldown = 20,
 		minInterval = 0.3,
@@ -58,7 +58,7 @@ local Cards: { CardDef } = {
 		id = "card_tremor",
 		key = "E",
 		isUlt = false,
-		rarity = nil,
+		rarity = "Comum",
 		charges = 1,
 		cooldown = 25,
 		minInterval = 0.3,
@@ -80,7 +80,7 @@ local Cards: { CardDef } = {
 		id = "card_renascer",
 		key = "X",
 		isUlt = true,
-		rarity = nil,
+		rarity = "Comum",
 		charges = 1,
 		cooldown = nil,
 		minInterval = 0.3,

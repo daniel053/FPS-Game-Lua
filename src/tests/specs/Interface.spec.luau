@@ -103,6 +103,24 @@ return function(t: any)
 		for _, hex in Theme.CrosshairPalette do
 			t.ok(not isRed(Color3.fromHex(hex)), `retícula {hex}`)
 		end
+		-- F9: skins (GDD 11: nunca vermelho que pareça contorno de inimigo) e elo
+		for id, look in Theme.SkinLook do
+			for part, color in look :: { [string]: Color3 } do
+				t.ok(not isRed(color), `skin {id} ({part})`)
+			end
+		end
+		for id, color in Theme.Rank do
+			t.ok(not isRed(color), `elo {id}`)
+		end
+	end)
+
+	t.test("todo elo tem nome, ícone e cor (nunca só a cor, F9)", function()
+		for _, tier in { "Bronze", "Prata", "Ouro", "Platina", "Mestre", "Deus", "Adm" } do
+			local names = Strings.Ranks :: { [string]: string }
+			t.ok(names[tier] ~= nil and names[tier] ~= "", `nome {tier}`)
+			t.ok(Strings.RankIcons[tier] ~= nil and Strings.RankIcons[tier] ~= "", `ícone {tier}`)
+			t.ok((Theme.Rank :: { [string]: Color3? })[tier] ~= nil, `cor {tier}`)
+		end
 	end)
 
 	t.test("toda raridade tem nome e ícone (nunca só a cor, ESTILO 2.2)", function()

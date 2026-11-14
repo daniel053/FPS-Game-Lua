@@ -6,7 +6,7 @@
 --   * direita: cartão "Duelo em dupla", x/2 prontos e o botão JOGAR, que vira
 --     "Procurando partida… 5/7" com CANCELAR;
 --   * centro: o cenário (ilhas cinza flutuantes, LobbyBackdrop), livre;
---   * embaixo: navegação JOGAR, ARSENAL (T5), CARTAS (T1), MAPAS (T4), RANKING e LOJA (em breve: F9/F11);
+--   * embaixo: navegação JOGAR, ARSENAL (T5), CARTAS (T1), MAPAS (T4), RANKING (F9) e LOJA (em breve: F11);
 --   * janela de convite (jogadores do servidor + convite nativo do Roblox) e convite recebido.
 -- Celular: só toque. PC: atalhos sempre visíveis ([Enter] jogar/cancelar, [G] convidar,
 -- [Y]/[N] aceitar/recusar). Controle: X jogar/cancelar, Y convidar, seleção pelos botões.
@@ -32,10 +32,12 @@ local PlayerDataClient = require(script.Parent.Parent.Common.PlayerDataClient)
 local SettingsController = require(script.Parent.Parent.Common.SettingsController)
 local Avatars = require(script.Parent.Parent.Common.Ui.Avatars)
 local Logo = require(script.Parent.Parent.Common.Ui.Logo)
+local RankBadge = require(script.Parent.Parent.Common.Ui.RankBadge)
 local Widgets = require(script.Parent.Parent.Common.Ui.Widgets)
 local ArsenalScreen = require(script.Parent.ArsenalScreen)
 local CardsScreen = require(script.Parent.CardsScreen)
 local MapsScreen = require(script.Parent.MapsScreen)
+local RankingScreen = require(script.Parent.RankingScreen)
 
 local S = Strings.Lobby
 local U = Strings.Ui
@@ -77,11 +79,6 @@ local modeSubtitle: TextLabel
 
 local function request(kind: LobbyTypes.RequestName, arg: any?)
 	requestEvent:FireServer(kind, arg)
-end
-
-local function rankName(id: string): string
-	local names = Strings.Ranks :: { [string]: string }
-	return names[id] or id
 end
 
 local function notice(text: string)
@@ -151,7 +148,7 @@ local function render()
 				if member.ready then Theme.Color.Success else Theme.Color.PanelBorder
 			)
 			local name = if i == 1 then string.format(S.You, member.name) else member.name
-			row.name.Text = string.format(S.MemberLine, name, rankName(member.rankTier))
+			row.name.Text = string.format(S.MemberLine, RankBadge.escape(name), RankBadge.rich(member.rankTier))
 			row.name.TextColor3 = Theme.Color.TextPrimary
 			row.state.Text = if member.ready then S.Ready else S.NotReady
 			row.state.TextColor3 = if member.ready then Theme.Color.Success else Theme.Color.TextSecondary
@@ -308,6 +305,7 @@ local function buildParty()
 		name.Size = UDim2.new(1, -(MEMBER_HEIGHT + 2), 0, 20)
 		name.TextXAlignment = Enum.TextXAlignment.Left
 		name.TextTruncate = Enum.TextTruncate.AtEnd
+		name.RichText = true -- elo com ícone e cor (F9)
 		local state = Ui.label("State", Theme.Font.BodyStrong, Theme.TextSize.Label, Theme.Color.TextSecondary, row)
 		state.Position = UDim2.fromOffset(MEMBER_HEIGHT + 2, 28)
 		state.Size = UDim2.new(1, -(MEMBER_HEIGHT + 2), 0, 16)
@@ -426,7 +424,7 @@ local function buildNav()
 		{ label = N.Arsenal, action = ArsenalScreen.open },
 		{ label = N.Cards, action = CardsScreen.open },
 		{ label = N.Maps, action = MapsScreen.open },
-		{ label = N.Ranking, action = nil },
+		{ label = N.Ranking, action = RankingScreen.open },
 		{ label = N.Shop, action = nil },
 	}
 	for i, entry in entries do
@@ -449,7 +447,7 @@ local function buildNav()
 		elseif action then
 			button.onClick(action)
 		else
-			-- Ranking (F9) e Loja (F11) ainda não existem
+			-- A Loja (Robux) chega na F11
 			button.setEnabled(false)
 			button.setText(entry.label .. " · " .. U.Soon)
 		end

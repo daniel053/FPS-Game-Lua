@@ -150,9 +150,111 @@ function ProfileRules.equipSkin(profile: Profile, skinId: string, catalogs: Cata
 	return true, nil
 end
 
--- Volta uma arma para a skin padrão.
-function ProfileRules.unequipWeaponSkin(profile: Profile, weaponId: string): (boolean, string?)
+-- Volta uma arma (ou o Bastão) para a skin padrão.
+function ProfileRules.unequipWeaponSkin(profile: Profile, weaponId: string, catalogs: Catalogs?): (boolean, string?)
+	local c = catalogs or DEFAULT_CATALOGS
+	if weaponId == WeaponConfig.Melee.id then
+		profile.cosmetics.equipped.melee = nil
+		return true, nil
+	end
+	if not c.isValidWeapon(weaponId) then
+		return false, "UnknownWeapon"
+	end
 	profile.cosmetics.equipped.weapons[weaponId] = nil
+	return true, nil
+end
+
+-- Comprar uma skin com moedas (F9): precisa estar à venda, o jogador não pode já ter e precisa ter
+-- saldo. Tudo ou nada: se algo falha, nem as moedas nem a coleção mudam. Quem chama é o EconomyService.
+function ProfileRules.buySkinWithCoins(
+	profile: Profile,
+	skinId: string,
+	now: number,
+	catalogs: Catalogs?
+): (boolean, string?)
+	local c = catalogs or DEFAULT_CATALOGS
+	local skin = c.getSkin(skinId)
+	if skin == nil then
+		return false, "UnknownSkin"
+	end
+	local price = skin.priceCoins
+	if price == nil or not isFiniteInteger(price) or price <= 0 then
+		return false, "NotForSale"
+	end
+	if profile.cosmetics.owned[skinId] ~= nil then
+		return false, "AlreadyOwned"
+	end
+	if profile.coins < price then
+		return false, "InsufficientCoins"
+	end
+	local ok, err = ProfileRules.addCoins(profile, -price)
+	if not ok then
+		return false, err
+	end
+	profile.cosmetics.owned[skinId] = { acquiredAt = now, source = "shop_coins" }
+	return true, nil
+end
+
+-- Estatísticas de uma partida (DADOS 3.1 Stats). Números inteiros e não negativos; abates por arma só
+-- com IDs do WeaponConfig (os outros são ignorados, sem recusar o resto).
+export type MatchStats = {
+	placement: number?,
+	roundsPlayed: number,
+	roundsWon: number,
+	kills: number,
+	deaths: number,
+	damageDealt: number,
+	viradasWon: number,
+	soloRoundsWon: number,
+	killsByWeapon: { [string]: number },
+}
+
+function ProfileRules.addMatchStats(profile: Profile, match: MatchStats, catalogs: Catalogs?): (boolean, string?)
+	local c = catalogs or DEFAULT_CATALOGS
+	for _, value in
+		{
+			match.roundsPlayed,
+			match.roundsWon,
+			match.kills,
+			match.deaths,
+			match.viradasWon,
+			match.soloRoundsWon,
+		}
+	do
+		if not isFiniteInteger(value) or value < 0 then
+			return false, "InvalidAmount"
+		end
+	end
+	local damage = match.damageDealt
+	if typeof(damage) ~= "number" or damage ~= damage or damage < 0 or damage == math.huge then
+		return false, "InvalidAmount"
+	end
+	local stats = profile.stats
+	stats.matchesPlayed += 1
+	if match.placement == 1 then
+		stats.matchesWon += 1
+	end
+	if match.placement and match.placement <= 3 then
+		stats.podiums += 1
+	end
+	stats.roundsPlayed += match.roundsPlayed
+	stats.roundsWon += match.roundsWon
+	stats.kills += match.kills
+	stats.deaths += match.deaths
+	stats.damageDealt += math.floor(damage)
+	stats.viradasWon += match.viradasWon
+	stats.soloRoundsWon += match.soloRoundsWon
+	for weaponId, count in match.killsByWeapon do
+		if c.isValidWeapon(weaponId) and isFiniteInteger(count) and count > 0 then
+			stats.killsByWeapon[weaponId] = (stats.killsByWeapon[weaponId] or 0) + count
+		end
+	end
+	return true, nil
+end
+
+-- Uma partida ranqueada a mais (para a proteção das primeiras partidas, GDD 9.2).
+function ProfileRules.countRankedMatch(profile: Profile): (boolean, string?)
+	profile.rank.matchesPlayed += 1
 	return true, nil
 end
 

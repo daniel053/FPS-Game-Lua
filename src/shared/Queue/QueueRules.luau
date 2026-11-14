@@ -14,7 +14,7 @@
 -- conta passar de 7 (a conta é feita do zero a cada vez, com as fichas em ordem).
 
 local QueueConfig = require(script.Parent.Parent.Config.QueueConfig)
-local RankConfig = require(script.Parent.Parent.Config.RankConfig)
+local RankRules = require(script.Parent.Parent.Progression.RankRules)
 
 export type Tier = "Aprendizes" | "Experientes"
 export type PoolId = Tier | "Mistura"
@@ -76,15 +76,9 @@ function QueueRules.params(isDev: boolean): Params
 	return p
 end
 
--- Faixa de elo exibida (Bronze, Prata…) a partir dos pontos (RankConfig.Tiers em ordem crescente).
+-- Faixa de elo (Bronze, Prata…) a partir dos pontos (RankRules, F9).
 function QueueRules.rankTierOf(points: number): string
-	local result = RankConfig.Tiers[1].id
-	for _, tier in RankConfig.Tiers do
-		if points >= tier.minPoints then
-			result = tier.id
-		end
-	end
-	return result
+	return RankRules.tierOf(points)
 end
 
 -- Faixa de fila de um jogador: menos de 10 partidas, Bronze ou Prata = Aprendizes.

@@ -84,10 +84,23 @@ end
 
 -- Troca a arma mostrada. `category` = categoria da arma de fogo, ou "Melee" (posição na tela);
 -- `weaponId` = a arma (cores e peças próprias, WeaponShapes).
+-- Skin equipada no perfil (F9): só muda as cores do modelo.
+local function equippedSkin(weaponId: string?): string?
+	local profile = PlayerDataClient.get()
+	if profile == nil then
+		return nil
+	end
+	local equipped = profile.cosmetics.equipped
+	if weaponId == nil then
+		return equipped.melee
+	end
+	return equipped.weapons[weaponId]
+end
+
 function ViewModel.setWeapon(category: string, weaponId: string?)
 	local shape = if category == "Melee"
-		then WeaponShapes.melee(true)
-		else WeaponShapes.gun(category :: Types.WeaponCategory, true, weaponId)
+		then WeaponShapes.melee(true, equippedSkin(nil))
+		else WeaponShapes.gun(category :: Types.WeaponCategory, true, weaponId, equippedSkin(weaponId))
 	build(category, shape)
 	equipStartedAt = os.clock()
 	reloadUntil = 0

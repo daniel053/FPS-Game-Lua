@@ -37,12 +37,14 @@ export type DamageSource = { player: Player?, weaponId: string, at: number? }
 export type KnockReport = { seconds: number, shots: number }
 
 type KnockedCallback = (target: Combatant, source: DamageSource?, report: KnockReport) -> ()
+type DamagedCallback = (target: Combatant, source: DamageSource?, dealt: number) -> ()
 
 local Combatants = {}
 
 local byModel: { [Model]: Combatant } = {}
 local byHitbox: { [BasePart]: Combatant } = {}
 local knockedCallbacks: { KnockedCallback } = {}
+local damagedCallbacks: { DamagedCallback } = {}
 -- Antes de derrubar: se o guarda devolver true, o combatente NÃO cai (ex.: ult Renascer, GDD 8.4).
 -- O guarda é quem decide o que acontece (vida cheia, voltar à marca).
 local knockGuard: ((target: Combatant) -> boolean)? = nil
@@ -140,6 +142,11 @@ function Combatants.onKnocked(callback: KnockedCallback)
 	table.insert(knockedCallbacks, callback)
 end
 
+-- Todo dano que entrou de verdade (para as estatísticas da partida, F9). Não pode esperar (yield).
+function Combatants.onDamaged(callback: DamagedCallback)
+	table.insert(damagedCallbacks, callback)
+end
+
 function Combatants.setKnockGuard(guard: ((target: Combatant) -> boolean)?)
 	knockGuard = guard
 end
@@ -175,6 +182,15 @@ function Combatants.applyDamage(target: Combatant, amount: number, source: Damag
 	end
 	target.hitsTaken += 1
 	target.lastDamageAt = now
+	for _, callback in damagedCallbacks do
+		local ok, err = pcall(function(): string?
+			callback(target, source, result.dealt)
+			return nil
+		end)
+		if not ok then
+			warn(`[Combate] Erro ao contar dano: {err}`)
+		end
+	end
 	if result.knocked and guarded(target) then
 		target.firstHitAt = nil
 		publish(target)

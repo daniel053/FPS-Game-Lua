@@ -42,7 +42,7 @@
 | F6 | Tutorial | Primeira entrada guiada | ✅ |
 | F7 | Interface final | Telas T1–T6 no estilo definitivo | ✅ |
 | F8 | Social e voz | Dupla se comunica e continua junta | ✅ |
-| F9 | Elo, economia e arsenal | Progressão completa | ☐ |
+| F9 | Elo, economia e arsenal | Progressão completa | 🔶 em teste |
 | F10 | Mapas e arte | 4 ilhas, mirante, personagem, armas | ☐ |
 | ⭐ | **Marco: beta fechado** | Teste com jogadores de fora | ☐ |
 | F11 | Robux e lançamento | Jogo público | ☐ |
@@ -383,9 +383,9 @@ Só seguir para a F5 quando a partida for divertida em blocos cinza.
 
 | Pendência (documento) | Bloqueia |
 |---|---|
-| Girar: sorteio ou visualização (GDD 8.9) | parte da F9 |
-| Raridade muda poder? (GDD 8.9) | parte da F9 |
-| Segunda moeda (GDD 18, DADOS 11) | F9, F11 |
+| ~~Girar: sorteio ou visualização (GDD 8.9)~~ Respondida na F9: visualização | — |
+| ~~Raridade muda poder? (GDD 8.9)~~ Respondida na F9: não | — |
+| ~~Segunda moeda (GDD 18, DADOS 11)~~ Respondida na F9: não por enquanto | — |
 | ~~Tutorial pode ser pulado? (GDD 18)~~ Respondida na F6: só as configurações | — |
 | Plantas baixas e tamanhos dos mapas (GDD 15.8) | F10 |
 | Preços em Robux (GDD 10.3) | F11 |

@@ -8,6 +8,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
+local ShopCatalog = require(Shared.Config.ShopCatalog)
 local Theme = require(Shared.Config.Theme)
 local Types = require(Shared.Types)
 local WeaponConfig = require(Shared.Config.WeaponConfig)
@@ -48,8 +49,22 @@ local function arm(hand: Vector3, elbow: Vector3, parts: { PartSpec })
 	table.insert(parts, segment(wrist, elbow, 0.34, COLORS.Sleeve))
 end
 
-local function lookOf(id: string?): WeaponModels.Look
-	local look = if id then Theme.WeaponLook[id] else nil
+-- Cores da arma: as da skin (tema do ShopCatalog, Theme.SkinLook) por cima das da arma. Skin
+-- desconhecida ou de outra arma = cores padrão.
+local function lookOf(id: string?, skinId: string?): WeaponModels.Look
+	local base = if id then Theme.WeaponLook[id] else nil
+	local skin = if skinId then ShopCatalog.getSkin(skinId) else nil
+	local theme = if skin and skin.weaponId == id and skin.theme then Theme.SkinLook[skin.theme] else nil
+	local look = theme or base
+	if theme and base then
+		look = {
+			body = theme.body,
+			dark = theme.dark,
+			accent = theme.accent,
+			metal = theme.metal or base.metal,
+			lens = theme.lens or base.lens,
+		}
+	end
 	local body = if look then look.body else COLORS.WeaponBody
 	local accent = if look then look.accent else COLORS.WeaponLight
 	return {
@@ -92,16 +107,18 @@ local function withHands(built: WeaponModels.Built, withArms: boolean): Shape
 end
 
 -- Arma de fogo. `id` escolhe o modelo e as cores; sem id (ou sem modelo), a forma da categoria.
-function WeaponShapes.gun(category: Types.WeaponCategory, withArms: boolean, id: string?): Shape
-	local look = lookOf(id)
+-- `skinId` = skin equipada (F9): só troca as cores.
+function WeaponShapes.gun(category: Types.WeaponCategory, withArms: boolean, id: string?, skinId: string?): Shape
+	local look = lookOf(id, skinId)
 	local built = (if id then WeaponModels.build(id, look) else nil) or fallback(category, look)
 	return withHands(built, withArms)
 end
 
 -- Bastão (corpo a corpo).
-function WeaponShapes.melee(withArms: boolean): Shape
+function WeaponShapes.melee(withArms: boolean, skinId: string?): Shape
 	local id = WeaponConfig.Melee.id
-	local built = WeaponModels.build(id, lookOf(id)) or fallback("Rifle", lookOf(id))
+	local look = lookOf(id, skinId)
+	local built = WeaponModels.build(id, look) or fallback("Rifle", look)
 	if not withArms then
 		return withHands(built, false)
 	end
@@ -118,12 +135,12 @@ function WeaponShapes.melee(withArms: boolean): Shape
 end
 
 -- Forma pelo ID da arma (WeaponConfig).
-function WeaponShapes.forId(id: string, withArms: boolean): Shape
+function WeaponShapes.forId(id: string, withArms: boolean, skinId: string?): Shape
 	if id == WeaponConfig.Melee.id then
-		return WeaponShapes.melee(withArms)
+		return WeaponShapes.melee(withArms, skinId)
 	end
 	local def = WeaponConfig.get(id)
-	return WeaponShapes.gun(if def then def.category else "Rifle", withArms, id)
+	return WeaponShapes.gun(if def then def.category else "Rifle", withArms, id, skinId)
 end
 
 -- Uma peça solta (sem física) a partir da descrição.

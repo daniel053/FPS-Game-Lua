@@ -27,6 +27,7 @@ local MapConfig = require(Shared.Config.MapConfig)
 local MatchConfig = require(Shared.Config.MatchConfig)
 local MatchRules = require(Shared.Match.MatchRules)
 local MatchTypes = require(Shared.Match.MatchTypes)
+local RankRules = require(Shared.Progression.RankRules)
 local Remotes = require(Shared.Remotes)
 local Strings = require(Shared.Config.Strings)
 local TeamColors = require(Shared.Config.TeamColors)
@@ -40,6 +41,7 @@ local CharacterService = require(script.Parent.Parent.Combat.CharacterService)
 local CombatService = require(script.Parent.Parent.Combat.CombatService)
 local Combatants = require(script.Parent.Parent.Combat.Combatants)
 local LobbyReturn = require(script.Parent.LobbyReturn)
+local MatchRewards = require(script.Parent.MatchRewards)
 local MatchWorld = require(script.Parent.MatchWorld)
 local TeamService = require(script.Parent.Parent.Combat.TeamService)
 
@@ -110,6 +112,8 @@ local requestWindow: { [Player]: { start: number, count: number } } = {}
 -- Composição vinda da fila (F5). Vale para a primeira partida deste servidor.
 local handoff: Handoff.MatchHandoff? = nil
 local expected: { [number]: boolean } = {}
+-- Partida privada (servidores privados, F11): vem do MatchHandoff e vale para o servidor inteiro.
+local privateServer = false
 
 local function serverNow(): number
 	return workspace:GetServerTimeNow()
@@ -387,6 +391,65 @@ local function formTeams()
 	rules = MatchRules.newState(ids, WorldLayout.islandCount())
 end
 
+-- Recompensas (F9) ---------------------------------------------------------------------------------
+
+-- Ainda com o parceiro do começo da partida? (o parceiro não saiu do jogo)
+local function keptPartner(member: Member): boolean
+	local partner = partnerOf(member)
+	return partner ~= nil and partner.connected
+end
+
+-- Credita moedas, elo e estatísticas da dupla com a colocação que ela tem agora (MatchRewards).
+local function settleTeam(teamId: string)
+	local state = rules
+	local team = teams[teamId]
+	local ts = state and state.teams[teamId]
+	if team == nil or ts == nil or ts.placement == nil then
+		return
+	end
+	for _, m in team.members do
+		if m.player and m.connected and not m.isBot then
+			MatchRewards.settle(m.player, ts.placement, keptPartner(m))
+		end
+	end
+end
+
+-- Começo da partida: quem é dupla de quem (para o bônus do mesmo parceiro).
+local function beginRewards()
+	local state = rules
+	if state == nil then
+		return
+	end
+	local entries = {}
+	for _, m in members do
+		if m.player and m.teamId and not m.isBot and m.connected then
+			local partner = partnerOf(m)
+			table.insert(entries, {
+				player = m.player,
+				teamId = m.teamId,
+				partnerUserId = if partner then partner.userId else nil,
+			})
+		end
+	end
+	MatchRewards.begin(entries, #state.order, privateServer)
+end
+
+-- Quem sai no meio conta como se a dupla caísse agora (RankConfig.LeaverCountsAsEliminatedNow).
+-- Usa a lista de membros pela chave (não memberByPlayer), porque a saída pode já ter sido tratada.
+local function leaverContext(player: Player): MatchRewards.LeaverContext?
+	local state = rules
+	local member = members[`p{player.UserId}`]
+	if state == nil or member == nil or member.teamId == nil then
+		return nil
+	end
+	local ts = state.teams[member.teamId]
+	if ts == nil then
+		return nil
+	end
+	local placement = ts.placement or RankRules.leaverPlacement(#MatchRules.aliveTeams(state))
+	return { placement = placement, samePartner = false }
+end
+
 -- Resultados -------------------------------------------------------------------------------------
 
 local function sendEliminatedPrompt(teamId: string)
@@ -402,6 +465,9 @@ end
 local function handleReport(report: MatchRules.RoundReport)
 	for _, id in report.eliminated do
 		announceAll({ kind = "TeamEliminated", teamId = id })
+		-- A colocação de quem caiu já está definida: credita agora (F9; quem fica para assistir recebe o
+		-- mesmo que receberia no fim, GDD 4.8)
+		settleTeam(id)
 		local state = rules
 		if state and state.championId == nil then
 			sendEliminatedPrompt(id)
@@ -874,6 +940,33 @@ local function playRound()
 	end
 	closePrepAndArm(roundPlan.round)
 
+	-- Quem jogou esta rodada (para as moedas e estatísticas, F9). "Sozinho" = 1 contra 2.
+	local participants: { { member: Member, teamId: string, duel: number, solo: boolean } } = {}
+	for i, d in duels do
+		local counts: { [string]: number } = {}
+		for _, id in { d.duel.a, d.duel.b } do
+			counts[id] = 0
+			for _, m in teams[id].members do
+				if m.inDuel then
+					counts[id] += 1
+				end
+			end
+		end
+		for _, id in { d.duel.a, d.duel.b } do
+			local other = if id == d.duel.a then d.duel.b else d.duel.a
+			for _, m in teams[id].members do
+				if m.inDuel and m.player and not m.isBot then
+					table.insert(participants, {
+						member = m,
+						teamId = id,
+						duel = i,
+						solo = counts[id] == 1 and counts[other] >= 2,
+					})
+				end
+			end
+		end
+	end
+
 	-- COMBATE
 	combatStartedAt = serverNow()
 	setPhase("Combat", MatchConfig.CombatMaxTime)
@@ -932,6 +1025,16 @@ local function playRound()
 	local outcomes: { MatchRules.DuelOutcome } = {}
 	for i, d in duels do
 		outcomes[i] = { winner = d.winner }
+	end
+	for _, p in participants do
+		local player = p.member.player
+		if player and p.member.connected then
+			MatchRewards.recordRound(player, {
+				won = duels[p.duel].winner == p.teamId,
+				virada = roundPlan.isVirada,
+				solo = p.solo,
+			})
+		end
 	end
 	local report = MatchRules.finishRound(state, roundPlan, outcomes)
 	setPhase("RoundEnd", MatchConfig.RoundEndTime)
@@ -1020,6 +1123,7 @@ local function resetMatch()
 	skipRequested = false
 	abortRequested = false
 	table.clear(pendingLifeRemovals)
+	MatchRewards.cancel() -- partida anterior interrompida: quem não recebeu não recebe mais
 	firstJoinAt = if connectedHumanCount() > 0 then os.clock() else nil
 end
 
@@ -1073,6 +1177,7 @@ local function loadHandoff()
 		return
 	end
 	handoff = data
+	privateServer = data.isPrivate == true
 	for _, userId in data.userIds do
 		expected[userId] = true
 	end
@@ -1226,6 +1331,9 @@ local function champion()
 	local championId = state.championId
 	setPhase("Champion", MatchConfig.ChampionCeremonyTime)
 	announceAll({ kind = "Champion", teamId = championId })
+	if championId then
+		settleTeam(championId) -- moedas e elo da campeã (as outras já receberam ao cair)
+	end
 	local slot = 0
 	for _, m in humans() do
 		if m.teamId == championId then
@@ -1242,7 +1350,10 @@ end
 
 local function endScreen()
 	local state = rules :: MatchRules.State
-	-- RECOMPENSAS E ELO: F9 (moedas e elo pela colocação)
+	-- Quem ainda não recebeu (não deveria sobrar ninguém: cada dupla recebe ao cair) recebe agora
+	for id in teams do
+		settleTeam(id)
+	end
 	setPhase("EndScreen", MatchConfig.EndScreenTime)
 	for _, m in humans() do
 		m.exitChoice = nil
@@ -1297,6 +1408,7 @@ local function runMatch()
 		receiving()
 		setPhase("Forming", nil)
 		formTeams()
+		beginRewards()
 		-- A composição da fila vale só para a primeira partida deste servidor.
 		handoff = nil
 		table.clear(expected)
@@ -1573,6 +1685,7 @@ function MatchService.devRestart(): boolean
 	end
 	-- Encerra a partida atual sem resultado; o laço volta para RECEBENDO_JOGADORES.
 	abortRequested = true
+	MatchRewards.cancel()
 	return true
 end
 
@@ -1601,6 +1714,13 @@ function MatchService.Start()
 		return
 	end
 	requestEvent.OnServerEvent:Connect(onRequest)
+	MatchRewards.setLeaverContext(leaverContext)
+	MatchRewards.onSettled(function(player: Player, data)
+		local member = memberByPlayer[player]
+		if member then
+			sendTo(member, "Rewards", data)
+		end
+	end)
 	CharacterService.onLost(onCharacterLost)
 	Combatants.onKnocked(function()
 		-- O laço do combate confere os duelos a cada 0,1 s; aqui só atualiza o placar.

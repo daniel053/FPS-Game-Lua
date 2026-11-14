@@ -186,8 +186,8 @@ Proibido em todo o resto: fundos, textos, ícones, barras, botões comuns, HUD.
 - Raridade sempre com nome e ícone (nunca só cor), num selo ao lado do nome.
 - Linha de atributos da carta (duração, cargas, alcance, recarga…), lidos do `CardConfig`.
 - **EQUIPAR** embaixo da carta. Na primeira versão (uma carta por tecla, GDD 8.3) a carta da coleção já é a da tecla dela: o botão mostra "EQUIPADA".
-- **Botão GIRAR** sempre visível embaixo da carta. Comportamento: GDD seção 8.9 `[ABERTO]` (sorteio ou visualização); até decidir, fica desativado. Se for sorteio: mostrar custo e chances **antes** de girar.
-- Aba **Skins de cartas / versos** no rodapé (F9).
+- **Botão GIRAR** sempre visível embaixo da carta: vira a carta para ver o verso (visualização, GDD 8.9) `[DECIDIDO]` (F9). No PC, tecla R. Se um dia virar sorteio: mostrar custo e chances **antes** de girar.
+- Aba **Skins de cartas / versos** no rodapé: desativada; o catálogo inicial da F9 só tem skins de arma.
 - Cartas que o jogador não tem: escurecidas com cadeado.
 - Arte das cartas: F10. Até lá, fundo na cor da carta e a tecla grande no meio.
 - Celular: arrastar para os lados troca a carta. PC: setas ou roda do mouse.
@@ -247,7 +247,7 @@ Proibido em todo o resto: fundos, textos, ícones, barras, botões comuns, HUD.
 - **Esquerda:** grupo (até 2 jogadores): avatar, nome, ícone do elo, estado (Pronto / Escolhendo). Botão **Convidar amigos**.
 - **Centro:** cena 3D com as ilhas flutuantes ao fundo (só ambientação). A ilha central é plana.
 - **Direita:** cartão do modo ("Duelo em dupla"), imagem, prontos "x/2", botão principal **Jogar** (entra na fila). Na fila, o botão vira "Procurando partida… 5/7" com opção de cancelar.
-- **Topo direito:** moedas (ícone amarelo), segunda moeda se existir `[ABERTO]`, engrenagem de configurações.
+- **Topo direito:** moedas (ícone amarelo) e engrenagem de configurações. Não há segunda moeda por enquanto `[DECIDIDO]` (F9).
 - **Navegação:** Jogar, Arsenal (T5), Cartas (T1), Ranking, Loja.
 - Seguir a organização do mockup, **sem** o símbolo em V e sem vermelho como cor principal.
 
@@ -295,6 +295,7 @@ Proibido em todo o resto: fundos, textos, ícones, barras, botões comuns, HUD.
 
 - **Tudo numa tela, sem abas e sem rolagem** `[DECIDIDO]` (F7; antes eram abas Todas/Primária/Secundária/Corpo a corpo/Habilidade): as 18 armas e o corpo a corpo agrupados por categoria, com o título da categoria acima de cada grupo. Os cartões se ajustam ao tamanho da tela.
 - **Painel de detalhe** à direita `[DECIDIDO]`: arma em 3D girando devagar, nome, categoria, descrição de uma frase, **barras de atributo** (dano, cadência, alcance, mobilidade), botão **Equipar** e, **logo abaixo, a fila de skins** (miniaturas com moldura de raridade; as que o jogador não tem ficam com cadeado e preço). O espaço das skins já existe desde a F7; o catálogo e a compra são da F9.
+- **Skins (F9):** a fila mostra Padrão + os temas do catálogo, com moldura de raridade, amostra de cores e cadeado com preço. O botão principal age sobre a skin escolhida: **COMPRAR (preço)** se não tem (apagado sem saldo), **EQUIPAR** se tem, **EQUIPADA** se está em uso. Os cartões da grade mostram a arma com a skin equipada.
 - Barras de atributo no acento roxo (sem vermelho: é cor de inimigo e perigo).
 - As cartas e as skins de efeito ficam na tela de Cartas (T1).
 - Celular: mesmo layout; o painel de detalhe rola sozinho se a tela for baixa, a grade nunca.

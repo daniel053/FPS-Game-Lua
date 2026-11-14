@@ -60,6 +60,7 @@ export type EventName =
 	| "PartnerQuestion" -- { partnerName: string }
 	| "EndScreen" -- EndScreenData
 	| "Notice" -- { key: string }
+	| "Rewards" -- RewardsData: moedas e elo da partida (F9), quando são creditados
 
 export type PrepData = {
 	round: number,
@@ -104,6 +105,29 @@ export type EndScreenData = {
 	championId: string?,
 	endsAt: number,
 	partnerName: string?,
+}
+
+-- Recompensas da partida (F9, GDD 9 e 10), mandadas a quem recebeu, quando são creditadas: ao ser
+-- eliminado, no fim da partida ou ao sair no meio.
+export type RewardsData = {
+	placement: number?,
+	coins: number,
+	coinsBreakdown: {
+		rounds: number,
+		wins: number,
+		kills: number,
+		placement: number,
+		partnerBonus: number,
+		firstWin: number,
+		privateCut: number,
+	},
+	ranked: boolean,
+	rankDelta: number,
+	rankPoints: number,
+	rankTier: string, -- faixa depois (RankRules.DisplayTier)
+	rankTierBefore: string,
+	rankProtected: boolean, -- perda anulada (primeiras partidas)
+	rankDoubled: boolean, -- perda dobrada (Mestre ou acima)
 }
 
 -- Cliente -> servidor, remote "MatchRequest": (tipo, argumento)

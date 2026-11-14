@@ -6,10 +6,10 @@
 --   * Carrossel em ordem de tecla: a carta escolhida no centro, maior e com brilho discreto; as
 --     vizinhas menores e inclinadas. Celular: arrastar; PC: setas ← → ou roda do mouse.
 --   * Embaixo: nome + selo da raridade, a frase do que faz, a linha de atributos (números do
---     CardConfig), EQUIPAR, GIRAR (desativado: GDD 8.9 [ABERTO]) e "na sua coleção".
---   * Aba "Skins de cartas / versos" no rodapé, desativada até a F9.
+--     CardConfig), EQUIPAR, GIRAR (vira a carta para ver o verso, F9; R no PC) e "na sua coleção".
+--   * Aba "Skins de cartas / versos" no rodapé, desativada (na F9 só há skins de arma; fica para depois).
 -- A arte das cartas é da F10: por enquanto, fundo na cor da carta e a tecla grande no meio.
--- A raridade das 4 cartas iniciais é [ABERTO] (GDD 8.9): sem raridade, borda na cor da carta.
+-- As 4 cartas iniciais são Comuns (F9, GDD 8.9): fundo na cor da carta, moldura na cor da raridade.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -68,9 +68,14 @@ local function cardName(id: string): string
 	return (Strings.Cards[id] or { name = id }).name
 end
 
+-- Cor da carta (fundo e tecla) e cor da moldura (a da raridade, ESTILO 2.2; sem raridade = a da carta).
 local function cardColor(def: CardConfig.CardDef): Color3
+	return Theme.Cards[def.id] or Theme.Color.Accent
+end
+
+local function frameColor(def: CardConfig.CardDef): Color3
 	local rarity = def.rarity
-	return if rarity then Theme.Rarity[rarity].color else (Theme.Cards[def.id] or Theme.Color.Accent)
+	return if rarity then Theme.Rarity[rarity].color else cardColor(def)
 end
 
 -- Ordem de exibição: por tecla (C, Q, E, X) e, dentro dela, a ordem do CardConfig.
@@ -142,9 +147,12 @@ local function makeTile(def: CardConfig.CardDef): Frame
 	Ui.corner(glow, 16)
 
 	local face = Ui.frame("Face", tile)
+	face.AnchorPoint = Vector2.new(0.5, 0) -- GIRAR estreita a carta pelo meio
+	face.Position = UDim2.fromScale(0.5, 0)
 	face.Size = UDim2.fromScale(1, 1)
 	face.BackgroundTransparency = 0
 	face.BackgroundColor3 = color
+	face.ClipsDescendants = true
 	Ui.corner(face, 12)
 	-- Fundo: a cor da carta escurecendo para o painel (sem degradê chamativo)
 	local gradient = Instance.new("UIGradient")
@@ -152,7 +160,7 @@ local function makeTile(def: CardConfig.CardDef): Frame
 	gradient.Color = ColorSequence.new(color:Lerp(Theme.Color.PanelBase, 0.55), Theme.Color.PanelBase)
 	gradient.Parent = face
 	local rarity = def.rarity
-	local border = Ui.stroke(face, color, if rarity then Theme.Rarity[rarity].borderThickness else 3)
+	local border = Ui.stroke(face, frameColor(def), if rarity then Theme.Rarity[rarity].borderThickness else 3)
 	if rarity and Theme.Rarity[rarity].glow == "neon" then
 		-- Celestial: neon vermelho pulsando devagar (única exceção de neon forte, ESTILO 2.2)
 		local pulse =
@@ -175,7 +183,7 @@ local function makeTile(def: CardConfig.CardDef): Frame
 	key.TextStrokeColor3 = color
 	key.TextStrokeTransparency = 0.4
 	if rarity then
-		local icon = Ui.label("Rarity", Theme.Font.Title, Theme.TextSize.Body, color, face)
+		local icon = Ui.label("Rarity", Theme.Font.Title, Theme.TextSize.Body, frameColor(def), face)
 		icon.Position = UDim2.fromOffset(12, 10)
 		icon.Size = UDim2.fromOffset(20, 20)
 		icon.Text = Strings.Rarity[rarity].icon
@@ -199,9 +207,78 @@ local function makeTile(def: CardConfig.CardDef): Frame
 		lock.Text = U.Lock
 		lock.ZIndex = 3
 	end
+	-- Verso (GIRAR, F9): a cor da carta mais escura, a moldura da raridade e o símbolo do jogo no meio
+	local back = Ui.frame("Back", tile)
+	back.AnchorPoint = Vector2.new(0.5, 0)
+	back.Position = UDim2.fromScale(0.5, 0)
+	back.Size = UDim2.fromScale(0, 1)
+	back.BackgroundTransparency = 0
+	back.BackgroundColor3 = color:Lerp(Theme.Color.PanelBase, 0.7)
+	back.ClipsDescendants = true
+	back.Visible = false
+	Ui.corner(back, 12)
+	Ui.stroke(back, frameColor(def), if rarity then Theme.Rarity[rarity].borderThickness else 3)
+	local backInner = Ui.frame("Inner", back)
+	backInner.Position = UDim2.fromOffset(7, 7)
+	backInner.Size = UDim2.new(1, -14, 1, -14)
+	Ui.corner(backInner, 8)
+	Ui.stroke(backInner, color, 1).Transparency = 0.5
+	local symbol = Ui.label("Symbol", Theme.Font.Title, 64, color, back)
+	symbol.AnchorPoint = Vector2.new(0.5, 0.5)
+	symbol.Position = UDim2.fromScale(0.5, 0.44)
+	symbol.Size = UDim2.fromScale(1, 0.5)
+	symbol.Text = Strings.Logo.Symbol
+	local gameName = Ui.label("GameName", Theme.Font.Title, Theme.TextSize.Label, Theme.Color.TextSecondary, back)
+	gameName.AnchorPoint = Vector2.new(0.5, 1)
+	gameName.Position = UDim2.new(0.5, 0, 1, -16)
+	gameName.Size = UDim2.new(1, -16, 0, 18)
+	gameName.TextWrapped = true
+	gameName.Text = TextUtil.upper(Strings.GameName)
+
 	local scale = Instance.new("UIScale")
 	scale.Parent = tile
 	return tile
+end
+
+-- GIRAR (F9, decisão do dono: visualização, GDD 8.9): a carta estreita até sumir, troca de lado
+-- (frente ↔ verso) e volta a abrir. Sem sorteio e sem custo.
+local flipping: { [Frame]: boolean } = {}
+local function flipTile(tile: Frame)
+	if flipping[tile] then
+		return
+	end
+	local face = tile:FindFirstChild("Face") :: Frame?
+	local back = tile:FindFirstChild("Back") :: Frame?
+	if face == nil or back == nil then
+		return
+	end
+	flipping[tile] = true
+	local showing = if back.Visible then back else face
+	local hidden = if back.Visible then face else back
+	local half = TweenInfo.new(Theme.Animation.CardFlipTime / 2, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+	local close = TweenService:Create(showing, half, { Size = UDim2.fromScale(0, 1) })
+	close.Completed:Once(function()
+		showing.Visible = false
+		hidden.Size = UDim2.fromScale(0, 1)
+		hidden.Visible = true
+		local open = TweenService:Create(
+			hidden,
+			TweenInfo.new(Theme.Animation.CardFlipTime / 2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+			{ Size = UDim2.fromScale(1, 1) }
+		)
+		open.Completed:Once(function()
+			flipping[tile] = nil
+		end)
+		open:Play()
+	end)
+	close:Play()
+end
+
+local function flipCurrent()
+	local tile = tiles[index]
+	if tile then
+		flipTile(tile)
+	end
 end
 
 local function layoutTiles(animate: boolean)
@@ -504,20 +581,21 @@ local function build()
 		size = UDim2.fromOffset(220, Theme.Touch.MinTarget + 6),
 		order = 1,
 	})
-	-- GIRAR sempre visível embaixo da carta (ESTILO T1), desativado enquanto o GDD 8.9 é [ABERTO]
+	-- GIRAR sempre visível embaixo da carta (ESTILO T1): vira a carta para ver o verso (GDD 8.9, F9)
 	local spin = Widgets.button(buttons, C.Spin, "secondary", {
 		size = UDim2.fromOffset(150, Theme.Touch.MinTarget + 6),
 		textSize = Theme.TextSize.Body,
 		arrow = false,
 		order = 2,
+		pc = "R",
 	})
-	spin.setEnabled(false)
+	spin.onClick(flipCurrent)
 
 	ownedLabel = Ui.label("Owned", Theme.Font.Title, Theme.TextSize.Label, Theme.Color.Success, bottom)
 	ownedLabel.Size = UDim2.new(1, 0, 0, 16)
 	ownedLabel.LayoutOrder = 5
 
-	-- Rodapé: skins de cartas / versos (F9)
+	-- Rodapé: skins de cartas / versos (depois da F9: o catálogo inicial só tem skins de arma)
 	local skins = Widgets.button(body, C.CardSkins .. " · " .. C.Soon, "secondary", {
 		size = UDim2.fromOffset(300, Theme.Touch.MinTarget),
 		textSize = Theme.TextSize.Label,
@@ -554,6 +632,8 @@ function CardsScreen.Start()
 			move(-1)
 		elseif input.KeyCode == Enum.KeyCode.Right then
 			move(1)
+		elseif input.KeyCode == Enum.KeyCode.R then
+			flipCurrent()
 		end
 	end)
 end

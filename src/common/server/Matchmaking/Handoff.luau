@@ -19,6 +19,9 @@ export type MatchHandoff = {
 	duos: { { number } },
 	pool: string, -- "Aprendizes", "Experientes" ou "Mistura"
 	createdAt: number,
+	-- Partida privada (servidores privados, F11): não mexe no elo e as moedas valem menos (GDD 6.6).
+	-- Ausente = partida normal da fila.
+	isPrivate: boolean?,
 }
 
 export type LobbyHandoff = {
@@ -80,6 +83,7 @@ function Handoff.readMatchAsync(privateServerId: string, timeoutSeconds: number)
 					duos = duos,
 					pool = if typeof(raw.pool) == "string" then raw.pool else "",
 					createdAt = if typeof(raw.createdAt) == "number" then raw.createdAt else 0,
+					isPrivate = raw.isPrivate == true,
 				}
 			end
 		elseif not ok then

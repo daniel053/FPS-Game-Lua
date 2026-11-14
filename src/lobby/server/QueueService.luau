@@ -420,6 +420,7 @@ local function launch(plan: QueueRules.Plan)
 			duos = plan.duos,
 			pool = plan.pool,
 			createdAt = MemoryMaps.now(),
+			isPrivate = false, -- a fila só monta partidas normais; as privadas chegam na F11
 		}
 		if not Handoff.writeMatch(privateServerId, handoff) then
 			return

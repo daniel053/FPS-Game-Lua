@@ -35,6 +35,10 @@ export type EventName =
 	| "TutorialRequest" -- cliente -> servidor: (pedido: Tutorial/TutorialTypes.RequestName)
 	| "SocialRequest" -- cliente -> servidor: (tipo, argumento) — ver Social/SocialTypes (F8)
 	| "SocialEvent" -- servidor -> cliente: (tipo, dados) — ver Social/SocialTypes (F8)
+	| "ShopRequest" -- cliente -> servidor: (tipo: "Buy" | "Equip" | "Unequip", id: string) — skins (F9)
+	| "ShopResult" -- servidor -> cliente: (sucesso: boolean, chaveDaMensagem: string, id: string?) (F9)
+	| "RankingRequest" -- cliente -> servidor: () — pede o ranking em cache (F9)
+	| "RankingBoard" -- servidor -> cliente: (ranking: Progression/RankingTypes.Board) (F9)
 
 -- Eventos sem garantia de entrega (efeitos visuais frequentes; perder um não muda o jogo).
 export type UnreliableEventName =

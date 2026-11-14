@@ -11,7 +11,7 @@ local WeaponShapes = require(Shared.Combat.WeaponShapes)
 
 export type Preview = {
 	root: ViewportFrame,
-	set: (weaponId: string?) -> (),
+	set: (weaponId: string?, skinId: string?) -> (), -- skinId = skin para mostrar (F9)
 	destroy: () -> (),
 }
 
@@ -55,7 +55,7 @@ function WeaponPreview.new(parent: Instance, spin: boolean): Preview
 		m:PivotTo(CFrame.Angles(0, math.rad(angle), 0))
 	end
 
-	local function set(weaponId: string?)
+	local function set(weaponId: string?, skinId: string?)
 		if model then
 			model:Destroy()
 			model = nil
@@ -64,7 +64,7 @@ function WeaponPreview.new(parent: Instance, spin: boolean): Preview
 		if weaponId == nil or category == nil then
 			return
 		end
-		local m = WeaponShapes.buildModel(WeaponShapes.forId(weaponId, false))
+		local m = WeaponShapes.buildModel(WeaponShapes.forId(weaponId, false, skinId))
 		-- Centraliza o modelo na origem
 		local cf, size = m:GetBoundingBox()
 		for _, part in m:GetChildren() do

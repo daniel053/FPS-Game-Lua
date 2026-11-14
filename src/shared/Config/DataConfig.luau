@@ -45,6 +45,7 @@ local DataConfig = {
 	-- Teste (só em DEV_). Atributo no ServerStorage que faz toda carga de perfil falhar.
 	DevSimulateLoadFailureAttribute = "DEV_SimulateLoadFailure",
 	DevAddCoinsAmount = 100,
+	DevRankStep = 500, -- botões +PE / −PE do painel de teste (F9)
 	DevResetConfirmSeconds = 3, -- tocar de novo em "Resetar" dentro deste tempo para confirmar
 }
 

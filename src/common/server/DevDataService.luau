@@ -7,6 +7,11 @@
 --   TutorialReset    -> tutorial pendente desde a etapa 1 (no lobby publicado, leva ao tutorial)
 --   TutorialComplete -> tutorial feito, com as 4 cartas (pular o tutorial nos testes)
 --   ClearCards   -> tira todas as cartas (testar a partida sem carta)
+--   RankUp / RankDown -> ± DataConfig.DevRankStep PE (F9), gravado no ranking
+--   RankReset    -> PE e partidas ranqueadas a zero (testar a proteção das primeiras partidas)
+--   SimulateMatch -> uma partida de 8 duplas com colocação sorteada: moedas e elo pelo caminho real
+--   ResetFirstWin -> a "primeira vitória do dia" volta a valer hoje
+--   ClearSkins   -> tira todas as skins (testar comprar de novo)
 
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
@@ -15,6 +20,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage.Shared
 local CardConfig = require(Shared.Config.CardConfig)
 local DataConfig = require(Shared.Config.DataConfig)
+local EconomyRules = require(Shared.Progression.EconomyRules)
 local Env = require(Shared.Env)
 local Remotes = require(Shared.Remotes)
 local TutorialConfig = require(Shared.Config.TutorialConfig)
@@ -23,6 +29,7 @@ local Common = script.Parent
 local DataService = require(Common.DataService)
 local EconomyService = require(Common.EconomyService)
 local ProfileRules = require(Common.Data.ProfileRules)
+local RankService = require(Common.RankService)
 
 local COOLDOWN_SECONDS = 0.5
 
@@ -84,6 +91,65 @@ local function onCommand(player: Player, command: unknown)
 			return true, nil
 		end)
 		reply(player, ok, if ok then "CardsCleared" else "NotLoaded")
+	elseif command == "RankUp" or command == "RankDown" then
+		local amount = if command == "RankUp" then DataConfig.DevRankStep else -DataConfig.DevRankStep
+		local ok = RankService.devAddPoints(player, amount)
+		reply(player, ok, if ok then "RankChanged" else "NotLoaded")
+	elseif command == "RankReset" then
+		local ok = RankService.devReset(player)
+		reply(player, ok, if ok then "RankReset" else "NotLoaded")
+	elseif command == "SimulateMatch" then
+		-- Uma partida de 8 duplas com colocação sorteada, pelo caminho real (EconomyRules, RankService)
+		local profile = DataService.getProfile(player)
+		if profile == nil then
+			reply(player, false, "NotLoaded")
+			return
+		end
+		local rng = Random.new()
+		local placement = rng:NextInteger(1, 8)
+		local roundsPlayed = 9 - placement
+		local tally = {
+			roundsPlayed = roundsPlayed,
+			roundsWon = math.max(0, roundsPlayed - 2),
+			kills = rng:NextInteger(0, 6),
+		}
+		local today = os.time()
+		local coins = EconomyRules.matchCoins(tally, {
+			placement = placement,
+			samePartner = true,
+			isPrivate = false,
+			firstWinAvailable = EconomyService.firstWinAvailable(player, today) == true,
+		})
+		EconomyService.creditMatch(player, coins, today)
+		local rank = RankService.applyMatch(player, { placement = placement, teamCount = 8 }, false)
+		DataService.saveNow(player)
+		reply(
+			player,
+			true,
+			"MatchSimulated",
+			string.format(
+				"%dº de 8 · +%d moedas · %+d PE (%s)%s",
+				placement,
+				coins.total,
+				if rank then rank.delta else 0,
+				if rank then rank.tier else "?",
+				if rank and rank.protected then " · sem perda (primeiras partidas)" else ""
+			)
+		)
+	elseif command == "ResetFirstWin" then
+		local ok = DataService.update(player, function(profile)
+			profile.daily.lastFirstWinDay = nil
+			return true, nil
+		end)
+		reply(player, ok, if ok then "FirstWinReset" else "NotLoaded")
+	elseif command == "ClearSkins" then
+		local ok = DataService.update(player, function(profile)
+			profile.cosmetics.owned = {}
+			profile.cosmetics.equipped.weapons = {}
+			profile.cosmetics.equipped.melee = nil
+			return true, nil
+		end)
+		reply(player, ok, if ok then "SkinsCleared" else "NotLoaded")
 	elseif command == "ResetProfile" then
 		local ok = DataService.devResetProfile(player)
 		reply(player, ok, if ok then "ProfileReset" else "NotLoaded")
@@ -100,8 +166,10 @@ local function onCommand(player: Player, command: unknown)
 			cardCount += 1
 		end
 		local detail = string.format(
-			"moedas %d · cartas %d · tutorial %s (etapa %d) · %d bytes · armazenamento: %s",
+			"moedas %d · PE %d (%d ranqueadas) · cartas %d · tutorial %s (etapa %d) · %d bytes · armazenamento: %s",
 			profile.coins,
+			profile.rank.points,
+			profile.rank.matchesPlayed,
 			cardCount,
 			if profile.tutorialDone then "feito" else "pendente",
 			profile.tutorialStep,

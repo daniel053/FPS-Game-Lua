@@ -56,6 +56,26 @@ local loadedEvent = Instance.new("BindableEvent")
 -- Dispara (player) quando o perfil termina de carregar.
 DataService.ProfileLoaded = loadedEvent.Event
 
+-- Chamados logo antes de o perfil deixar este servidor (o jogador saiu ou vai ser teleportado), com o
+-- perfil ainda aberto: a última chance de gravar algo (ex.: recompensas de quem sai no meio da partida,
+-- F9). Não podem esperar (yield): só DataService.update.
+local beforeRelease: { (player: Player) -> () } = {}
+
+local function runBeforeRelease(player: Player)
+	if states[player] == nil then
+		return
+	end
+	for _, callback in beforeRelease do
+		local ok, err = pcall(function(): string?
+			callback(player)
+			return nil
+		end)
+		if not ok then
+			warn(`[Dados] Erro antes de liberar o perfil de {player.UserId}: {err}`)
+		end
+	end
+end
+
 -- ===== Cópia para o cliente =====
 
 local dirty: { [Player]: boolean } = {}
@@ -198,6 +218,7 @@ end
 local function endSession(player: Player)
 	local state = states[player]
 	if state then
+		runBeforeRelease(player)
 		state.endingByUs = true
 		states[player] = nil
 		state.session:EndSession() -- salva e libera a trava
@@ -241,6 +262,11 @@ function DataService.update(player: Player, mutator: Mutator): (boolean, string?
 	return ok, reason
 end
 
+-- Registra uma função para rodar antes de o perfil deixar este servidor (ver beforeRelease).
+function DataService.onBeforeRelease(callback: (player: Player) -> ())
+	table.insert(beforeRelease, callback)
+end
+
 -- Salvar já (compra, fim de partida, fim do tutorial — seção 5.2).
 function DataService.saveNow(player: Player)
 	local state = states[player]
@@ -256,6 +282,7 @@ function DataService.releaseForTeleportAsync(player: Player): boolean
 	if state == nil or state.releasing then
 		return false
 	end
+	runBeforeRelease(player)
 	state.releasing = true
 	state.endingByUs = true
 

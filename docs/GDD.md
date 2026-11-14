@@ -358,7 +358,7 @@ Grupo de 2 e fila `[DECIDIDO]` (F5):
 ### 6.6 Servidores privados
 
 - Permitidos para grupos de amigos. Preço em Robux `[ABERTO]`.
-- Partidas privadas **não mexem no elo** e dão recompensa reduzida. `[PROPOSTA]`
+- Partidas privadas **não mexem no elo** e dão **metade das moedas**. `[DECIDIDO]` (F9; as partidas privadas em si chegam na F11)
 
 ---
 
@@ -687,19 +687,17 @@ Raridade:
 
 - Celestial é a raridade mais alta e mais difícil de conseguir.
 - A mesma escala de raridade vale para skins. `[PROPOSTA]`
-- A raridade de carta muda **só o quanto ela é difícil de conseguir**, ou também **o poder** da carta? `[ABERTO]` (Recomendação: só a raridade e o visual; poder equilibrado entre cartas da mesma tecla, para o jogo não ficar injusto.)
-- Raridade das 4 cartas iniciais: `[ABERTO]`.
+- A raridade de carta muda **só o quanto ela é difícil de conseguir e o visual**, nunca o poder: cartas da mesma tecla têm poder equilibrado, para o jogo não ficar injusto. `[DECIDIDO]` (F9)
+- As 4 cartas iniciais (Nuvem, Impulso, Tremor e Renascer) são **Comuns**. `[DECIDIDO]` (F9)
 
-#### Girar cartas `[DECIDIDO]` (funcionamento `[ABERTO]`)
+#### Girar cartas `[DECIDIDO]` (F9: visualização)
 
 A tela de Cartas tem o botão **GIRAR**. É uma função importante do jogo.
 
-Interpretação a confirmar com o dono do projeto:
+- **Na primeira versão, GIRAR é visualização (B):** vira a carta para ver a frente e o verso. Sem sorteio e sem custo. `[DECIDIDO]` (F9)
+- Um sorteio de carta nova (A) pode voltar a ser discutido quando houver cartas novas. Nesse caso valem as regras abaixo.
 
-- **(A) Sorteio:** girar sorteia uma carta nova para o jogador; ou
-- **(B) Visualização:** girar só gira a carta em 3D para ver a frente e o verso.
-
-**Se for (A), regras obrigatórias** `[PROPOSTA]`:
+**Se um dia houver sorteio (A), regras obrigatórias** `[PROPOSTA]`:
 
 - **Nunca** pode custar Robux, nem moeda que possa ser comprada com Robux. No Brasil, o ECA Digital (Lei 15.211/2025) proíbe caixas de recompensa aleatória em jogos voltados ou acessíveis a crianças e adolescentes. O giro só usa **moedas ganhas jogando**, ou é **grátis** (ex.: 1 giro grátis por dia).
 - Chances de cada raridade **sempre visíveis** antes de girar.
@@ -733,7 +731,8 @@ Interpretação a confirmar com o dono do projeto:
 | 5º–6º | −5 |
 | 7º–8º | −15 |
 
-- Em partidas com menos duplas, a tabela é proporcional.
+- Em partidas com menos duplas, a tabela é proporcional: a colocação é levada para a escala de 8 duplas (1º continua 1º, o último vira 8º) e arredondada. Ex.: com 4 duplas, 1º → +40, 2º → +10, 3º → −5, 4º → −15. `[PROPOSTA]` (F9, `RankConfig.ReferenceTeams`)
+- Quem sai no meio da partida (ou volta ao lobby por ausência) conta como se a dupla tivesse caído naquele momento: fica atrás de todas as duplas ainda vivas. Não existe perda menor para quem desiste. `[DECIDIDO]` (F9)
 - Bronze não perde PE abaixo de 0.
 - Nas 10 primeiras partidas, o jogador não perde PE.
 - A partir de Mestre, as perdas dobram.
@@ -747,7 +746,8 @@ Interpretação a confirmar com o dono do projeto:
 
 - Elo visual exclusivo do dono do projeto, definido pelo **UserId** dele em config (nunca pelo nome).
 - Só cosmético: ícone e título próprios. Não dá vantagem de jogo.
-- Ferramentas de administrador (expulsar, banir, dar moedas, etc.): `[ABERTO]`.
+- No ranking global, o ADM fica **fixo no topo com o selo ADM**, fora da contagem dos 100. `[DECIDIDO]` (F9)
+- Ferramentas de administrador (expulsar, banir, dar moedas, etc.): `[ABERTO]`. Fora da F9: só os comandos de teste do ambiente `DEV_`.
 
 ---
 
@@ -766,6 +766,10 @@ Interpretação a confirmar com o dono do projeto:
 | Primeira vitória do dia | 150 |
 | Jogar a partida inteira com o mesmo parceiro | +10% |
 
+- **Primeira vitória do dia** = a primeira **rodada** vencida no dia (UTC). `[DECIDIDO]` (F9)
+- **Mesmo parceiro:** +10% sobre as moedas da partida (sem contar a primeira vitória do dia), para quem terminou com o parceiro do começo. Quem joga sozinho (1v2) não tem parceiro e não ganha o bônus. `[PROPOSTA]` (F9)
+- **Quando as moedas e o elo entram:** a dupla eliminada recebe na hora em que cai (a colocação já está definida; quem fica para assistir recebe o mesmo); a campeã e a vice, no fim; quem sai no meio, na saída (seção 9.2). A dupla de folga não ganha moedas de participação naquela rodada. `[PROPOSTA]` (F9)
+
 ### 10.2 Preços `[PROPOSTA]`
 
 Na primeira versão as moedas compram **só skins** (não há loja de cartas, seção 8.8). Preços de cartas ficam definidos para quando a loja de cartas existir.
@@ -775,9 +779,12 @@ Na primeira versão as moedas compram **só skins** (não há loja de cartas, se
 | Carta básica comum (futuro) | 1.500 |
 | Carta básica rara (futuro) | 3.000 |
 | Carta ult (futuro) | 5.000 |
-| Skin comum | 600 |
-| Skin rara | 2.000 |
-| Skin épica | 5.000 |
+| Skin Comum | 600 |
+| Skin Épica | 2.000 |
+| Skin Lendária | 5.000 |
+| Skin Celestial | não é vendida por moedas (só eventos) |
+
+As skins seguem a escala de raridade das cartas (seção 8.9); a tabela antiga falava em "rara", que não existe na escala. `[DECIDIDO]` (F9)
 
 ### 10.3 Robux
 
@@ -790,6 +797,8 @@ Na primeira versão as moedas compram **só skins** (não há loja de cartas, se
 ## 11. Skins
 
 - Tipos: roupa, chapéu/acessório, skin de arma, efeito de vitória, emote. `[PROPOSTA]`
+- **Catálogo inicial (F9):** só **skins de arma e do Bastão**, porque o personagem é o avatar do jogador (seção 3.2). Quatro temas de cores, cada um para as 18 armas e o Bastão: **Areia** e **Floresta** (Comum), **Oceano** (Épica) e **Ouro** (Lendária). Cada skin só troca as cores do modelo; o ID é `skin_<arma>_<tema>` (ex.: `skin_rajada_areia`). `[DECIDIDO]` (F9, proposta aprovada pelo dono do projeto)
+- Skins de versos de carta, efeito de vitória e emotes ficam para depois da F9.
 - Uma skin **nunca**: esconde a marcação de aliado ou inimigo (seção 7.6), usa vermelho de forma que pareça o contorno de inimigo, muda a hitbox, ou tem neon.
 - Em primeira pessoa, o jogador vê principalmente **os próprios braços e a arma**: skins de arma e de luva/manga têm prioridade de produção. `[PROPOSTA]`
 
@@ -1071,9 +1080,9 @@ Ordem resumida: F0 Base → F1 Dados do jogador → F2 Combate → F3 Loop da pa
 2. ~~Moedor e Gêmea na fase Pesadas?~~ Respondida: entram (seção 7.2.2).
 3. ~~Aviso de abate por rodada ou por partida?~~ Respondida: pela partida (seção 7.7).
 4. ~~O tutorial pode ser pulado?~~ Respondida na F6: só as telas de configuração (seção 5.1).
-5. Girar cartas: sorteio de carta nova (A) ou só girar a carta em 3D para ver (B)? (seção 8.9)
-6. Raridade da carta muda o poder dela ou só a dificuldade de conseguir?
-7. O diamante roxo que aparece no lobby do mockup é uma segunda moeda (comprada com Robux)? Se sim, ela não pode ser usada para girar cartas (seção 8.9).
+5. ~~Girar cartas: sorteio (A) ou visualização (B)?~~ Respondida na F9: visualização (seção 8.9).
+6. ~~Raridade da carta muda o poder dela?~~ Respondida na F9: não, só a dificuldade e o visual (seção 8.9).
+7. ~~O diamante roxo do mockup é uma segunda moeda?~~ Respondida na F9: não há segunda moeda por enquanto (`gems` fica 0).
 8. Quais mapas são maiores e quais menores?
 9. Ferramentas de ADM além do elo visual.
 10. Câmeras cinematográficas (cerimônia de campeão) também em primeira pessoa?
@@ -1081,7 +1090,7 @@ Ordem resumida: F0 Base → F1 Dados do jogador → F2 Combate → F3 Loop da pa
 12. ~~Final melhor de 3: sim ou não?~~ Respondida: sim, e na final as vidas param de contar (seção 4.7).
 13. Preços em Robux e passe VIP.
 14. Plantas baixas dos 4 mapas e paletas.
-15. Temas das primeiras skins.
+15. ~~Temas das primeiras skins.~~ Respondida na F9: Areia, Floresta, Oceano e Ouro, só em armas (seção 11).
 
 ---
 
@@ -1284,3 +1293,21 @@ Detalhes de implementação decididos durante o desenvolvimento (não são regra
 | **Parceiros recentes:** quando a dupla se forma na partida (`TeamService.onChanged`), os dois entram no `social.recentPartners` um do outro (`ProfileRules.addRecentPartner`: 10, mais recente primeiro, sem repetir). Elogio: `ProfileRules.addPraise`. | DADOS 3 e 4. |
 | **Sons provisórios** de ping e de frase do parceiro em `AudioConfig` (estalo curto). | Sons finais na F10. |
 | **Boot do cliente espera a pasta `Place`** (até 10 s) antes de carregar os módulos. Num place gerado do zero, o Roblox copiou `Place` para o jogador depois de o Boot rodar, e as telas da Partida não abriam. | Achado nos testes da F8; os 3 places têm a pasta `Place`. |
+
+### F9 · Elo, economia e arsenal
+
+| Decisão | Por quê |
+|---|---|
+| **Regras puras em `Shared/Progression`:** `RankRules` (faixa, ADM, tabela proporcional, proteção das 10 primeiras partidas, perda dobrada em Mestre+, colocação de quem sai) e `EconomyRules` (moedas da partida peça por peça, primeira vitória do dia por dia UTC, bônus do parceiro, corte da partida privada). Testadas em `Progression.spec`. | Números só em config; regras testáveis sem servidor. |
+| **`RankService`** (Common, os 3 places) é o único que muda `rank`: aplica o PE da colocação, conta a partida ranqueada e grava no `RankLeaderboard_v1` (OrderedDataStore, chave = UserId) por uma fila com novas tentativas e espera crescente, respeitando o orçamento de pedidos; o servidor espera a fila esvaziar ao fechar (até 20 s). O ADM e jogadores de teste (UserId ≤ 0) não são gravados. Atributo `RankTier` no Player (faixa ou "Adm") para o placar mostrar o elo dos outros. | DADOS 4 e 8. |
+| **`MatchRewards`** (Partida) conta rodadas jogadas/vencidas, Viradas e rodadas 1v2 vencidas (fim de cada rodada), abates, mortes, dano e abates por arma (`Combatants.onKnocked` e o novo `Combatants.onDamaged`). Credita **uma vez** por jogador: ao cair a dupla, no fim (campeã e vice) ou antes de o perfil deixar o servidor. Partida interrompida pelo painel de teste não credita. | GDD 4.8, 9 e 10. |
+| **`DataService.onBeforeRelease`:** funções chamadas logo antes de o perfil sair do servidor (o jogador saiu ou vai ser teleportado), com o perfil ainda aberto. É por aqui que quem sai no meio recebe (com a colocação de agora). | Sem isso, a saída fechava o perfil antes da recompensa. |
+| **Partida privada:** `MatchHandoff.isPrivate` (a fila sempre manda `false`; as privadas chegam na F11). Elo não muda e as moedas valem `EconomyConfig.PrivateMatchRewardMultiplier` (0,5). | GDD 6.6. |
+| **Evento `Rewards`** (MatchEvent) com moedas (e o detalhe), PE, faixa antes e depois, proteção e perda dobrada. A tela de dupla eliminada e a tela final mostram numa linha (`EndScreen`), com ícone e cor do elo. | GDD 9.3. |
+| **Loja de skins no lobby** (`ShopService`, remotes `ShopRequest`/`ShopResult`): Buy, Equip e Unequip, só com IDs válidos, limite de 10 pedidos a cada 5 s. Comprar é `ProfileRules.buySkinWithCoins` (tudo ou nada) pelo `EconomyService.buySkin`, que salva na hora. | DADOS 4 e 5.2. Teste de exploit no `Progression.spec`. |
+| **Catálogo gerado** (`ShopCatalog`): tema × (18 armas + Bastão), preço pela raridade (`EconomyConfig.Prices.SkinByRarity`). Cores dos temas em `Theme.SkinLook`; o `WeaponShapes` aplica a skin por cima das cores da arma (vitrines e arma em primeira pessoa, que lê a skin equipada no perfil). | ESTILO 2 e GDD 11. Sem vermelho e sem neon (teste no `Interface.spec`). |
+| **Arsenal (T5):** a fila de skins mostra Padrão + os 4 temas com moldura de raridade, amostra de cores (3 faixas, sem mais um modelo 3D) e cadeado com preço; o botão principal age sobre a skin escolhida: COMPRAR (preço, apagado sem saldo), EQUIPAR ou EQUIPADA. Os cartões da grade mostram a skin equipada. | ESTILO T5. |
+| **Ranking (T3 › RANKING):** `LeaderboardService` no lobby lê os 100 primeiros a cada 5 min (30 s em `DEV_`), busca os nomes em lote (`UserService`) e manda a lista para todos; abrir a tela só pede a cópia em memória. ADM fixo no topo. Sem avatares nas linhas (100 miniaturas por tela). | DADOS 8: não estourar limites. |
+| **Elo na interface** (`Common/Ui/RankBadge`): ícone + nome na cor da faixa (`Strings.RankIcons`, `Theme.Rank`), em texto rico. Lobby (dupla), placar (ícone antes do nome), tela final e ranking. | ESTILO 2.2: nunca só a cor. |
+| **Cartas (T1):** as 4 iniciais são Comuns; o fundo continua na cor da carta e a moldura fica na cor da raridade. GIRAR (e R no PC) estreita a carta e abre o verso (cor da carta escura, moldura da raridade, símbolo e nome do jogo); de novo volta à frente. | GDD 8.9. |
+| **Comandos de teste** (`DEV_`, painel de dados): ±500 PE, zerar elo, simular uma partida de 8 duplas com colocação sorteada (moedas e elo pelo caminho real), primeira vitória do dia de novo e tirar as skins. | Testar elo e economia sem jogar partidas inteiras. |

@@ -17,7 +17,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local Shared = ReplicatedStorage.Shared
 local LobbyTypes = require(Shared.Queue.LobbyTypes)
 local QueueConfig = require(Shared.Config.QueueConfig)
-local QueueRules = require(Shared.Queue.QueueRules)
+local RankRules = require(Shared.Progression.RankRules)
 local Remotes = require(Shared.Remotes)
 
 local DataService = require(ServerScriptService.Common.DataService)
@@ -65,7 +65,7 @@ local function memberView(player: Player, party: Party): LobbyTypes.MemberView
 	return {
 		userId = player.UserId,
 		name = player.DisplayName,
-		rankTier = QueueRules.rankTierOf(if profile then profile.rank.points else 0),
+		rankTier = RankRules.displayTier(player.UserId, if profile then profile.rank.points else 0),
 		ready = party.ready[player] == true,
 	}
 end

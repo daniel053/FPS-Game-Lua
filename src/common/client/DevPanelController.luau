@@ -376,6 +376,25 @@ local function build(teleportEvent: RemoteEvent, dataEvent: RemoteEvent)
 		dataEvent:FireServer("ClearCards")
 	end)
 
+	-- Elo, moedas e skins (F9)
+	for _, entry in
+		{
+			{ "RankUp", string.format(Strings.Dev.RankUp, DataConfig.DevRankStep) },
+			{ "RankDown", string.format(Strings.Dev.RankDown, DataConfig.DevRankStep) },
+			{ "RankReset", Strings.Dev.RankReset },
+			{ "SimulateMatch", Strings.Dev.SimulateMatch },
+			{ "ResetFirstWin", Strings.Dev.ResetFirstWin },
+			{ "ClearSkins", Strings.Dev.ClearSkins },
+		}
+	do
+		local command = entry[1]
+		local button = add(makeButton(entry[2], false))
+		button.Name = command
+		button.Activated:Connect(function()
+			dataEvent:FireServer(command)
+		end)
+	end
+
 	-- Pedido de configuração VÁLIDO pelo caminho real (SettingsUpdateRequest): testa salvar e voltar.
 	local sensitivity = add(makeButton(string.format(Strings.Dev.SensitivityUp, DevConfig.SensitivityStep), false))
 	sensitivity.Name = "SensitivityUp"

@@ -9,6 +9,8 @@
 --     "JOGAR DE NOVO JUNTOS" (F8);
 --   * linha social (F8, GDD 12.4): ADICIONAR AMIGO (pedido nativo do Roblox), ELOGIAR o parceiro e
 --     DENUNCIAR (ReportPanel).
+--   * recompensas (F9): moedas (com o detalhe) e PE da partida, com o elo depois, quando são creditadas
+--     (ao cair ou no fim da partida).
 -- Fundo escurecido, nunca preto opaco; o mouse fica livre enquanto a tela está aberta (PC).
 
 local GuiService = game:GetService("GuiService")
@@ -24,6 +26,7 @@ local Theme = require(Shared.Config.Theme)
 
 local InputDevice = require(script.Parent.Parent.Common.InputDevice)
 local Widgets = require(script.Parent.Parent.Common.Ui.Widgets)
+local RankBadge = require(script.Parent.Parent.Common.Ui.RankBadge)
 local MatchClient = require(script.Parent.MatchClient)
 local ReportPanel = require(script.Parent.ReportPanel)
 local SocialClient = require(script.Parent.SocialClient)
@@ -46,6 +49,9 @@ local primaryButton: Widgets.Button
 local secondaryButton: Widgets.Button
 local noticeText: TextLabel
 local noticeUntil = 0
+-- Recompensas da partida (F9): chegam pelo evento "Rewards" quando são creditadas
+local rewardsText: TextLabel
+local rewards: MatchTypes.RewardsData? = nil
 
 local onPrimary: (() -> ())? = nil
 local onSecondary: (() -> ())? = nil
@@ -116,9 +122,55 @@ local function refreshSocial()
 	praiseButton.setEnabled(canPraise)
 end
 
+-- Moedas e PE da partida, em duas linhas: total e elo; o detalhe das moedas embaixo, menor.
+local function rewardsLines(data: MatchTypes.RewardsData): string
+	local R = Strings.Rewards
+	local coinHex = Theme.Color.Coin:ToHex()
+	local first = `<font color="#{coinHex}">{string.format(R.Coins, Strings.Ui.Coin, data.coins)}</font>`
+	if not data.ranked then
+		first ..= "   " .. R.Private
+	else
+		local delta = data.rankDelta
+		local deltaText = if delta > 0
+			then string.format(R.RankUp, delta)
+			elseif delta < 0 then string.format(R.RankDown, -delta)
+			else R.RankSame
+		local color = if delta > 0 then Theme.RankUp else Theme.RankDown
+		first ..= `   <font color="#{color:ToHex()}">{deltaText}</font> · {RankBadge.rich(data.rankTier)}`
+		if data.rankProtected then
+			first ..= ` ({R.Protected})`
+		elseif data.rankDoubled then
+			first ..= ` ({R.Doubled})`
+		end
+		if data.rankTier ~= data.rankTierBefore and data.rankTierBefore ~= "" then
+			local tierFmt = if delta > 0 then R.TierUp else R.TierDown
+			first ..= "\n" .. string.format(tierFmt, RankBadge.rich(data.rankTier))
+		end
+	end
+	local parts: { string } = {}
+	local breakdown = data.coinsBreakdown :: { [string]: number }
+	for _, key in R.PartsOrder do
+		local value = breakdown[key]
+		if value and value > 0 then
+			table.insert(parts, string.format(R.Parts[key], value))
+		end
+	end
+	local small = `<font size="{Theme.TextSize.Label}">{table.concat(parts, " · ")}</font>`
+	return first .. "\n" .. small
+end
+
+local function refreshRewards()
+	local data = rewards
+	rewardsText.Visible = panel.Visible and data ~= nil
+	if data then
+		rewardsText.Text = rewardsLines(data)
+	end
+end
+
 local function setSocial(shown: boolean)
 	socialShown = shown
 	refreshSocial()
+	refreshRewards()
 end
 
 local function hide()
@@ -256,8 +308,16 @@ local function build()
 	bodyText =
 		MatchUi.label("Body", Theme.Font.BodyStrong, Theme.TextSize.PrimaryButton, Theme.Color.TextSecondary, content)
 	bodyText.Position = UDim2.fromOffset(0, 40)
-	bodyText.Size = UDim2.new(1, 0, 0, 70)
+	bodyText.Size = UDim2.new(1, 0, 0, 44)
 	bodyText.TextWrapped = true
+
+	-- Moedas e PE da partida (F9)
+	rewardsText = MatchUi.label("Rewards", Theme.Font.BodyStrong, Theme.TextSize.Body, Theme.Color.TextPrimary, content)
+	rewardsText.Position = UDim2.fromOffset(0, 86)
+	rewardsText.Size = UDim2.new(1, 0, 0, 62)
+	rewardsText.TextWrapped = true
+	rewardsText.RichText = true
+	rewardsText.Visible = false
 
 	buttons = MatchUi.frame("Buttons", content)
 	buttons.AnchorPoint = Vector2.new(0.5, 1)
@@ -307,6 +367,10 @@ function EndScreen.Start()
 	MatchClient.onEvent("Eliminated", showEliminated)
 	MatchClient.onEvent("PartnerQuestion", showPartnerQuestion)
 	MatchClient.onEvent("EndScreen", showEnd)
+	MatchClient.onEvent("Rewards", function(data: MatchTypes.RewardsData)
+		rewards = data
+		refreshRewards()
+	end)
 	MatchClient.onEvent("Notice", function(data: { key: string })
 		if data.key == "GoingToLobby" then
 			notice(S.GoingToLobby)
@@ -323,6 +387,7 @@ function EndScreen.Start()
 	MatchClient.onChanged(function(snapshot: MatchTypes.Snapshot)
 		-- Nova partida começando (no Studio, depois do fim): fecha tudo
 		if snapshot.phase == "Receiving" or snapshot.phase == "Forming" then
+			rewards = nil
 			hide()
 		end
 	end)
