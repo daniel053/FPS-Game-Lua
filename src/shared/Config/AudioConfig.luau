@@ -37,6 +37,9 @@ local AudioConfig = {
 	Equip = { id = "rbxasset://sounds/unsheath.wav", volume = 0.3, pitch = 1.3 } :: SoundDef,
 	Empty = { id = "rbxasset://sounds/clickfast.wav", volume = 0.4, pitch = 1 } :: SoundDef,
 	HitMarker = { id = "rbxasset://sounds/hit.wav", volume = 0.35, pitch = 1.4 } :: SoundDef,
+	-- Comunicação (F8), provisórios: ping e frase do parceiro
+	Ping = { id = "rbxasset://sounds/clickfast.wav", volume = 0.45, pitch = 1.6 } :: SoundDef,
+	Phrase = { id = "rbxasset://sounds/clickfast.wav", volume = 0.3, pitch = 1.2 } :: SoundDef,
 	ShieldBreak = { id = "rbxasset://sounds/glassbreak.wav", volume = 0.25, pitch = 1.6 } :: SoundDef, -- GDD 7.3
 	KillCrack = { id = "rbxasset://sounds/snap.wav", volume = 0.8, pitch = 0.8 } :: SoundDef, -- estalo curto, oco e macio
 	Knockdown = { id = "rbxasset://sounds/collide.wav", volume = 0.4, pitch = 1.4 } :: SoundDef, -- poeira ao sumir

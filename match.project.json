@@ -25,6 +25,21 @@
 			},
 			"Tests": { "$path": "src/tests" }
 		},
+		"VoiceChatService": {
+			"$className": "VoiceChatService",
+			"$properties": {
+				"EnableDefaultVoice": false,
+				"UseAudioApi": "Enabled"
+			}
+		},
+		"TextChatService": {
+			"$className": "TextChatService",
+			"$ignoreUnknownInstances": true,
+			"$properties": {
+				"ChatVersion": "TextChatService",
+				"CreateDefaultTextChannels": false
+			}
+		},
 		"StarterPlayer": {
 			"$className": "StarterPlayer",
 			"$ignoreUnknownInstances": true,

@@ -12,6 +12,13 @@ local UiConfig = {
 		SettingsPad = Enum.KeyCode.DPadRight,
 		AbilitiesPad = Enum.KeyCode.DPadDown,
 		ScoreboardPad = Enum.KeyCode.DPadLeft,
+		-- Comunicação (F8): toque curto = ping rápido; segurar = roda. Botão do meio do mouse = ping rápido.
+		Ping = Enum.KeyCode.Z,
+		Phrase = Enum.KeyCode.V,
+		Emote = Enum.KeyCode.G,
+		Praise = Enum.KeyCode.H,
+		PingPad = Enum.KeyCode.ButtonR3,
+		PhrasePad = Enum.KeyCode.ButtonL3, -- a roda de frases também leva aos emotes e ao elogio
 	},
 	-- Texto dos chips das dicas fixas (o que aparece na tela)
 	KeyLabels = {
@@ -21,6 +28,12 @@ local UiConfig = {
 		SettingsPad = "→",
 		AbilitiesPad = "↓",
 		ScoreboardPad = "←",
+		Ping = "Z",
+		Phrase = "V",
+		Emote = "G",
+		Praise = "H",
+		PingPad = "R3",
+		PhrasePad = "L3",
 	},
 
 	-- Configurações: as mudanças de uma aba são salvas ao trocar de aba ou fechar o painel

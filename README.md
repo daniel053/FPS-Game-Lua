@@ -105,6 +105,29 @@ No mesmo painel **TESTE**, seção **DADOS DO JOGADOR**:
 
 Para simular falha do DataStore: no Studio, selecione o **ServerStorage**, adicione o atributo booleano `DEV_SimulateLoadFailure` marcado e aperte Play. O jogador deve ser expulso com a mensagem de falha, sem perder nada. Apague o atributo depois.
 
+## Testar a comunicação e a voz (F8)
+
+**Uma vez, no place Partida:** depois de atualizar, pare o `rojo serve match.project.json`, rode de novo e clique em **Connect**. O projeto agora grava no place:
+- `VoiceChatService.EnableDefaultVoice = false` e `UseAudioApi = Enabled` (o jogo cria a voz só da dupla);
+- `TextChatService.ChatVersion = TextChatService` e `CreateDefaultTextChannels = false` (sem chat geral na partida).
+
+Confira no Studio (Explorer › VoiceChatService / TextChatService) e **publique o place Partida**. Nas configurações da experiência no site do Roblox, **Comunicação › Voz** precisa estar ligada.
+
+| Onde | O que fazer |
+|---|---|
+| **Ping** — PC **Z** (toque curto = rápido; segurar = roda) ou **botão do meio do mouse**; controle **R3**; celular **PING** (toque / segurar) | só na ilha (preparação e combate). Mira num inimigo = "Inimigo aqui"; senão "Vou para cá". Marcador com ícone, nome e distância, no minimapa e na legenda, só para você e o parceiro |
+| **Frases** — PC **V**; controle **L3**; celular **FRASES** | 6 frases para o parceiro (legenda + balão em cima de quem falou). A roda também tem EMOTES › e ★ ELOGIAR quando valem |
+| **Emotes** — PC **G**; celular **EMOTES** | no mirante e no fim da rodada; andar cancela |
+| **Elogiar** — PC **H** ou botão no fim da rodada; tela final | 1 por rodada e 1 no fim; o parceiro vê "[nome] elogiou você ★" |
+| **Tela final** | JOGAR DE NOVO JUNTOS, ADICIONAR AMIGO, ELOGIAR, DENUNCIAR |
+| **Placar (Tab)** › **DENUNCIAR** | explica a denúncia pelo menu do Roblox e tem BLOQUEAR por jogador |
+
+**Voz e chat só funcionam no jogo publicado**, com contas que têm voz/chat liberados pelo Roblox. Teste dos critérios de aceite (F8):
+1. 4 contas (ou pelo menos 3: 2 de uma dupla e 1 da outra) numa partida. Durante a rodada, a dupla se ouve em qualquer distância; a dupla adversária não ouve nada.
+2. Quem cai continua ouvindo o parceiro. No mirante, todos se ouvem pela distância (perto = alto, longe = nada).
+3. Chat: na ilha, o que você digita aparece só para o parceiro com "[Dupla]"; no mirante, com "[Mirante]" para quem está lá.
+4. Sem voz e sem texto: combinar uma jogada só com pings e frases.
+
 ## Testar a interface final (F7)
 
 Todas as telas usam os componentes de `src/shared/Ui` (peças básicas) e `src/common/client/Ui` (botões, abas, cartões, modal…), com cores do `Theme` e textos do `Strings`.

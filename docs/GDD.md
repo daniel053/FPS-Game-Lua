@@ -804,22 +804,31 @@ O Roblox exige verificação de idade para usar o chat e limita conversas a faix
 ### 12.2 Voz
 
 - Incentivada desde o tutorial (seção 5.2).
-- Durante a rodada, a voz deve ser **só da dupla**, independentemente da distância. Entre rodadas, no mirante, voz por proximidade. `[PROPOSTA]` (usar a API de áudio do Roblox para canal de equipe; viabilidade verificada na F8.)
+- Durante a rodada, a voz é **só da dupla**, independentemente da distância. No mirante, voz por proximidade com todos que estão lá. `[DECIDIDO]` (F8; viável com a API de áudio do Roblox, ver seção 20)
+  - Quem foi derrubado e está espectando o parceiro continua falando e ouvindo **só a dupla** até o fim da rodada. `[DECIDIDO]` (F8)
+  - Quem está no mirante não fala com quem está numa ilha, exceto o próprio parceiro. `[DECIDIDO]` (F8)
+  - Distâncias da proximidade no mirante (volume cheio até 12 studs, nada a partir de 70) em `SocialConfig.Voice`. `[PROPOSTA]`
+- No lobby, a voz é a padrão do Roblox (por proximidade). `[DECIDIDO]` (F8)
 - Quem pode usar voz é decidido pelo Roblox, não pelo jogo.
 
 ### 12.3 Sem voz e sem texto
 
-1. **Pings**: "Inimigo aqui", "Vou para cá", "Cuidado", "Preciso de ajuda". No celular: botão de ping; segurar abre uma roda.
-2. **Frases prontas**: "Boa!", "Valeu!", "Vamos juntos", "Usei minha carta", "Minha ult está pronta", "Joga de novo comigo?".
-3. **Emotes** no mirante e no fim da rodada.
-4. **Chat de texto** do Roblox em canal da dupla, para quem tem permissão.
+1. **Pings**: "Inimigo aqui", "Vou para cá", "Cuidado", "Preciso de ajuda". No celular: botão de ping; segurar abre uma roda. `[DECIDIDO]` (F8)
+   - Só para o parceiro, só de quem está numa ilha de duelo (preparação e combate). Marcador no mundo (ícone, nome e distância), no minimapa e numa legenda. `[DECIDIDO]` (F8)
+   - Ping rápido (toque curto): "Inimigo aqui" se a mira está num inimigo, senão "Vou para cá". O "Inimigo aqui" marca o lugar, não segue o inimigo. `[DECIDIDO]` (F8)
+   - Duração (5 s), alcance (300 studs) e intervalo entre pings em `SocialConfig.Ping`. `[PROPOSTA]`
+   - O nome da zona no ping entra na F10, quando os mapas tiverem zonas nomeadas (seção 15.1).
+2. **Frases prontas**: "Boa!", "Valeu!", "Vamos juntos", "Usei minha carta", "Minha ult está pronta", "Joga de novo comigo?". Para o parceiro, em qualquer momento da partida: legenda e balão em cima de quem falou. `[DECIDIDO]` (F8)
+3. **Emotes** no mirante e no fim da rodada. Na primeira versão, **4 emotes grátis para todos**, com animações padrão do próprio Roblox: Acenar, Apontar, Comemorar e Dançar. Andar cancela o emote. Emotes da loja (até 4 equipados) ficam para a F9. `[DECIDIDO]` (F8)
+4. **Chat de texto** do Roblox em canal da dupla, para quem tem permissão. Na partida **não existe o canal geral**: só o canal da dupla e, para quem está no mirante, o canal do mirante. O que o jogador digita vai para o mirante quando ele está lá e para a dupla na ilha. No lobby, o chat geral continua. `[DECIDIDO]` (F8)
 
 ### 12.4 Fazer amizade
 
 - "Ir para a próxima partida com [nome]?" (seção 4.8).
-- "Adicionar amigo" (pedido nativo do Roblox) na tela de fim.
-- Elogio ao parceiro no fim da rodada. `[PROPOSTA]`
-- Botão de denunciar sempre acessível.
+- "Adicionar amigo" (pedido nativo do Roblox) na tela de fim. Some quando os dois já são amigos. `[DECIDIDO]` (F8)
+- "Jogar de novo juntos": na tela final, é o "sim" da pergunta da seção 4.8. `[DECIDIDO]` (F8)
+- Elogio ao parceiro: **1 no fim de cada rodada e 1 no fim da partida** (botão ELOGIAR e opção na roda de frases). Soma `social.praisesReceived` do parceiro, que recebe o aviso "[nome] elogiou você". Não dá moedas. `[DECIDIDO]` (F8)
+- Botão de denunciar sempre acessível: no placar (Tab) e na tela final. **Só o fluxo do Roblox**: o jogo não guarda denúncias. Como o Roblox não deixa o jogo abrir a denúncia de um jogador, a tela explica o caminho pelo menu do Roblox e oferece **Bloquear** (pedido nativo). `[DECIDIDO]` (F8)
 
 ---
 
@@ -1257,3 +1266,21 @@ Detalhes de implementação decididos durante o desenvolvimento (não são regra
 | **Modelos low poly detalhados das 18 armas e do Bastão** (`Shared/Combat/WeaponModels`, pedido do dono; referências `ref-menus-armas.webp` e `ref-tatico-atirador.webp`; resultado `docs/referencias/resultado-todas-as-armas.jpg`): cada arma montada peça por peça (caixas, cilindros e cunhas, ~30 a 60 peças) com conjuntos comuns — empunhadura, trilho com dentes, freio de boca, fendas, pente curvo ou reto, luneta, mira holográfica, red dot, alças de ferro, coronha AR — e as peças próprias de cada uma (ex.: tambor de revólver, silenciador, coronha dobrável, porta-cartuchos, carregador de tambor, alça de transporte, cano duplo, para-sol e bipé, caixa de munição, 6 canos). Cores no `Theme.WeaponLook` (corpo, escuro, destaque, metal, lente); nenhuma vermelha. Cada modelo diz onde ficam a boca do cano e as mãos; o `WeaponShapes` só monta (mãos na primeira pessoa, Bastão inclinado na mão) e guarda uma forma simples de reserva. **Pentes curvos inclinam a base para a frente e encaixam embaixo do encaixe** (correção pedida no Tático e no Atirador). Vitrines: `WorldPivot` fixo no modelo para a caixa envolvente não herdar o giro da primeira peça. Arte final continua na F10. | Diferenciar as armas e mostrar o nível possível com peças do Roblox. |
 | **Símbolos nos textos:** só caracteres que a fonte do Roblox desenha (testado no Studio): ◆ ★ ☀ ● ◉ ◎ ▲ ▼ ⏱ ✓ ‹ › ∞ ♥ ♡ ⇄ − e os emojis 🔒 👑 🔄. Coroa da Lendária = 👑; recarga e GIRAR = 🔄. | ♛, ⟳, ⇡, ⇣, ◷ e ✕ apareciam como quadradinho. |
 | Testes automáticos novos (`Interface.spec`): layout dos botões (padrão, salvo, escala, validação), contraste de 4,5:1, nenhum vermelho fora de perigo/inimigo, raridade com nome e ícone, alvos de toque mínimos e modal nunca opaco. | Checklist do ESTILO 6 no que dá para testar sem tela. |
+
+### F8 · Social e voz
+
+| Decisão | Por quê |
+|---|---|
+| **Voz pela API de áudio, com a voz padrão desligada na Partida** (`match.project.json`: `VoiceChatService.EnableDefaultVoice = false`, `UseAudioApi = Enabled`). O servidor (`VoiceService`) cria o microfone de cada jogador (`AudioDeviceInput` "TeamVoice" no Player) com `AccessType = Allow` e a lista de quem pode ouvir (`SetUserIdAccessList`), refeita quando muda a dupla ou o lugar (`MatchLocation`) e a cada 1 s. O cliente (`VoiceRouter`) só escolhe o caminho: parceiro ligado direto num `AudioDeviceOutput` (sem distância); no mirante, `AudioEmitter` no personagem de quem fala + `AudioListener` na câmera. Tudo passa por um `AudioFader` com o volume master × voz das configurações. | GDD 12.2. A lista de acesso fica no servidor: a voz da dupla não chega à adversária nem a um cliente modificado. Testado no Studio que um plugin (o Rojo) consegue gravar essas propriedades. |
+| **Regra da voz pura** (`Shared/Social/SocialRules.voiceMode`): os dois no mirante → proximidade; mesma dupla, fora disso → direto; o resto → ninguém ouve. Se a voz padrão continuar ligada no place por engano, o servidor aplica a lista de acesso também no microfone que o Roblox cria (scripts do jogo não conseguem ler `EnableDefaultVoice`, então não há aviso). | Testável sem servidor (`SocialRules.spec`). |
+| **Chat por canais** (`ChatChannels` no servidor): `TextChatService.CreateDefaultTextChannels = false` na Partida; um `TextChannel` por dupla (`Dupla_<cor>`) e um `Mirante`, com `AddUserAsync` e a `TextSource` apagada ao sair. O cliente (`ChatTarget`) aponta a barra do chat para o mirante (lá) ou para a dupla (na ilha) e põe "[Dupla]" / "[Mirante]" na frente das mensagens. Jogadores de teste do Studio (UserId negativo) ficam fora dos canais. | GDD 12.3: só a dupla, para quem o Roblox deixa usar o chat. |
+| **Pings, frases, emotes e elogio** pelo `SocialService` (remotes `SocialRequest`/`SocialEvent`, tipos em `Shared/Social/SocialTypes`). O servidor confere tipo, lugar (ping só na ilha; emote no mirante e no fim da rodada), alcance do ping (300 + 12 studs do personagem), intervalo de cada tipo e o limite geral (15 pedidos a cada 5 s). Ping e frase vão só para quem fez e o parceiro. O emote é tocado pelo servidor no `Animator` (todos veem) e para quando o jogador anda, muda de lugar ou passa de 8 s. | CLAUDE.md: o servidor é a autoridade; o cliente só pede e mostra. |
+| **Rodas** (`SocialWheel`): opções em volta do centro, com botões que liberam o mouse. PC: segurar a tecla abre e soltar escolhe a opção sob o mouse; toque curto em V/G deixa a roda aberta. Celular: segurar o botão abre, tocar escolhe, tocar fora fecha. Controle: segurar abre com a primeira opção selecionada, A escolhe, B fecha. A roda de frases também leva aos emotes e ao elogio quando valem (assim o controle chega a tudo com R3 e L3). | GDD 13.3 e ESTILO 3: tudo no toque, teclado e controle. |
+| **Atalhos** (`UiConfig.Keys`): Z ping (toque curto = rápido, segurar = roda), botão do meio do mouse = ping rápido, V frases, G emotes, H elogiar; controle R3 ping, L3 frases. Dicas fixas numa segunda linha acima de [B] [P] [Tab], só na Partida. | Teclas livres no jogo e no Roblox; ESC nunca. |
+| **Botões de toque PING, FRASES e EMOTES** no editor de botões (`TouchLayout.ButtonIds`), por padrão numa linha no canto superior esquerdo, embaixo do PLACAR (`SocialConfig.Touch`). PING só aparece na ilha; EMOTES só quando vale. | GDD 13.1: o layout é do jogador. |
+| **Marcador do ping:** `BillboardGui` por cima de tudo, num `Attachment` no Terrain, com ícone, nome curto e distância em metros (1 stud ≈ 0,28 m); no minimapa, o ícone na cor do ping (`Minimap.addPing`). "Inimigo aqui" usa a cor de contorno de inimigo escolhida pelo jogador; "Cuidado" é laranja, não vermelho. No máximo 2 marcadores por jogador; somem fora da preparação e do combate. | ESTILO 5: nunca só a cor. |
+| **Tela final:** linha ADICIONAR AMIGO (`SetCore "PromptSendFriendRequest"`, some como "JÁ SÃO AMIGOS" pelo `IsFriendsWith`), ELOGIAR e DENUNCIAR, também na tela de dupla eliminada. O SIM da pergunta do fim virou "JOGAR DE NOVO JUNTOS". | GDD 12.4. |
+| **Denunciar** (`ReportPanel`, pelo placar e pela tela final): o `SetCore` do Roblox não tem a denúncia ("PromptReportAbuse" não existe; testado no Studio), então a tela explica o caminho pelo menu do Roblox e tem BLOQUEAR por jogador (`SetCore "PromptBlockPlayer"`). O botão DENUNCIAR do placar libera o mouse enquanto o placar está aberto (no PC, segurando Tab, a câmera para de girar). | GDD 12.4 e decisão do dono: só o fluxo do Roblox. |
+| **Parceiros recentes:** quando a dupla se forma na partida (`TeamService.onChanged`), os dois entram no `social.recentPartners` um do outro (`ProfileRules.addRecentPartner`: 10, mais recente primeiro, sem repetir). Elogio: `ProfileRules.addPraise`. | DADOS 3 e 4. |
+| **Sons provisórios** de ping e de frase do parceiro em `AudioConfig` (estalo curto). | Sons finais na F10. |
+| **Boot do cliente espera a pasta `Place`** (até 10 s) antes de carregar os módulos. Num place gerado do zero, o Roblox copiou `Place` para o jogador depois de o Boot rodar, e as telas da Partida não abriam. | Achado nos testes da F8; os 3 places têm a pasta `Place`. |

@@ -5,13 +5,17 @@
 --   * "Ir para a próxima partida com [nome]?" (SIM / NÃO), quando os dois querem nova partida e no
 --     fim da partida para todos com parceiro;
 --   * fim da partida: colocação, contagem para voltar ao lobby e NOVA PARTIDA. Quem disse "sim" dos
---     dois lados volta como dupla fixa e entra direto na fila.
+--     dois lados volta como dupla fixa e entra direto na fila. No fim, o "sim" se chama
+--     "JOGAR DE NOVO JUNTOS" (F8);
+--   * linha social (F8, GDD 12.4): ADICIONAR AMIGO (pedido nativo do Roblox), ELOGIAR o parceiro e
+--     DENUNCIAR (ReportPanel).
 -- Fundo escurecido, nunca preto opaco; o mouse fica livre enquanto a tela está aberta (PC).
 
 local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local StarterGui = game:GetService("StarterGui")
 
 local Shared = ReplicatedStorage.Shared
 local MatchTypes = require(Shared.Match.MatchTypes)
@@ -21,9 +25,13 @@ local Theme = require(Shared.Config.Theme)
 local InputDevice = require(script.Parent.Parent.Common.InputDevice)
 local Widgets = require(script.Parent.Parent.Common.Ui.Widgets)
 local MatchClient = require(script.Parent.MatchClient)
+local ReportPanel = require(script.Parent.ReportPanel)
+local SocialClient = require(script.Parent.SocialClient)
 local MatchUi = require(Shared.Ui.Ui)
+local SocialRules = require(Shared.Social.SocialRules)
 
 local S = Strings.Match
+local SS = Strings.Social
 local NOTICE_SECONDS = 4
 
 local EndScreen = {}
@@ -44,6 +52,19 @@ local onSecondary: (() -> ())? = nil
 local countdownEndsAt: number? = nil
 local countdownFormat: string? = nil
 
+-- Linha social (F8)
+local socialRow: Frame
+local friendButton: Widgets.Button
+local praiseButton: Widgets.Button
+local reportButton: Widgets.Button
+local socialShown = false
+local friendState: { [number]: "checking" | "no" | "friends" | "sent" } = {}
+
+local function phaseNow(): string?
+	local snapshot = MatchClient.get()
+	return if snapshot then snapshot.phase else nil
+end
+
 local function show(title: string, body: string, primary: string?, secondary: string?)
 	titleText.Text = title
 	bodyText.Text = body
@@ -60,8 +81,49 @@ local function show(title: string, body: string, primary: string?, secondary: st
 	end
 end
 
+-- Linha social (F8, GDD 12.4): ADICIONAR AMIGO e ELOGIAR o parceiro, DENUNCIAR sempre.
+local function refreshSocial()
+	local partner = MatchClient.partnerPlayer()
+	socialRow.Visible = panel.Visible and socialShown
+	friendButton.root.Visible = partner ~= nil
+	praiseButton.root.Visible = partner ~= nil and SocialRules.praiseKey(phaseNow(), 0) ~= nil
+	if partner == nil then
+		return
+	end
+	if friendState[partner.UserId] == "sent" then
+		friendButton.setText(SS.FriendSent)
+		friendButton.setEnabled(false)
+	elseif friendState[partner.UserId] == "friends" then
+		friendButton.setText(SS.AlreadyFriends)
+		friendButton.setEnabled(false)
+	else
+		friendButton.setText(SS.AddFriend)
+		friendButton.setEnabled(true)
+		if friendState[partner.UserId] == nil then
+			friendState[partner.UserId] = "checking"
+			local userId = partner.UserId
+			task.spawn(function()
+				local ok, isFriend = pcall(function()
+					return player:IsFriendsWith(userId)
+				end)
+				friendState[userId] = if ok and isFriend then "friends" else "no"
+				refreshSocial()
+			end)
+		end
+	end
+	local canPraise = SocialClient.canPraise()
+	praiseButton.setText(if canPraise then SS.PraiseShort else SS.PraiseDone)
+	praiseButton.setEnabled(canPraise)
+end
+
+local function setSocial(shown: boolean)
+	socialShown = shown
+	refreshSocial()
+end
+
 local function hide()
 	panel.Visible = false
+	setSocial(false)
 	onPrimary, onSecondary = nil, nil
 	countdownEndsAt = nil
 	countdownFormat = nil
@@ -77,6 +139,7 @@ end
 
 local function showEliminated()
 	show(S.EliminatedTitle, "", S.Watch, S.NewMatch)
+	setSocial(true)
 	onPrimary = function()
 		MatchClient.request("Watch")
 		hide()
@@ -92,7 +155,8 @@ local function showPartnerQuestion(data: { partnerName: string })
 	show(
 		if panel.Visible and previousTitle ~= "" then previousTitle else S.EndTitle,
 		string.format(S.PartnerQuestion, data.partnerName),
-		S.Yes,
+		-- No fim da partida, o "sim" é o botão "Jogar de novo juntos" (GDD 12.4)
+		if phaseNow() == "EndScreen" then SS.PlayAgainTogether else S.Yes,
 		S.No
 	)
 	local function answer(yes: boolean)
@@ -131,6 +195,49 @@ local function showEnd(data: MatchTypes.EndScreenData)
 		bodyText.Text = S.GoingToLobby
 		primaryButton.root.Visible = false
 	end
+	setSocial(true)
+end
+
+local function buildSocial(content: Frame)
+	socialRow = MatchUi.frame("Social", content)
+	socialRow.AnchorPoint = Vector2.new(0.5, 1)
+	socialRow.Position = UDim2.new(0.5, 0, 1, -(Theme.PrimaryButtonMinHeight + Theme.Space.Small))
+	socialRow.Size = UDim2.new(1, 0, 0, Theme.Touch.MinTarget)
+	socialRow.Visible = false
+	local layout = MatchUi.list(socialRow, Enum.FillDirection.Horizontal, Theme.Touch.ButtonGap)
+	layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	local function small(text: string, order: number): Widgets.Button
+		local b = Widgets.button(socialRow, text, "secondary", {
+			size = UDim2.new(1 / 3, -8, 1, 0),
+			textSize = Theme.TextSize.Label,
+			arrow = false,
+			order = order,
+			modal = true,
+		})
+		return b
+	end
+	friendButton = small(SS.AddFriend, 1)
+	friendButton.onClick(function()
+		local partner = MatchClient.partnerPlayer()
+		if partner == nil then
+			return
+		end
+		local ok = pcall(function()
+			StarterGui:SetCore("PromptSendFriendRequest", partner)
+		end)
+		if ok then
+			friendState[partner.UserId] = "sent"
+		end
+		refreshSocial()
+	end)
+	praiseButton = small(SS.PraiseShort, 2)
+	praiseButton.onClick(function()
+		SocialClient.praise()
+		refreshSocial()
+	end)
+	reportButton = small(SS.Report, 3)
+	reportButton.onClick(ReportPanel.open)
+	SocialClient.onPraiseChanged(refreshSocial)
 end
 
 local function build()
@@ -140,9 +247,9 @@ local function build()
 	panel, content = MatchUi.panel("Panel", gui, 18)
 	panel.AnchorPoint = Vector2.new(0.5, 0.5)
 	panel.Position = UDim2.fromScale(0.5, 0.55)
-	panel.Size = UDim2.fromOffset(480, 240)
+	panel.Size = UDim2.fromOffset(480, 300)
 	panel.Visible = false
-	MatchUi.sizeLimit(panel, nil, Vector2.new(480, 260))
+	MatchUi.sizeLimit(panel, nil, Vector2.new(480, 320))
 
 	titleText = MatchUi.label("Title", Theme.Font.Title, Theme.TextSize.Title, Theme.Color.TextPrimary, content)
 	titleText.Size = UDim2.new(1, 0, 0, 30)
@@ -179,6 +286,7 @@ local function build()
 			onSecondary()
 		end
 	end)
+	buildSocial(content)
 
 	noticeText = MatchUi.label("Notice", Theme.Font.BodyStrong, Theme.TextSize.Body, Theme.Color.TextPrimary, gui)
 	noticeText.AnchorPoint = Vector2.new(0.5, 1)

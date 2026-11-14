@@ -5,7 +5,8 @@
 --   * a zona (círculo roxo) quando começa a fechar;
 --   * você (seta na direção da câmera), o parceiro (ponto verde) e os inimigos só quando vistos
 --     (contorno ligado), que continuam por um instante depois de sumir.
--- Sem neon. Pings (F8) entram aqui depois.
+--   * os pings da dupla (F8): ícone na cor do ping, até expirar (Minimap.addPing).
+-- Sem neon.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -44,6 +45,8 @@ local enemyDots: { [Model]: Frame } = {}
 local enemySeenAt: { [Model]: number } = {}
 local drawnIsland: number? = nil
 local lastRefresh = 0
+type PingDot = { label: TextLabel, island: number, position: Vector3, expiresAt: number }
+local pingDots: { [string]: PingDot } = {}
 
 local function islandExtent(): Vector2
 	return MapConfig.Gray.IslandSize
@@ -128,6 +131,48 @@ local function place(f: GuiObject, island: number, position: Vector3)
 	f.Position = UDim2.fromScale(p.X, p.Y)
 end
 
+-- Pings (F8): marcador com o ícone do ping (nunca só a cor), na ilha onde foi feito.
+function Minimap.addPing(key: string, island: number, position: Vector3, icon: string, color: Color3, expiresAt: number)
+	if not map then
+		return -- minimapa ainda não montado
+	end
+	local existing = pingDots[key]
+	if existing then
+		existing.label:Destroy()
+	end
+	local size = Theme.PingMinimapDot + 4
+	local label = Ui.label("Ping", Theme.Font.Title, size, color, map)
+	label.AnchorPoint = Vector2.new(0.5, 0.5)
+	label.Size = UDim2.fromOffset(size, size)
+	label.Text = icon
+	label.ZIndex = 7
+	Ui.outlineText(label)
+	pingDots[key] = { label = label, island = island, position = position, expiresAt = expiresAt }
+end
+
+function Minimap.removePing(key: string)
+	local existing = pingDots[key]
+	if existing then
+		existing.label:Destroy()
+		pingDots[key] = nil
+	end
+end
+
+local function updatePings(island: number)
+	local now = workspace:GetServerTimeNow()
+	for key, ping in pingDots do
+		if now >= ping.expiresAt then
+			Minimap.removePing(key)
+			continue
+		end
+		ping.label.Visible = ping.island == island
+		if ping.island == island then
+			local p = toMap(island, ping.position)
+			ping.label.Position = UDim2.fromScale(p.X, p.Y)
+		end
+	end
+end
+
 local function update()
 	local island = MatchClient.myIsland()
 	local character = player.Character
@@ -135,6 +180,7 @@ local function update()
 	if island == nil then
 		return
 	end
+	updatePings(island)
 	if drawnIsland ~= island then
 		drawIsland(island)
 	end

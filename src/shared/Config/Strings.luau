@@ -251,7 +251,73 @@ local Strings = {
 			E = "E",
 			C = "C",
 			X = "X",
+			Ping = "PING",
+			Phrase = "FRASES",
+			Emote = "EMOTES",
 		} :: { [string]: string },
+	},
+
+	-- Comunicação (GDD 12, F8): pings, frases prontas, emotes, elogio, voz, chat e amizade
+	Social = {
+		Pings = {
+			Enemy = { label = "Inimigo aqui", short = "INIMIGO", icon = "◉" },
+			Going = { label = "Vou para cá", short = "VOU AQUI", icon = "▼" },
+			Danger = { label = "Cuidado", short = "CUIDADO", icon = "▲" },
+			Help = { label = "Preciso de ajuda", short = "AJUDA", icon = "+" },
+		} :: { [string]: { label: string, short: string, icon: string } },
+		Phrases = {
+			Nice = "Boa!",
+			Thanks = "Valeu!",
+			Together = "Vamos juntos",
+			UsedCard = "Usei minha carta",
+			UltReady = "Minha ult está pronta",
+			PlayAgain = "Joga de novo comigo?",
+		} :: { [string]: string },
+		Emotes = {
+			Wave = "Acenar",
+			Point = "Apontar",
+			Cheer = "Comemorar",
+			Dance = "Dançar",
+		} :: { [string]: string },
+		-- Legendas
+		PingCaption = "%s: %s", -- "Ana: Inimigo aqui"
+		PhraseCaption = "%s: %s",
+		You = "Você",
+		Meters = "%d m",
+		EmoteCaption = "Você: %s",
+		PingNoTarget = "Mire em algum lugar para marcar",
+		-- Rodas
+		PingWheel = "PING",
+		PhraseWheel = "FRASES",
+		EmoteWheel = "EMOTES",
+		ToEmotes = "EMOTES ›",
+		PraiseOption = "★ ELOGIAR PARCEIRO",
+		Close = "FECHAR",
+		-- Dicas fixas do PC (GDD 13.3)
+		PingHint = "Ping",
+		PhraseHint = "Frases",
+		EmoteHint = "Emotes",
+		-- Elogio (GDD 12.4)
+		Praise = "ELOGIAR %s",
+		PraiseShort = "ELOGIAR",
+		PraiseSent = "Você elogiou %s ★",
+		Praised = "%s elogiou você ★",
+		PraiseDone = "ELOGIADO ★",
+		-- Fim da partida (GDD 4.8 e 12.4)
+		PlayAgainTogether = "JOGAR DE NOVO JUNTOS",
+		AddFriend = "ADICIONAR AMIGO",
+		FriendSent = "PEDIDO ENVIADO",
+		AlreadyFriends = "JÁ SÃO AMIGOS",
+		Report = "DENUNCIAR",
+		-- Denunciar (sempre acessível: placar e tela final)
+		ReportTitle = "DENUNCIAR OU BLOQUEAR",
+		ReportHelp = "Para denunciar, abra o menu do Roblox (botão no canto de cima) e toque em Denunciar. "
+			.. "A denúncia vai direto para a equipe do Roblox.\nVocê também pode bloquear um jogador aqui:",
+		Block = "BLOQUEAR",
+		NoOneToReport = "Não há outros jogadores nesta partida.",
+		-- Chat de texto (canais da partida)
+		ChatDuo = "[Dupla]",
+		ChatMirante = "[Mirante]",
 	},
 
 	-- Placar da partida (Tab no PC; botão no topo no celular). Substitui a lista de jogadores do Roblox.

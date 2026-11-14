@@ -326,7 +326,9 @@ posicionado no canto inferior esquerdo, logo acima das barras de escudo e vida, 
 Elementos:
 - **Topo centro:** as duas duplas (2 avatares de cada lado, com a cor da equipe), vidas de cada dupla em corações, tempo da rodada no meio. Na Rodada da Virada, o tempo ganha um selo "VIRADA".
 - **Topo direito:** minimapa redondo com o mapa da ilha atual, a posição do jogador e do parceiro (inimigos só aparecem quando vistos ou marcados por ping).
-- **Topo esquerdo (celular):** engrenagem de configurações.
+- **Topo esquerdo (celular):** engrenagem de configurações, botão PLACAR e, embaixo, a linha **PING · FRASES · EMOTES** (F8; PING só na ilha, EMOTES só no mirante e no fim da rodada; posição editável). `[DECIDIDO]`
+- **PC (F8):** uma segunda linha de dicas acima de [B] [P] [Tab]: **[Z] Ping · [V] Frases · [G] Emotes**. `[DECIDIDO]`
+- **Pings no mundo (F8):** ícone + nome curto + distância, sempre por cima, na cor do ping ("Inimigo aqui" na cor de contorno do inimigo escolhida pelo jogador). Rodas de ping, frases e emotes: opções em volta do centro, sem fundo opaco. `[DECIDIDO]`
 - **Centro:** retícula configurada pelo jogador.
 - **Baixo esquerdo:** escudo (`shield`) e vida (`hp`) em barras com o número ao lado.
 - **Baixo centro:** as cartas com a tecla embaixo de cada uma (chip). Carta em recarga mostra o tempo restante sobre o ícone; ult travada mostra cadeado até a 4ª rodada.

@@ -28,6 +28,7 @@ local InputDevice = require(script.Parent.Parent.Common.InputDevice)
 local Avatars = require(script.Parent.Parent.Common.Ui.Avatars)
 local Widgets = require(script.Parent.Parent.Common.Ui.Widgets)
 local MatchClient = require(script.Parent.MatchClient)
+local ReportPanel = require(script.Parent.ReportPanel)
 
 local S = Strings.Scoreboard
 local M = Strings.Match
@@ -218,10 +219,25 @@ local function build()
 	title.Size = UDim2.new(0.6, 0, 0, 28)
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.Text = S.Title
+	-- Denunciar sempre acessível (GDD 12.4, F8). No PC o botão libera o mouse enquanto o placar está aberto.
+	local report = Widgets.button(content, Strings.Social.Report, "secondary", {
+		size = UDim2.fromOffset(120, 28),
+		textSize = Theme.TextSize.Label,
+		arrow = false,
+		modal = true,
+	})
+	report.root.AnchorPoint = Vector2.new(1, 0)
+	report.root.Position = UDim2.fromScale(1, 0)
+	report.onClick(function()
+		if UiConfig.Scoreboard.HoldToShow and InputDevice.get() ~= "Touch" then
+			setShown(false)
+		end
+		ReportPanel.open()
+	end)
 	roundLabel = Ui.label("Round", Theme.Font.BodyStrong, Theme.TextSize.Body, Theme.Color.TextSecondary, content)
 	roundLabel.AnchorPoint = Vector2.new(1, 0)
-	roundLabel.Position = UDim2.fromScale(1, 0)
-	roundLabel.Size = UDim2.new(0.4, 0, 0, 28)
+	roundLabel.Position = UDim2.new(1, -132, 0, 0)
+	roundLabel.Size = UDim2.new(0.4, -132, 0, 28)
 	roundLabel.TextXAlignment = Enum.TextXAlignment.Right
 
 	list = Ui.scroll("List", Enum.ScrollingDirection.Y, content)

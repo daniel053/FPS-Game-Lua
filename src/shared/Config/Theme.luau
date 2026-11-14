@@ -276,6 +276,20 @@ local Theme = {
 	},
 	MinimapBackgroundTransparency = 0.15,
 
+	-- Comunicação (F8). Cada ping tem ícone e nome escritos (nunca só a cor, ESTILO 5).
+	-- "Inimigo aqui" usa a cor do contorno do inimigo escolhida pelo jogador (EnemyOutline).
+	Social = {
+		PingGoing = hex("#4ADE80"), -- verde do aliado
+		PingDanger = hex("#FFB020"), -- laranja de aviso (não é vermelho)
+		PingHelp = hex("#4FA8FF"),
+		PhraseBubble = hex("#141A2E"),
+		PhraseText = hex("#FFFFFF"),
+		Praise = hex("#F5B700"),
+	},
+	SocialBubbleTransparency = 0.15,
+	PingMarkerSize = 34, -- marcador no mundo (px, tamanho fixo na tela)
+	PingMinimapDot = 10,
+
 	-- Placar (Tab): linha da minha dupla com fundo do acento bem leve
 	ScoreboardMineTransparency = 0.75,
 

@@ -33,6 +33,8 @@ export type EventName =
 	| "DevQueueResult" -- servidor -> cliente: (sucesso: boolean, chaveDaMensagem: string, detalhe: string?) — só em DEV_
 	| "TutorialState" -- servidor -> cliente: (foto: Tutorial/TutorialTypes.Snapshot)
 	| "TutorialRequest" -- cliente -> servidor: (pedido: Tutorial/TutorialTypes.RequestName)
+	| "SocialRequest" -- cliente -> servidor: (tipo, argumento) — ver Social/SocialTypes (F8)
+	| "SocialEvent" -- servidor -> cliente: (tipo, dados) — ver Social/SocialTypes (F8)
 
 -- Eventos sem garantia de entrega (efeitos visuais frequentes; perder um não muda o jogo).
 export type UnreliableEventName =

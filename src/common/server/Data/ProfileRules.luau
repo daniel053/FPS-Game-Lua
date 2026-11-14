@@ -14,6 +14,7 @@ local Shared = ReplicatedStorage.Shared
 local CardConfig = require(Shared.Config.CardConfig)
 local DataConfig = require(Shared.Config.DataConfig)
 local ShopCatalog = require(Shared.Config.ShopCatalog)
+local SocialConfig = require(Shared.Config.SocialConfig)
 local WeaponConfig = require(Shared.Config.WeaponConfig)
 local PlayerData = require(Shared.Types.PlayerData)
 
@@ -197,6 +198,13 @@ function ProfileRules.addRecentPartner(profile: Profile, userId: number, now: nu
 	while #list > DataConfig.MaxRecentPartners do
 		table.remove(list)
 	end
+	return true, nil
+end
+
+-- Elogio recebido do parceiro (GDD 12.4): só soma, com teto.
+function ProfileRules.addPraise(profile: Profile): (boolean, string?)
+	local social = profile.social
+	social.praisesReceived = math.min(social.praisesReceived + 1, SocialConfig.Praise.MaxReceived)
 	return true, nil
 end
 

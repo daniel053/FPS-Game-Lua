@@ -126,6 +126,18 @@ local function buildHints(parent: Instance)
 	if place and place:FindFirstChild("Scoreboard") then
 		Widgets.hint(hints, KEYS.Scoreboard, KEYS.ScoreboardPad, Strings.Scoreboard.Hint).LayoutOrder = 3
 	end
+	-- Comunicação (F8, só na Partida): uma linha acima
+	if place and place:FindFirstChild("SocialClient") then
+		local social = frame("SocialHints", parent)
+		social.AnchorPoint = Vector2.new(0, 1)
+		social.Position = hints.Position - UDim2.fromOffset(0, 26)
+		social.Size = hints.Size
+		local row = Ui.list(social, Enum.FillDirection.Horizontal, HUD.HintKeyGap)
+		row.VerticalAlignment = Enum.VerticalAlignment.Center
+		Widgets.hint(social, KEYS.Ping, KEYS.PingPad, Strings.Social.PingHint).LayoutOrder = 1
+		Widgets.hint(social, KEYS.Phrase, KEYS.PhrasePad, Strings.Social.PhraseHint).LayoutOrder = 2
+		Widgets.hint(social, KEYS.Emote, nil, Strings.Social.EmoteHint).LayoutOrder = 3
+	end
 end
 
 local function buildHealth()
