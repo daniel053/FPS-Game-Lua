@@ -256,14 +256,14 @@ Proibido em todo o resto: fundos, textos, ícones, barras, botões comuns, HUD.
 **Função:** descrever como o mundo da partida é montado. Regras: GDD seções 6.5 e 15.
 
 ```
-            [PRAÇA]                [TORRE]
-                  \                /
-                   ( MIRANTE CENTRAL )   ← mais alto, chão plano
-                  /                \
-          [FÁBRICA]                [PORTO]
+                       [PORTO]
+                          |
+          [TORRE] —— ( MIRANTE ) —— [FÁBRICA]     ← mais alto, octógono, piso de vidro
+                          |
+                       [PRAÇA]
 ```
 
-- **Mirante:** ilha central, **plana, sem torre, sem prédio no meio**. Está acima das outras. Bordas com barreira invisível.
+- **Mirante:** ilha central, **plana, sem torre, sem prédio no meio**, em **octógono** com um lado para cada ilha. Está acima das outras. Bordas com barreira invisível. **Piso levemente transparente** (vidro claro, com grade e aro opacos): quem está no mirante vê os duelos olhando para baixo, sem precisar ir até a borda. `[DECIDIDO]` (F10)
 - De cada borda do mirante se vê, olhando para baixo, uma ilha de duelo.
 - **Ilhas de duelo:** 4 temas bem diferentes (Praça, Fábrica, Porto, Torre). Cada uma com paleta própria, mas todas no mesmo estilo low poly cartoon.
 - Ilhas e mirante cercados por céu claro e nuvens baixas; nada de fundo escuro ou espacial.

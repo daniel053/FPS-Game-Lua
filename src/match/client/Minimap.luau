@@ -15,12 +15,12 @@ local RunService = game:GetService("RunService")
 local Shared = ReplicatedStorage.Shared
 local CombatNames = require(Shared.Combat.CombatNames)
 local CombatConfig = require(Shared.Config.CombatConfig)
-local MapConfig = require(Shared.Config.MapConfig)
 local MatchTypes = require(Shared.Match.MatchTypes)
 local MatchConfig = require(Shared.Config.MatchConfig)
 local Theme = require(Shared.Config.Theme)
 local Ui = require(Shared.Ui.Ui)
 local UiConfig = require(Shared.Config.UiConfig)
+local WorldBuilder = require(Shared.Maps.WorldBuilder)
 local WorldLayout = require(Shared.Match.WorldLayout)
 
 local PlayerDataClient = require(script.Parent.Parent.Common.PlayerDataClient)
@@ -29,7 +29,7 @@ local MatchClient = require(script.Parent.MatchClient)
 
 local CFG = UiConfig.Minimap
 local COLORS = Theme.Minimap
-local WORLD_FOLDER = "MatchWorld"
+local WORLD_FOLDER = WorldBuilder.FolderName
 
 local Minimap = {}
 
@@ -48,14 +48,14 @@ local lastRefresh = 0
 type PingDot = { label: TextLabel, island: number, position: Vector3, expiresAt: number }
 local pingDots: { [string]: PingDot } = {}
 
-local function islandExtent(): Vector2
-	return MapConfig.Gray.IslandSize
+local function islandExtent(island: number): Vector2
+	return WorldLayout.islandExtent(island)
 end
 
 -- Posição no mapa (0 a 1) de um ponto do mundo, para a ilha atual.
 local function toMap(island: number, position: Vector3): Vector2
 	local center = WorldLayout.islandCenter(island)
-	local size = islandExtent()
+	local size = islandExtent(island)
 	local span = math.max(size.X, size.Y) * (1 + 2 * CFG.Padding)
 	return Vector2.new(0.5 + (position.X - center.X) / span, 0.5 + (position.Z - center.Z) / span)
 end
@@ -81,17 +81,8 @@ local function drawIsland(island: number)
 	end
 	drawnIsland = island
 	local center = WorldLayout.islandCenter(island)
-	local size = islandExtent()
+	local size = islandExtent(island)
 	local span = math.max(size.X, size.Y) * (1 + 2 * CFG.Padding)
-
-	local ground = Ui.frame("Ground", map)
-	ground:SetAttribute("Static", true)
-	ground.AnchorPoint = Vector2.new(0.5, 0.5)
-	ground.Position = UDim2.fromScale(0.5, 0.5)
-	ground.Size = UDim2.fromScale(size.X / span, size.Y / span)
-	ground.BackgroundTransparency = 0
-	ground.BackgroundColor3 = COLORS.Island
-	Ui.corner(ground, 4)
 
 	local world = workspace:FindFirstChild(WORLD_FOLDER)
 	local folder = world and world:FindFirstChild(`Island{island}`)
@@ -102,11 +93,17 @@ local function drawIsland(island: number)
 		if not part:IsA("BasePart") or part.Transparency >= 0.9 then
 			continue
 		end
+		-- Chão (área de duelo e bases) embaixo; construções acima do chão por cima. Peças rasas e a
+		-- rocha de baixo da ilha ficam de fora.
+		local ground = part:GetAttribute(WorldBuilder.GroundAttribute) == true
 		local top = part.Position.Y + part.Size.Y / 2
-		if top < center.Y + 1 or part.Size.X >= size.X * 0.9 then
-			continue -- chão e peças rasas
+		if not ground and top < center.Y + 1 then
+			continue
 		end
-		local rect = Ui.frame("Block", map)
+		if ground and not part:IsA("Part") then
+			continue -- triângulos de chão (chanfros): desenho próprio quando cada mapa for ligado
+		end
+		local rect = Ui.frame(if ground then "Ground" else "Block", map)
 		rect:SetAttribute("Static", true)
 		rect.AnchorPoint = Vector2.new(0.5, 0.5)
 		local p = toMap(island, part.Position)
@@ -115,8 +112,8 @@ local function drawIsland(island: number)
 		rect.Rotation = -math.deg(yaw)
 		rect.Size = UDim2.fromScale(part.Size.X / span, part.Size.Z / span)
 		rect.BackgroundTransparency = 0
-		rect.BackgroundColor3 = COLORS.Cover
-		rect.ZIndex = 2
+		rect.BackgroundColor3 = if ground then COLORS.Island else COLORS.Cover
+		rect.ZIndex = if ground then 1 else 2
 	end
 end
 
@@ -213,7 +210,7 @@ local function update()
 	if started then
 		local elapsed = workspace:GetServerTimeNow() - started
 		local radius = WorldLayout.zoneRadius(elapsed)
-		local size = islandExtent()
+		local size = islandExtent(island)
 		local span = math.max(size.X, size.Y) * (1 + 2 * CFG.Padding)
 		zoneRing.Visible = elapsed >= MatchConfig.Zone.StartsAt
 		zoneRing.Size = UDim2.fromScale(2 * radius / span, 2 * radius / span)

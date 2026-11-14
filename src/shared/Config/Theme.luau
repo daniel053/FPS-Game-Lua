@@ -116,6 +116,15 @@ local Theme = {
 	Match = {
 		MiranteFloor = hex("#C9CCD4"),
 		MiranteEdge = hex("#9AA0AE"),
+		-- Mirante octogonal (F10): piso de vidro claro meio azulado, grade e aro escuros
+		MiranteGlass = hex("#B9D6EC"),
+		MiranteFrame = hex("#7E8AA3"),
+		-- Céu (ESTILO T4: céu claro, nuvens baixas, nada escuro)
+		Cloud = hex("#F4F7FB"),
+		CloudShade = hex("#E2E9F3"),
+		CloudSea = hex("#DDE7F2"),
+		SkyAtmosphere = hex("#C8DDF0"),
+		SkyDecay = hex("#9FB7D4"),
 		IslandFloor = hex("#B9BBC2"),
 		IslandRail = hex("#8E929E"),
 		IslandCover = hex("#A3A7B2"),
@@ -130,6 +139,61 @@ local Theme = {
 		LifeLost = hex("#5A6280"),
 	},
 	ZoneTransparency = 0.82,
+
+	-- Paletas dos mapas (KIT-MODULAR, F10). Cenário menos saturado que os personagens; nunca vermelho
+	-- puro (cor do inimigo) e nunca neon.
+	Maps = {
+		Praca = {
+			Reboco = hex("#EFE3CF"),
+			Tijolo = hex("#C08A6A"),
+			Telha = hex("#C47A52"),
+			Folhas = hex("#4F9A62"),
+			Grama = hex("#8FCF8A"),
+			Porta = hex("#4F7FB8"),
+			Pedra = hex("#B9B2A6"),
+			ToldoCreme = hex("#F4EAD2"),
+			ToldoPetroleo = hex("#3C8C8C"),
+			Agua = hex("#4FA3C7"),
+			Madeira = hex("#B98A5A"), -- caixas de madeira (mesma madeira do kit do Porto)
+		},
+		Porto = {
+			Chapa = hex("#6F8FA6"),
+			Ferrugem = hex("#B5652E"),
+			FerrugemEscura = hex("#8A4A24"),
+			Concreto = hex("#B9B2A6"),
+			Metal = hex("#4A5368"),
+			Madeira = hex("#B98A5A"),
+			Agua = hex("#4FA3C7"),
+			Aviso = hex("#F2C230"),
+			Guindaste = hex("#E0A526"),
+			ConteinerLaranja = hex("#D9773A"),
+			ConteinerPetroleo = hex("#3C7A8C"),
+			ConteinerMusgo = hex("#6E8F4E"),
+			ConteinerMostarda = hex("#D9A93A"),
+		},
+		Fabrica = {
+			Painel = hex("#8FA3B8"),
+			Tijolo = hex("#B97C5E"),
+			Maquina = hex("#5F9A7A"),
+			Tubos = hex("#D9773A"),
+			Borracha = hex("#3A3F4F"),
+			Papelao = hex("#C9A46B"),
+			Janela = hex("#BFE3FF"),
+			Metal = hex("#4A5368"),
+			Aviso = hex("#F2C230"),
+		},
+		Torre = {
+			Pedra = hex("#A8A29A"),
+			PedraEscura = hex("#7D776F"),
+			Musgo = hex("#6E8F4E"),
+			Madeira = hex("#9A6B43"),
+			Ferro = hex("#4A5368"),
+			Terra = hex("#B49A74"),
+			Estandarte = hex("#E9E3D5"),
+			Roxo = hex("#6A4FB0"),
+			Chama = hex("#E8913A"),
+		},
+	},
 
 	-- Cartas (F4): uma cor por carta (GDD 14). Brilho/neon só nos EFEITOS das cartas (ESTILO 2.6);
 	-- no HUD as mesmas cores aparecem sem brilho. Nenhuma é vermelha (vermelho = inimigo e perigo).

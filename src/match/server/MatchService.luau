@@ -601,7 +601,7 @@ local function tickCombat(dt: number)
 	local elapsed = serverNow() - started
 	local radius = WorldLayout.zoneRadius(elapsed)
 	local zoneDamage = MatchConfig.Zone.DamagePerSecond * dt
-	local fallY = MapConfig.Gray.IslandFloorY - MatchConfig.FallOutDepth
+	local fallY = MapConfig.World.IslandFloorY - MatchConfig.FallOutDepth
 
 	for _, m in members do
 		if not (m.inDuel and m.alive and m.island) then
@@ -1572,7 +1572,7 @@ end
 
 -- Mirante: quem cair abaixo do mirante volta para ele.
 local function watchMiranteFalls()
-	local fallY = MapConfig.Gray.MiranteFloorY - MatchConfig.FallOutDepth
+	local fallY = MapConfig.World.MiranteFloorY - MatchConfig.FallOutDepth
 	RunService.Heartbeat:Connect(function()
 		for _, player in Players:GetPlayers() do
 			if player:GetAttribute(MatchTypes.Attr.Location) ~= MatchTypes.MiranteLocation then

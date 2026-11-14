@@ -1,11 +1,15 @@
 --!strict
--- Posições do mundo da partida (mirante + 4 ilhas), calculadas de MapConfig.Gray.
--- Usado pelo servidor (montar o mundo, nascer, zona) e pelo cliente (desenhar a zona).
+-- Posições do mundo da partida (mirante + 4 ilhas), calculadas de MapConfig.World.
+-- Usado pelo servidor (montar o mundo, nascer, zona) e pelo cliente (minimapa, zona, mirante).
+--
+-- Cada ilha tem um "quadro" (CFrame) no centro do chão: o eixo X local vai de uma base à outra e fica
+-- tangente ao mirante; o eixo Z local aponta para longe/perto do mirante. As bases ficam nas pontas
+-- do eixo X, fora da área de duelo.
 
 local MapConfig = require(script.Parent.Parent.Config.MapConfig)
 local MatchConfig = require(script.Parent.Parent.Config.MatchConfig)
 
-local GRAY = MapConfig.Gray
+local WORLD = MapConfig.World
 
 local WorldLayout = {}
 
@@ -17,30 +21,69 @@ function WorldLayout.mapId(island: number): string
 	return MapConfig.Maps[island].id
 end
 
+-- Quadro da ilha: no centro do topo do chão, com o eixo X local de base a base.
+function WorldLayout.islandFrame(island: number): CFrame
+	local position: string = MapConfig.Maps[island].position
+	local direction = MapConfig.PositionDirection[position] * WORLD.IslandDistance
+	local yaw = math.rad(MapConfig.PositionYaw[position])
+	return CFrame.new(direction.X, WORLD.IslandFloorY, direction.Y) * CFrame.Angles(0, yaw, 0)
+end
+
 -- Centro da ilha no nível do chão.
 function WorldLayout.islandCenter(island: number): Vector3
-	local center = GRAY.IslandCenters[MapConfig.Maps[island].position]
-	return Vector3.new(center.X, GRAY.IslandFloorY, center.Y)
+	return WorldLayout.islandFrame(island).Position
+end
+
+-- Meio comprimento da ilha inteira (área de duelo + uma base), no eixo X local.
+function WorldLayout.islandHalfLength(): number
+	return WORLD.BodySize.X / 2 + WORLD.BaseSize.X
+end
+
+-- Tamanho da ilha inteira nos eixos do mundo (X, Z), para o minimapa.
+function WorldLayout.islandExtent(island: number): Vector2
+	local length = WorldLayout.islandHalfLength() * 2
+	local depth = WORLD.BodySize.Y
+	if MapConfig.PositionYaw[MapConfig.Maps[island].position] % 180 == 0 then
+		return Vector2.new(length, depth)
+	end
+	return Vector2.new(depth, length)
+end
+
+-- Centro de cada base no chão. `side` 1 = ponta -X local, 2 = ponta +X local.
+function WorldLayout.baseCenter(island: number, side: number): Vector3
+	local x = WORLD.BodySize.X / 2 + WORLD.BaseSize.X / 2
+	return WorldLayout.islandFrame(island) * Vector3.new(if side == 1 then -x else x, 0, 0)
 end
 
 function WorldLayout.miranteCenter(): Vector3
-	return Vector3.new(0, GRAY.MiranteFloorY, 0)
+	return Vector3.new(0, WORLD.MiranteFloorY, 0)
 end
 
--- Ponto de nascer na base. `side` 1 = lado oeste da ilha, 2 = lado leste; `slot` 1 ou 2.
+-- Distância do centro do mirante até o meio de cada lado do octógono.
+function WorldLayout.miranteApothem(): number
+	return WORLD.MiranteWidth / 2
+end
+
+-- Lado do octógono regular com a largura do mirante.
+function WorldLayout.miranteSide(): number
+	return WORLD.MiranteWidth / (1 + math.sqrt(2))
+end
+
+-- Ponto de nascer na base. `side` 1 ou 2 (pontas da ilha); `slot` 1 ou 2.
 -- Olhando para o centro da ilha.
 function WorldLayout.baseSpawn(island: number, side: number, slot: number): CFrame
-	local center = WorldLayout.islandCenter(island)
-	local dx = GRAY.IslandSize.X / 2 - GRAY.BaseInset
-	local x = if side == 1 then center.X - dx else center.X + dx
-	local z = center.Z + (if slot == 1 then -1 else 1) * GRAY.BaseSpawnSpread / 2
-	local position = Vector3.new(x, GRAY.IslandFloorY + 3, z)
-	return CFrame.lookAt(position, Vector3.new(center.X, position.Y, z))
+	local frame = WorldLayout.islandFrame(island)
+	local x = WORLD.BodySize.X / 2 + WORLD.BaseSize.X / 2
+	local localX = if side == 1 then -x else x
+	local localZ = (if slot == 1 then -1 else 1) * WORLD.BaseSpawnSpread / 2
+	local position = frame * Vector3.new(localX, 3, localZ)
+	local target = frame * Vector3.new(0, 3, localZ)
+	return CFrame.lookAt(position, target)
 end
 
--- Raio da zona no começo: cobre a ilha inteira com folga.
+-- Raio da zona no começo: cobre a ilha inteira (com as bases) com folga.
 function WorldLayout.zoneStartRadius(): number
-	local half = GRAY.IslandSize / 2
+	local half = Vector2.new(WorldLayout.islandHalfLength(), WORLD.BodySize.Y / 2)
 	return half.Magnitude + MatchConfig.Zone.StartMargin
 end
 
@@ -57,10 +100,11 @@ end
 
 -- Qual ilha fica embaixo deste ponto (por X e Z), ou nil.
 function WorldLayout.islandAt(position: Vector3): number?
-	local half = GRAY.IslandSize / 2
+	local halfLength = WorldLayout.islandHalfLength()
+	local halfDepth = WORLD.BodySize.Y / 2
 	for i = 1, WorldLayout.islandCount() do
-		local center = WorldLayout.islandCenter(i)
-		if math.abs(position.X - center.X) <= half.X + 2 and math.abs(position.Z - center.Z) <= half.Y + 2 then
+		local p = WorldLayout.islandFrame(i):PointToObjectSpace(position)
+		if math.abs(p.X) <= halfLength + 2 and math.abs(p.Z) <= halfDepth + 2 then
 			return i
 		end
 	end

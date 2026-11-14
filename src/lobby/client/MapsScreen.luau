@@ -18,12 +18,16 @@ local Ui = require(Shared.Ui.Ui)
 local Widgets = require(script.Parent.Parent.Common.Ui.Widgets)
 
 local M = Strings.MapsScreen
+-- Centro de cada ilha no desenho (0 a 1) e tamanho: deitadas no norte e no sul, em pé no leste e no
+-- oeste, como no mundo da partida (MapConfig.PositionYaw).
 local POSITIONS: { [string]: Vector2 } = {
-	NorthWest = Vector2.new(0.2, 0.22),
-	NorthEast = Vector2.new(0.8, 0.22),
-	SouthWest = Vector2.new(0.2, 0.78),
-	SouthEast = Vector2.new(0.8, 0.78),
+	North = Vector2.new(0.5, 0.15),
+	East = Vector2.new(0.84, 0.5),
+	South = Vector2.new(0.5, 0.85),
+	West = Vector2.new(0.16, 0.5),
 }
+local LYING = Vector2.new(0.3, 0.26)
+local STANDING = Vector2.new(0.16, 0.5)
 
 local MapsScreen = {}
 
@@ -73,8 +77,8 @@ local function build()
 	local mirante = Ui.frame("Mirante", world)
 	mirante.AnchorPoint = Vector2.new(0.5, 0.5)
 	mirante.Position = UDim2.fromScale(0.5, 0.5)
-	mirante.Size = UDim2.fromScale(0.2, 0.28)
-	mirante.Rotation = 45
+	mirante.Size = UDim2.fromScale(0.18, 0.25)
+	Ui.corner(mirante, 14) -- lembra o octógono
 	mirante.BackgroundTransparency = 0
 	mirante.BackgroundColor3 = Theme.Match.MiranteFloor
 	Ui.stroke(mirante, Theme.Match.MiranteEdge, 2)
@@ -92,7 +96,8 @@ local function build()
 		island.AutoButtonColor = true
 		island.AnchorPoint = Vector2.new(0.5, 0.5)
 		island.Position = UDim2.fromScale(p.X, p.Y)
-		island.Size = UDim2.fromScale(0.3, 0.3)
+		local size = if MapConfig.PositionYaw[map.position] % 180 == 0 then LYING else STANDING
+		island.Size = UDim2.fromScale(size.X, size.Y)
 		island.BackgroundColor3 = Theme.Match.IslandFloor
 		Ui.corner(island, 10)
 		Ui.stroke(island)

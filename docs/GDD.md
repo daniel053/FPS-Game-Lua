@@ -347,7 +347,9 @@ Grupo de 2 e fila `[DECIDIDO]` (F5):
 ### 6.5 Mirante (dentro do servidor de partida)
 
 - **Ilha flutuante central, de chão plano** (sem torre, sem prédio no meio), posicionada **acima** das 4 ilhas de duelo. `[DECIDIDO]`
-- As 4 ilhas de duelo ficam em volta e abaixo dela. Quem está no mirante caminha até uma das bordas e **olha para baixo** para assistir ao duelo daquela ilha: borda esquerda → uma ilha, borda direita → outra, frente e trás → as outras duas. `[DECIDIDO]`
+- **Formato de octógono**, com um lado de frente para cada ilha. `[DECIDIDO]` (F10)
+- **Piso levemente transparente** (vidro claro), para quem está no mirante ver os duelos olhando para baixo sem precisar ir até a borda. Grade e aro opacos, para o piso continuar parecendo chão. Sem rocha embaixo. `[DECIDIDO]` (F10; transparência em `MapConfig.Mirante.GlassTransparency` `[PROPOSTA]`)
+- As 4 ilhas de duelo ficam em volta e abaixo dela, uma de cada lado: norte, leste, sul e oeste. Quem está no mirante **olha para baixo** para assistir ao duelo daquela ilha. `[DECIDIDO]`
 - **Sem interferência:** ninguém no mirante pode atirar, usar carta ou afetar os duelos. Bordas com barreira invisível. `[DECIDIDO]`
 - As ilhas de duelo precisam ser **legíveis de cima**: áreas cobertas (galpões, túneis) têm telhado que fica transparente só para quem está no mirante (ajuste local no cliente). Quem joga na arena continua vendo o telhado normalmente. `[PROPOSTA]`
 - Os jogadores na arena não veem os espectadores do mirante (para não revelar nada nem distrair). `[PROPOSTA]`
@@ -917,7 +919,7 @@ Alvo: **30 fps estáveis num Android básico de ~3 anos**. `[PROPOSTA]`
 
 | Regra | Valor |
 |---|---|
-| Área jogável | ~140 × 100 studs |
+| Área jogável | ~140 × 105 studs, mais as 2 bases (40 × 36) nas pontas (F10) |
 | Simetria | espelhada |
 | Rotas | 3 (esquerda, meio, direita) |
 | Níveis de altura | 2 ou 3 |
@@ -950,25 +952,32 @@ Paleta:
 ### 15.3 Mundo do servidor de partida: ilhas flutuantes `[DECIDIDO]`
 
 ```
-            [PRAÇA]                [TORRE]
-                  \                /
-                   ( MIRANTE CENTRAL )   ← ilha mais alta, chão plano
-                  /                \
-          [FÁBRICA]                [PORTO]
+                       [PORTO]
+                          |
+          [TORRE] —— ( MIRANTE ) —— [FÁBRICA]     ← mirante: octógono mais alto, piso de vidro
+                          |
+                       [PRAÇA]
 ```
 
 - O servidor de partida é um céu aberto com **5 ilhas flutuantes**: o **Mirante** no centro e mais alto (seção 6.5) e as **4 ilhas de duelo** em volta e abaixo dele.
-- Cada ilha de duelo tem **um tema próprio e bem marcado**: Praça, Fábrica, Porto e Torre. Posições como no desenho acima. `[PROPOSTA]` (posição exata)
+- Cada ilha de duelo tem **um tema próprio e bem marcado**: Praça, Fábrica, Porto e Torre. Posições como no desenho acima: Porto ao norte, Fábrica a leste, Praça ao sul, Torre a oeste. `[DECIDIDO]` (F10, plantas do dono do projeto)
+- Cada ilha fica **de lado** para o mirante: as duas bases ficam nas pontas, à esquerda e à direita de quem olha da borda, fora da área de duelo. Assim quem assiste vê os dois times por igual. `[DECIDIDO]` (F10)
 - Ao trocar de ilha entre rodadas, o jogador muda **totalmente** de clima visual.
 - Cada ilha é uma arena fechada de duelo rápido 2v2. A borda da ilha funciona como "queda para fora" (volta à base sem morrer, perde o escudo).
-- Tamanhos: os mapas podem variar entre **maiores** e **menores**, mas todos para duelo rápido. Quais são maiores: `[ABERTO]`.
+- Tamanhos: pelas plantas do dono, as 4 ilhas têm o **mesmo tamanho**: área de duelo de 140 × 105 studs e bases de 40 × 36 nas pontas, ligadas por uma passagem de 8. Ilhas a 180 studs do centro do mirante, que fica 70 acima. `[PROPOSTA]` (F10, em `MapConfig.World`; confirmar com o dono)
 - Todos os mapas precisam ser **legíveis de cima** (seção 6.5).
 
-### 15.4 Praça `[PROPOSTA]`
-- **Tema:** praça de cidade pequena, com coreto, bancos, árvores, banca de jornal e casinhas coloridas em volta.
-- **Ideia central:** mapa de estreia, aberto e fácil de entender.
-- **Zonas:** *Bases* em ruas opostas; *Coreto* (centro, nível 1, cobertura em volta); *Feira* (rota esquerda, barracas como cobertura); *Sobrados* (rota direita, dá para entrar e atirar das janelas, nível 1); *Chafariz* (meio, cobertura baixa).
-- **Cartas que brilham:** Nuvem fecha a visão das janelas dos Sobrados; Impulso leva ao teto do Coreto.
+### 15.4 Praça — planta `[DECIDIDO]` (F10, dono do projeto); medidas e alturas `[PROPOSTA]`
+- **Tema:** praça de cidade pequena (arte com o kit da Praça, KIT-MODULAR 4).
+- **Ideia central:** mapa de estreia, fácil de entender.
+- **Planta** (`docs/referencias/f10/praca-0-planta-do-dono.png`; código em `Shared/Maps/Islands/Praca`): duas áreas chanfradas encaixadas, com **simetria de giro** (o que existe numa metade existe girado 180° na outra). As metades se ligam pelo meio por uma passagem de 18 studs. Cada metade tem:
+  - **Passarela elevada** (nível 1, 5 studs, 10 de largura) ao longo do lado diagonal, com rampa nas duas pontas e mureta do lado do vazio;
+  - **Muro comprido** (20 × 2 × 4) com uma **caixa de madeira** (6 × 6 × 6) na ponta;
+  - **Canteiro de grama** em triângulo, rente ao chão (não protege de tiro);
+  - **Caixa de madeira** encostada na borda.
+- **Sem coreto e sem chafariz** (dono do projeto, F10).
+- **Zonas** (nomes para os pings): `[ABERTO]`, definir junto com a arte.
+- **Cartas que brilham:** Impulso para subir na passarela sem a rampa; Tremor em quem desce a rampa. `[PROPOSTA]`
 
 ### 15.5 Fábrica `[PROPOSTA]`
 - **Tema:** fábrica colorida, com caixas, tubos, guindaste de ponte e **esteiras em movimento**.
@@ -1181,7 +1190,7 @@ Detalhes de implementação decididos durante o desenvolvimento (não são regra
 | **Começo sem fila (até a F5):** entram os jogadores do servidor. A partida começa 20 s depois do primeiro jogador, com o mínimo de `MatchConfig.Start.MinPlayers` (4; 2 em `DEV_`), ou na hora com 16. Quem chega no meio assiste do mirante e entra na próxima. | FASES F3: "quem estiver no servidor". |
 | **2 jogadores (só em teste):** se a formação daria uma dupla só, cada um vira uma dupla de uma pessoa. | Dá para testar a partida com 2 clientes. Em produção o mínimo é 4. |
 | **Amigos no Roblox** (`IsFriendsWithAsync`) são conferidos em paralelo, até 5 s no total. Duplas fixas vindas do lobby entram pelo `TeleportData` na F5 (a função já aceita). | GDD 4.2. |
-| **Mundo cinza montado por código** (`MatchWorld`, nada salvo no place): mirante em losango a 70 studs de altura, plano, com barreira invisível nas 4 bordas; cada borda fica de frente para uma ilha. As 4 ilhas (140 × 100) ficam nas diagonais, abaixo, com o mesmo desenho simétrico: bases nas pontas, galpão coberto no centro, rotas laterais, plataformas de 2º nível, cobertura fina e mureta. Medidas em `MapConfig.Gray`. | FASES F3 e ESTILO T4. Os mapas de verdade (F10) são construídos no Studio. |
+| **Mundo cinza montado por código** (`MatchWorld`, nada salvo no place): mirante em losango a 70 studs de altura, plano, com barreira invisível nas 4 bordas; cada borda fica de frente para uma ilha. As 4 ilhas (140 × 100) ficam nas diagonais, abaixo, com o mesmo desenho simétrico: bases nas pontas, galpão coberto no centro, rotas laterais, plataformas de 2º nível, cobertura fina e mureta. Medidas em `MapConfig.Gray`. *(Revisto na F10: mirante octogonal com piso de vidro, ilhas nos 4 lados, `MapConfig.World`, e os mapas também são montados por código; ver F10.)* | FASES F3 e ESTILO T4. |
 | **Mesma ilha:** o combatente tem o atributo `Island`; o servidor só aceita dano entre combatentes da mesma ilha, e o cliente só mira e contorna quem está na mesma ilha. No mirante ninguém é combatente (sem vida, sem armas, sem contorno). | "Quem está no mirante não interfere" e uma ilha não atira na outra. |
 | **Preparação:** o jogador nasce na base congelado (`HumanoidRootPart` ancorado: não anda, mas olha em volta) e sem armas; as armas só chegam no começo do combate. | GDD 4.10: congelado na base. Nada a validar durante a preparação. |
 | **Armas sem escolha a tempo:** escolha atual → escolha da rodada anterior → última salva no perfil para a fase (`loadout.lastPrimaryByPhase`, `lastSecondary`) → primeira da lista. O perfil é atualizado no começo de cada combate e serve para **Repetir última**. | GDD 4.10 e DADOS 3.1. |
@@ -1311,3 +1320,18 @@ Detalhes de implementação decididos durante o desenvolvimento (não são regra
 | **Elo na interface** (`Common/Ui/RankBadge`): ícone + nome na cor da faixa (`Strings.RankIcons`, `Theme.Rank`), em texto rico. Lobby (dupla), placar (ícone antes do nome), tela final e ranking. | ESTILO 2.2: nunca só a cor. |
 | **Cartas (T1):** as 4 iniciais são Comuns; o fundo continua na cor da carta e a moldura fica na cor da raridade. GIRAR (e R no PC) estreita a carta e abre o verso (cor da carta escura, moldura da raridade, símbolo e nome do jogo); de novo volta à frente. | GDD 8.9. |
 | **Comandos de teste** (`DEV_`, painel de dados): ±500 PE, zerar elo, simular uma partida de 8 duplas com colocação sorteada (moedas e elo pelo caminho real), primeira vitória do dia de novo e tirar as skins. | Testar elo e economia sem jogar partidas inteiras. |
+
+### F10 · Mapas e arte
+
+| Decisão | Por quê |
+|---|---|
+| **Mundo montado por código também na F10** (muda a decisão da F3, que previa construir os mapas à mão no Studio). `Shared/Maps/Build` (peças básicas: bloco, triângulo deitado, peça no chão, peça espelhada) e `Shared/Maps/WorldBuilder` (mirante, ilhas, nuvens e luz). O `MatchWorld` da partida só chama o `WorldBuilder`; o lobby e a prévia no Studio usam o mesmo código. Os kits de cada mapa (KIT-MODULAR) e as plantas entram em `Shared/Maps` à medida que cada mapa for aprovado. | Tudo fica no git (dá para revisar e voltar atrás), as mesmas peças servem à partida, ao lobby e ao minimapa, e nada se perde se o place for refeito. Em `Shared` só há `require` relativo, então a prévia no Studio carrega uma cópia nova a cada mudança (o Studio guarda os módulos já carregados). |
+| **Posição das ilhas** (`MapConfig.Maps`, `PositionDirection`, `PositionYaw`): Porto N, Fábrica L, Praça S, Torre O, a `MapConfig.World.IslandDistance` do centro. Cada ilha tem um quadro (`WorldLayout.islandFrame`) com o eixo X local de base a base, tangente ao mirante. `baseSpawn`, `islandAt`, `islandExtent` e a zona trabalham nesse quadro. | Plantas do dono do projeto (F10). O mesmo código serve para ilhas deitadas e em pé. |
+| **Bases fora da área de duelo:** 40 × 36 em cada ponta, com parede de 7 studs e passagem de 8 para a área de duelo. Nascer no meio da base (~90 studs do centro ≈ 5,6 s andando). | Proporções das plantas; GDD 15.1 (~6 s até o centro). |
+| **Mirante octogonal:** grade em "#" divide o piso de vidro em quadrado do centro, 4 painéis retos e 4 triângulos (cada triângulo é uma `WedgePart` deitada). Sem placa opaca: olhando para uma ilha (15° a 30° para baixo) o olhar atravessa o piso a 10–20 studs de quem olha, e uma placa no meio tapava a ilha (visto na prévia); as vigas ficam em cima das emendas, então nenhum vidro se sobrepõe a outro (sobreposição dobra a transparência). Aro de 0,6 (sem faixa opaca embaixo, que tapava a ilha vista da borda); barreira invisível de 14 em cada um dos 8 lados. Vidro em SmoothPlastic (sem reflexo), sem sombra. | GDD 6.5 revisto pelo dono do projeto (F10). `World.spec` confere que vidro + placa cobrem exatamente o octógono. |
+| **Céu:** luz do dia (`MapConfig.Sky.ClockTime`) e o `Atmosphere` do place (reaproveitado, nunca um segundo) com névoa leve, aplicados pelo servidor. **Mar de nuvens** bem abaixo (y = −500, 5 × 5 ladrilhos de 2048, a maior peça do Roblox), para o fundo olhando para baixo ficar claro e a borda sumir no horizonte; a −170 as sombras das ilhas e do mirante apareciam nele como buracos escuros. Nuvens de desenho animado (bolas brancas encostadas, sem colisão e sem raio) em cima do mar, entre as ilhas e o mar (aparecem pelo vidro) e no horizonte, com semente fixa. Tudo num `Model` com streaming persistente (o place usa streaming com raio de 1024, e o mar e o horizonte ficam mais longe). Chão e rocha das ilhas sem sombra. O `SpawnLocation` do place, que ficava embaixo do mirante e aparecia pelo vidro, vai para o centro do mirante, invisível e sem colisão. | ESTILO T4: céu claro e nuvens baixas, nada escuro. Sem pós-processamento pesado (GDD 13.2). Visto na prévia no Studio (fotos em `docs/referencias/f10/`). |
+| **Minimapa:** desenha o chão a partir das peças com o atributo `MapGround` (área de duelo e bases) e as construções por cima; o tamanho vem de `WorldLayout.islandExtent` (ilhas em pé ou deitadas). | Serve para os mapas finais sem mudar o código do minimapa. |
+| **Uma planta por mapa** em `Shared/Maps/Islands/<Mapa>` (função que monta a área de duelo no quadro da ilha); o `WorldBuilder` usa a do mapa ou, sem planta ainda, o desenho cinza da F3. As **bases** (iguais em todas as ilhas: chão, mureta, parede da frente de 7 com a passagem, rocha) e a âncora do nome ficam em `Shared/Maps/IslandCommon`. Ilhas com simetria de giro montam uma metade e a outra com o quadro girado 180° (`IslandCommon.rotated`). | Cada mapa muda sem mexer nos outros; as bases e as regras de nascer são as mesmas para todos. |
+| **Medidas da planta** tiradas do desenho do dono na escala da área de duelo (140 studs de base a base). Bases 36 × 42 e passagem de 14 (`MapConfig.World`), medidas na planta da Praça. Coordenadas da planta ficam no módulo do mapa (são o desenho do nível, não números de balanceamento). | Planta do dono = fonte da verdade; o bloco cinza é conferido de cima, lado a lado com o desenho. |
+| **Peças novas do `Build`:** parede entre dois pontos (`wall`), retângulo e triângulo de chão em coordenadas da ilha (`floorRect`, `floorTriangle`) e rampa (`ramp`, uma `WedgePart`). A rocha embaixo da ilha fica sempre por dentro do contorno do chão (nos recortes ela aparecia de cima). | Plantas com chanfros e diagonais. |
+| **Minimapa:** por enquanto pula os triângulos de chão (desenhava retângulos errados); o desenho certo dos chanfros entra quando cada mapa for ligado de vez. | Provisório, anotado para não esquecer. |
