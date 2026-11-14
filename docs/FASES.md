@@ -42,7 +42,7 @@
 | F6 | Tutorial | Primeira entrada guiada | ✅ |
 | F7 | Interface final | Telas T1–T6 no estilo definitivo | ✅ |
 | F8 | Social e voz | Dupla se comunica e continua junta | ✅ |
-| F9 | Elo, economia e arsenal | Progressão completa | 🔶 em teste |
+| F9 | Elo, economia e arsenal | Progressão completa | ✅ |
 | F10 | Mapas e arte | 4 ilhas, mirante, personagem, armas | ☐ |
 | ⭐ | **Marco: beta fechado** | Teste com jogadores de fora | ☐ |
 | F11 | Robux e lançamento | Jogo público | ☐ |
