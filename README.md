@@ -43,7 +43,22 @@ Cada place tem a sua porta. Abra o place no Studio e rode **só o comando daquel
 
 No Studio: aba **Plugins › Rojo**, confira a porta e clique em **Connect**. A partir daí, cada arquivo salvo na pasta aparece no Studio na hora.
 
-> Nunca use `rojo build` para gerar um place por cima de um place existente. Os mapas vivem só no Studio.
+> Nunca use `rojo build` para gerar um place por cima de um place existente: o `Workspace` (onde fica o mapa salvo) não vem do Rojo.
+
+## Mapa salvo no place (Partida)
+
+O mundo da partida (mirante, 4 ilhas e nuvens) é **desenhado em código**, em `src/shared/Maps/`, e fica **salvo no place da Partida**, em `Workspace.MatchWorld`. Assim ele aparece ao abrir o place no Studio.
+
+- **Para mudar um mapa**, mude o código (`Maps/Islands/<Mapa>.luau` e `Maps/Kits/<Mapa>.luau`). O que for mexido à mão dentro de `Workspace.MatchWorld` se perde na próxima montagem.
+- **Para atualizar o que está salvo**, com o Rojo conectado e em modo de edição, rode na barra de comandos do Studio e depois salve o place (Ctrl+S):
+
+```lua
+local s = game.ReplicatedStorage.Shared:Clone() s.Parent = game.ServerStorage require(s.Maps.WorldBuilder).bake() s:Destroy()
+```
+
+(A cópia do `Shared` serve para o Studio carregar o código novo, e não o que ele já tinha na memória.)
+
+- **Se esquecer**, nada quebra: ao iniciar, o servidor compara o mundo salvo com o que o código monta. Se estiverem diferentes, ele monta de novo e avisa no Output; o teste "o mundo salvo no place da Partida está em dia com o código" também acusa.
 
 ## Conferir o código antes de um commit
 

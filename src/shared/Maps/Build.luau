@@ -9,7 +9,14 @@ export type PartOptions = {
 	collide: boolean?,
 	query: boolean?, -- false = raios (tiros, câmera) atravessam
 	shadow: boolean?,
+	-- Peça de acabamento (junta de tijolo, tábua, ferrugem, moldura): não colide, não bloqueia tiro,
+	-- não faz sombra e não entra no minimapa. Sempre encostada numa peça que colide.
+	detail: boolean?,
 }
+
+Build.DetailAttribute = "MapDetail"
+-- Atalho para as peças de acabamento.
+Build.Detail = { detail = true } :: PartOptions
 
 local function apply(part: BasePart, name: string, color: Color3, parent: Instance, options: PartOptions?)
 	part.Name = name
@@ -30,8 +37,29 @@ local function apply(part: BasePart, name: string, color: Color3, parent: Instan
 		if options.shadow == false then
 			part.CastShadow = false
 		end
+		if options.detail then
+			part.CanCollide = false
+			part.CanQuery = false
+			part.CanTouch = false
+			part.CastShadow = false
+			part:SetAttribute(Build.DetailAttribute, true)
+		end
 	end
 	part.Parent = parent
+end
+
+-- Modelo vazio para agrupar as peças de um componente do kit (aparece com nome no Explorer).
+function Build.model(name: string, parent: Instance): Model
+	local model = Instance.new("Model")
+	model.Name = name
+	model.Parent = parent
+	return model
+end
+
+-- Quadro de um componente: no ponto (x, z) do quadro da ilha, na altura `y` (0 = chão), girado
+-- `yawDegrees` em volta de Y. As peças do componente usam `origem * CFrame.new(...)`.
+function Build.pivot(frame: CFrame, at: Vector2, yawDegrees: number?, y: number?): CFrame
+	return frame * CFrame.new(at.X, y or 0, at.Y) * CFrame.Angles(0, math.rad(yawDegrees or 0), 0)
 end
 
 -- Bloco com tamanho e posição (centro).
@@ -207,7 +235,8 @@ function Build.ramp(
 	toY: number,
 	width: number,
 	color: Color3,
-	parent: Instance
+	parent: Instance,
+	options: PartOptions?
 ): WedgePart
 	local rise = toY - fromY
 	local dir = head - foot
@@ -217,12 +246,49 @@ function Build.ramp(
 	local wedge = Instance.new("WedgePart")
 	wedge.Size = Vector3.new(width, rise, dir.Magnitude)
 	wedge.CFrame = frame * CFrame.new(mid.X, fromY + rise / 2, mid.Y) * look
-	wedge.Name = name
-	wedge.Anchored = true
-	wedge.Color = color
-	wedge.Material = Enum.Material.SmoothPlastic
-	wedge.Parent = parent
+	apply(wedge, name, color, parent, options)
 	return wedge
+end
+
+-- Cunha solta (telhado de duas águas, chanfro), com tamanho e posição (centro). A WedgePart tem a
+-- face alta no +Z local e a rampa descendo para o -Z.
+function Build.wedge(
+	name: string,
+	size: Vector3,
+	cframe: CFrame,
+	color: Color3,
+	parent: Instance,
+	options: PartOptions?
+): WedgePart
+	local wedge = Instance.new("WedgePart")
+	wedge.Size = size
+	wedge.CFrame = cframe
+	apply(wedge, name, color, parent, options)
+	return wedge
+end
+
+-- Prisma low poly de 6 ou 8 lados (KIT-MODULAR 1: cilindro = prisma), em pé no eixo Y de `cframe`
+-- (centro da peça). `diameter` é a medida de face a face. É feito de blocos cruzados (3 no de 6
+-- lados, 4 no de 8), todos da mesma cor.
+function Build.prism(
+	name: string,
+	sides: number,
+	diameter: number,
+	height: number,
+	cframe: CFrame,
+	color: Color3,
+	parent: Instance,
+	options: PartOptions?
+): { Part }
+	assert(sides == 6 or sides == 8, "prisma de 6 ou 8 lados")
+	local face = diameter * math.tan(math.pi / sides) -- largura de cada face
+	local parts = {}
+	for k = 0, sides / 2 - 1 do
+		local turn = CFrame.Angles(0, k * 2 * math.pi / sides, 0)
+		local size = Vector3.new(diameter, height, face)
+		table.insert(parts, Build.block(name, size, cframe * turn, color, parent, options))
+	end
+	return parts
 end
 
 return Build

@@ -3,17 +3,19 @@
 -- lados (norte, leste, sul e oeste), mais abaixo, e as nuvens. Fica em Shared para servir à partida
 -- (servidor), ao lobby (cliente) e à prévia no Studio, sempre com o mesmo código.
 --
--- Até cada mapa ficar pronto, a ilha usa o desenho cinza simétrico da F3 (agora com as bases fora
--- da área de duelo, nas pontas).
+-- Cada ilha tem o seu módulo em Maps/Islands. O mundo fica salvo no place da Partida (`bake`), para
+-- aparecer ao abrir o Studio; o servidor confere se a cópia salva está em dia (`sameWorld`).
 
 local CollectionService = game:GetService("CollectionService")
 local Lighting = game:GetService("Lighting")
 
 local Build = require(script.Parent.Build)
 local IslandCommon = require(script.Parent.IslandCommon)
+local Fabrica = require(script.Parent.Islands.Fabrica)
+local Porto = require(script.Parent.Islands.Porto)
 local Praca = require(script.Parent.Islands.Praca)
+local Torre = require(script.Parent.Islands.Torre)
 local MapConfig = require(script.Parent.Parent.Config.MapConfig)
-local MatchTypes = require(script.Parent.Parent.Match.MatchTypes)
 local Strings = require(script.Parent.Parent.Config.Strings)
 local TextUtil = require(script.Parent.Parent.TextUtil)
 local Theme = require(script.Parent.Parent.Config.Theme)
@@ -28,13 +30,12 @@ local WorldBuilder = {}
 
 WorldBuilder.FolderName = "MatchWorld"
 WorldBuilder.GroundAttribute = IslandCommon.GroundAttribute -- chão desenhado no minimapa
+WorldBuilder.DetailAttribute = Build.DetailAttribute -- peças de acabamento: fora do minimapa
 WorldBuilder.AtmosphereName = "MatchAtmosphere"
+WorldBuilder.RebuiltAttribute = "RebuiltAtStart" -- a cópia salva estava velha e o servidor refez
 
 local INVISIBLE: Build.PartOptions = { transparency = 1, query = false, shadow = false }
 local DECOR: Build.PartOptions = { collide = false, query = false, shadow = false }
--- Chão e rocha das ilhas: sem sombra (projetada lá embaixo no mar de nuvens, parecia um buraco).
--- As construções continuam fazendo sombra no chão.
-local NO_SHADOW: Build.PartOptions = { shadow = false }
 
 local function addLabel(parent: BasePart, text: string)
 	local gui = Instance.new("BillboardGui")
@@ -155,106 +156,15 @@ local function buildMirante(parent: Instance)
 end
 
 -- Ilhas ------------------------------------------------------------------------------------------
--- Cada mapa com planta aprovada tem o seu módulo em Maps/Islands; os outros usam o desenho cinza
--- simétrico da F3. As bases (iguais em todas) vêm do IslandCommon.
+-- Cada mapa tem o seu módulo em Maps/Islands (a planta da área de duelo e as cores das bases). As
+-- bases (iguais em todas) vêm do IslandCommon.
 
-local ISLANDS: { [string]: (frame: CFrame, folder: Instance) -> () } = {
+local ISLANDS: { [string]: IslandCommon.Island } = {
+	map_porto = Porto,
+	map_fabrica = Fabrica,
 	map_praca = Praca,
+	map_torre = Torre,
 }
-
-local function buildGrayBody(frame: CFrame, folder: Instance)
-	local body = WORLD.BodySize
-	local halfX, halfZ = body.X / 2, body.Y / 2
-	local t = WORLD.IslandThickness
-
-	IslandCommon.ground(
-		Build.block(
-			"Floor",
-			Vector3.new(body.X, t, body.Y),
-			frame * CFrame.new(0, -t / 2, 0),
-			COLORS.IslandFloor,
-			folder,
-			NO_SHADOW
-		)
-	)
-
-	-- Rocha embaixo, afunilando (low poly em degraus)
-	for i, scale in { 0, 0.55, 0.25 } do
-		local size = if scale == 0
-			then Vector3.new(body.X - 12, 10, body.Y - 12)
-			else Vector3.new(body.X * scale, 12, body.Y * scale)
-		Build.block(
-			"Underside",
-			size,
-			frame * CFrame.new(0, -t - 5 - (i - 1) * 11.5, 0),
-			COLORS.IslandUnderside,
-			folder,
-			NO_SHADOW
-		)
-	end
-
-	-- Mureta em volta da área de duelo (com a abertura de cada base)
-	local rail = WORLD.IslandEdgeRail
-	local baseHalf = WORLD.BaseSize.Y / 2
-	for _, z in { -halfZ, halfZ } do
-		Build.wall("Rail", frame, Vector2.new(-halfX, z), Vector2.new(halfX, z), rail, 1, COLORS.IslandRail, folder)
-	end
-	for _, x in { -halfX, halfX } do
-		for _, sign in { -1, 1 } do
-			Build.wall(
-				"Rail",
-				frame,
-				Vector2.new(x, sign * baseHalf),
-				Vector2.new(x, sign * halfZ),
-				rail,
-				1,
-				COLORS.IslandRail,
-				folder
-			)
-		end
-	end
-	Build.mirrored("BaseCover", Vector3.new(1.5, 3, 10), frame, halfX - 12, 0, COLORS.IslandCover, folder)
-
-	-- Galpão coberto no centro: paredes nos lados Z, portas nos lados X, telhado com tag
-	local hallX, hallZ, hallH = 26, 20, 9
-	for _, z in { -hallZ / 2, hallZ / 2 } do
-		Build.onFloor("HallWall", Vector3.new(hallX, hallH, 1.5), frame, 0, z, COLORS.IslandWall, folder)
-	end
-	local sideLen = (hallZ - 6) / 2
-	for _, sign in { -1, 1 } do
-		Build.mirrored(
-			"HallWall",
-			Vector3.new(1.5, hallH, sideLen),
-			frame,
-			hallX / 2,
-			sign * (3 + sideLen / 2),
-			COLORS.IslandWall,
-			folder
-		)
-	end
-	local roof = Build.block(
-		"HallRoof",
-		Vector3.new(hallX + 2, 1, hallZ + 2),
-		frame * CFrame.new(0, hallH + 0.5, 0),
-		COLORS.IslandRoof,
-		folder
-	)
-	CollectionService:AddTag(roof, MatchTypes.RoofTag)
-	Build.mirrored("HallCover", Vector3.new(4, 3, 4), frame, 6, 0, COLORS.IslandCover, folder)
-
-	-- Rotas laterais: coberturas cheias, meia altura e uma fina (o Moedor atravessa)
-	for _, sign in { 1, -1 } do
-		local laneZ = sign * 32
-		Build.mirrored("FullCover", Vector3.new(8, 6, 1.5), frame, 34, laneZ, COLORS.IslandCover, folder)
-		Build.mirrored("HalfCover", Vector3.new(6, 3, 1.5), frame, 18, laneZ - sign * 6, COLORS.IslandCover, folder)
-		Build.mirrored("FullCover", Vector3.new(1.5, 6, 8), frame, 48, laneZ + sign * 6, COLORS.IslandCover, folder)
-		-- Plataforma de 2º nível com degrau
-		Build.onFloor("Platform", Vector3.new(14, 5, 10), frame, 0, sign * 38, COLORS.IslandRamp, folder)
-		Build.mirrored("Step", Vector3.new(4, 2.5, 6), frame, 9, sign * 38, COLORS.IslandRamp, folder)
-		Build.onFloor("PlatformCover", Vector3.new(6, 2.5, 1), frame, 0, sign * 33.5, COLORS.IslandCover, folder)
-	end
-	Build.mirrored("ThinCover", Vector3.new(0.8, 6, 8), frame, 24, 0, Theme.Combat.ArenaThin, folder)
-end
 
 local function buildIsland(index: number, parent: Instance)
 	local folder = Instance.new("Folder")
@@ -262,14 +172,10 @@ local function buildIsland(index: number, parent: Instance)
 	folder:SetAttribute("Island", index)
 	local frame = WorldLayout.islandFrame(index)
 	local mapId = WorldLayout.mapId(index)
+	local island = ISLANDS[mapId]
 	addLabel(IslandCommon.labelAnchor(frame, folder), TextUtil.upper(Strings.Maps[mapId] or ""))
-	IslandCommon.bases(frame, folder)
-	local layout = ISLANDS[mapId]
-	if layout then
-		layout(frame, folder)
-	else
-		buildGrayBody(frame, folder)
-	end
+	IslandCommon.bases(frame, folder, island.style)
+	island.build(frame, folder)
 	folder.Parent = parent
 end
 
@@ -352,16 +258,92 @@ end
 
 -- API -------------------------------------------------------------------------------------------
 
+-- Monta o mundo dentro de `world`, uma parte por vez (mirante, cada ilha, nuvens). `pause` roda
+-- entre as partes: no Studio (modo de edição) é um `task.wait`, para a janela não travar.
+local function fill(world: Instance, pause: (() -> ())?)
+	local steps: { () -> () } = {
+		function()
+			buildMirante(world)
+		end,
+	}
+	for i = 1, WorldLayout.islandCount() do
+		table.insert(steps, function()
+			buildIsland(i, world)
+		end)
+	end
+	table.insert(steps, function()
+		buildSky(world)
+	end)
+	for _, step in steps do
+		step()
+		if pause then
+			pause()
+		end
+	end
+end
+
 -- Monta o mundo inteiro numa pasta (sem pai). Quem chama põe no Workspace.
 function WorldBuilder.build(): Folder
 	local world = Instance.new("Folder")
 	world.Name = WorldBuilder.FolderName
-	buildMirante(world)
-	for i = 1, WorldLayout.islandCount() do
-		buildIsland(i, world)
-	end
-	buildSky(world)
+	fill(world)
 	return world
+end
+
+-- Monta o mundo já dentro de `parent` (troca o que existir com o mesmo nome).
+function WorldBuilder.install(parent: Instance, pause: (() -> ())?): Folder
+	local existing = parent:FindFirstChild(WorldBuilder.FolderName)
+	if existing then
+		existing:Destroy()
+	end
+	local world = Instance.new("Folder")
+	world.Name = WorldBuilder.FolderName
+	world.Parent = parent
+	fill(world, pause)
+	return world
+end
+
+-- O mundo `saved` (a cópia salva no place) é igual ao `fresh` (o que o código monta hoje)? Compara
+-- quantas peças há e as somas de posição, tamanho, cor, transparência e colisão (valores que o
+-- place guarda sem arredondar) e, com uma folga pequena, a soma dos giros.
+function WorldBuilder.sameWorld(saved: Instance, fresh: Instance): boolean
+	local function measure(world: Instance): (number, number, number)
+		local count, sum, turn = 0, 0, 0
+		for _, part in world:GetDescendants() do
+			if part:IsA("BasePart") then
+				count += 1
+				local p, s, c = part.Position, part.Size, part.Color
+				sum += p.X + p.Y * 3 + p.Z * 7 + s.X * 11 + s.Y * 13 + s.Z * 17
+				sum += math.round(c.R * 255) * 19 + math.round(c.G * 255) * 23 + math.round(c.B * 255) * 29
+				sum += part.Transparency * 31 + (if part.CanCollide then 37 else 0) + (if part.CanQuery then 41 else 0)
+				local look, right = part.CFrame.LookVector, part.CFrame.RightVector
+				turn += look.X + look.Y * 3 + look.Z * 7 + right.X * 11 + right.Y * 13 + right.Z * 17
+			end
+		end
+		return count, sum, turn
+	end
+	local countA, sumA, turnA = measure(saved)
+	local countB, sumB, turnB = measure(fresh)
+	return countA == countB and math.abs(sumA - sumB) < 0.01 and math.abs(turnA - turnB) < 0.01
+end
+
+-- O SpawnLocation do place fica embaixo do mirante e aparecia pelo vidro: vai para o centro do
+-- mirante, invisível e sem colisão (quem entra aparece ali até o servidor posicionar).
+function WorldBuilder.hideSpawn(container: Instance)
+	for _, child in container:GetChildren() do
+		if child:IsA("SpawnLocation") then
+			child.Transparency = 1
+			child.CanCollide = false
+			child.CanQuery = false
+			child.CastShadow = false
+			for _, decal in child:GetChildren() do
+				if decal:IsA("Decal") then
+					decal:Destroy()
+				end
+			end
+			child.CFrame = CFrame.new(WorldLayout.miranteCenter() + Vector3.new(0, child.Size.Y / 2, 0))
+		end
+	end
 end
 
 -- Luz do dia e névoa leve (sem pós-processamento pesado, GDD 13.2).
@@ -382,6 +364,15 @@ function WorldBuilder.applyLighting()
 	a.Glare = 0
 	a.Color = COLORS.SkyAtmosphere
 	a.Decay = COLORS.SkyDecay
+end
+
+-- Monta o mundo no Workspace do place aberto no Studio (modo de edição), para ficar salvo e visível
+-- ao abrir o place. Rodar pela barra de comandos (README, "Mapa salvo no place"); depois salvar.
+function WorldBuilder.bake(): Folder
+	WorldBuilder.applyLighting()
+	local world = WorldBuilder.install(workspace, task.wait)
+	WorldBuilder.hideSpawn(workspace)
+	return world
 end
 
 return WorldBuilder

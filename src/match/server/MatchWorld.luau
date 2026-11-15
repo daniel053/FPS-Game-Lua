@@ -1,7 +1,8 @@
 --!strict
 -- Mundo da partida (GDD 6.5 e 15.3): mirante octogonal no centro e as 4 ilhas de duelo nos lados,
--- mais abaixo. Montado por código ao iniciar o servidor (nada fica salvo no place), pelo
--- `Shared/Maps/WorldBuilder`, o mesmo usado pelo lobby e pela prévia no Studio.
+-- mais abaixo. O mundo fica salvo no place (montado pelo `Shared/Maps/WorldBuilder.bake`, para
+-- aparecer ao abrir o Studio). Ao iniciar, o servidor confere se a cópia salva é igual à que o
+-- código monta hoje: se for, usa a salva; se não for (ou não existir), monta de novo.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -12,28 +13,23 @@ local WorldLayout = require(Shared.Match.WorldLayout)
 local MatchWorld = {}
 
 function MatchWorld.build()
-	local existing = workspace:FindFirstChild(WorldBuilder.FolderName)
-	if existing then
-		existing:Destroy()
-	end
 	WorldBuilder.applyLighting()
-	WorldBuilder.build().Parent = workspace
-	-- O SpawnLocation do place fica embaixo do mirante e aparecia pelo vidro: vai para o centro do
-	-- mirante, invisível e sem colisão (quem entra aparece ali até o servidor posicionar).
-	for _, child in workspace:GetChildren() do
-		if child:IsA("SpawnLocation") then
-			child.Transparency = 1
-			child.CanCollide = false
-			child.CanQuery = false
-			child.CastShadow = false
-			for _, decal in child:GetChildren() do
-				if decal:IsA("Decal") then
-					decal:Destroy()
-				end
-			end
-			child.CFrame = CFrame.new(WorldLayout.miranteCenter() + Vector3.new(0, child.Size.Y / 2, 0))
+	local saved = workspace:FindFirstChild(WorldBuilder.FolderName)
+	local upToDate = false
+	if saved then
+		local fresh = WorldBuilder.build()
+		upToDate = WorldBuilder.sameWorld(saved, fresh)
+		fresh:Destroy()
+	end
+	if not upToDate then
+		local world = WorldBuilder.install(workspace)
+		if saved then
+			-- Aviso para quem desenvolve: o mapa do place está velho (README, "Mapa salvo no place").
+			world:SetAttribute(WorldBuilder.RebuiltAttribute, true)
+			warn("[MatchWorld] O mundo salvo no place está diferente do código: montado de novo.")
 		end
 	end
+	WorldBuilder.hideSpawn(workspace)
 end
 
 -- Ponto aleatório perto do centro do mirante, olhando para fora.

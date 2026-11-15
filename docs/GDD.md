@@ -909,7 +909,7 @@ Alvo: **30 fps estáveis num Android básico de ~3 anos**. `[PROPOSTA]`
 - **Sem sangue.** `[DECIDIDO]`
 - **Vermelho no jogo** (fora da carta Celestial): só contorno de inimigo e avisos de perigo.
 - **Luz:** dia ou fim de tarde. `[PROPOSTA]`
-- Paleta de cores da interface: `ESTILO-E-TELAS.md`. Paleta de cada mapa: `[ABERTO]`.
+- Paleta de cores da interface: `ESTILO-E-TELAS.md`. Paleta de cada mapa: as do `KIT-MODULAR.md` (seções 2 a 5), em `Theme.Maps`. `[DECIDIDO]` (F10)
 
 ---
 
@@ -964,19 +964,20 @@ Paleta:
 - Cada ilha fica **de lado** para o mirante: as duas bases ficam nas pontas, à esquerda e à direita de quem olha da borda, fora da área de duelo. Assim quem assiste vê os dois times por igual. `[DECIDIDO]` (F10)
 - Ao trocar de ilha entre rodadas, o jogador muda **totalmente** de clima visual.
 - Cada ilha é uma arena fechada de duelo rápido 2v2. A borda da ilha funciona como "queda para fora" (volta à base sem morrer, perde o escudo).
-- Tamanhos: pelas plantas do dono, as 4 ilhas têm o **mesmo tamanho**: área de duelo de 140 × 105 studs e bases de 40 × 36 nas pontas, ligadas por uma passagem de 8. Ilhas a 180 studs do centro do mirante, que fica 70 acima. `[PROPOSTA]` (F10, em `MapConfig.World`; confirmar com o dono)
+- Tamanhos: as 4 ilhas têm o **mesmo tamanho** `[DECIDIDO]` (F10, dono do projeto): área de duelo de até 140 × 105 studs e bases de 36 × 42 nas pontas, com passagem de 14. Ilhas a 180 studs do centro do mirante, que fica 70 acima (valores em `MapConfig.World`, `[PROPOSTA]`).
 - Todos os mapas precisam ser **legíveis de cima** (seção 6.5).
 
 ### 15.4 Praça — planta `[DECIDIDO]` (F10, dono do projeto); medidas e alturas `[PROPOSTA]`
 - **Tema:** praça de cidade pequena (arte com o kit da Praça, KIT-MODULAR 4).
 - **Ideia central:** mapa de estreia, fácil de entender.
 - **Planta** (`docs/referencias/f10/praca-0-planta-do-dono.png`; código em `Shared/Maps/Islands/Praca`): duas áreas chanfradas encaixadas, com **simetria de giro** (o que existe numa metade existe girado 180° na outra). As metades se ligam pelo meio por uma passagem de 18 studs. Cada metade tem:
-  - **Passarela elevada** (nível 1, 5 studs, 10 de largura) ao longo do lado diagonal, com rampa nas duas pontas e mureta do lado do vazio;
+  - **Passarela elevada** (nível 1, 5 studs, 10 de largura) ao longo do lado diagonal, com rampa nas duas pontas e mureta do lado do vazio `[DECIDIDO]` (F10);
   - **Muro comprido** (20 × 2 × 4) com uma **caixa de madeira** (6 × 6 × 6) na ponta;
   - **Canteiro de grama** em triângulo, rente ao chão (não protege de tiro);
-  - **Caixa de madeira** encostada na borda.
+  - **Caixa de madeira** (6 × 6 × 6) encostada na borda `[DECIDIDO]` (F10).
 - **Sem coreto e sem chafariz** (dono do projeto, F10).
-- **Zonas** (nomes para os pings): `[ABERTO]`, definir junto com a arte.
+- **Zonas** (nomes para os pings) `[DECIDIDO]` (F10): *Passarela*, *Muro*, *Canteiro* e *Meio*, com Leste/Oeste para diferenciar as metades, mais *Base*.
+- **Decoração** `[DECIDIDO]` (F10): sobrados e árvores ficam **fora** da área de duelo, como moldura; postes e bancos dentro, nas bordas, sem criar cobertura nova nas rotas. A copa da árvore não bloqueia tiro (só o tronco); confirmar em teste.
 - **Cartas que brilham:** Impulso para subir na passarela sem a rampa; Tremor em quem desce a rampa. `[PROPOSTA]`
 
 ### 15.5 Fábrica `[PROPOSTA]`
@@ -998,9 +999,9 @@ Paleta:
 - **Cartas que brilham:** Impulso para chegar ao topo sem a escadaria; Tremor em quem desce a escadaria.
 
 ### 15.8 Em aberto
-- Planta baixa com medidas de cada mapa (um por vez).
-- Quais mapas são maiores e quais menores.
-- Paleta de cada mapa.
+- Plantas do Porto, da Fábrica e da Torre: o dono deu o contorno e deixou o interior livre; cada uma é aprovada em bloco colorido antes da arte (F10).
+- ~~Quais mapas são maiores e quais menores.~~ Respondida na F10: as 4 ilhas têm o mesmo tamanho (15.3).
+- ~~Paleta de cada mapa.~~ Respondida na F10: as do KIT-MODULAR (seção 14).
 
 ---
 
@@ -1092,13 +1093,13 @@ Ordem resumida: F0 Base → F1 Dados do jogador → F2 Combate → F3 Loop da pa
 5. ~~Girar cartas: sorteio (A) ou visualização (B)?~~ Respondida na F9: visualização (seção 8.9).
 6. ~~Raridade da carta muda o poder dela?~~ Respondida na F9: não, só a dificuldade e o visual (seção 8.9).
 7. ~~O diamante roxo do mockup é uma segunda moeda?~~ Respondida na F9: não há segunda moeda por enquanto (`gems` fica 0).
-8. Quais mapas são maiores e quais menores?
+8. ~~Quais mapas são maiores e quais menores?~~ Respondida na F10: mesmo tamanho (seção 15.3).
 9. Ferramentas de ADM além do elo visual.
 10. Câmeras cinematográficas (cerimônia de campeão) também em primeira pessoa?
 11. ~~Onde fica a cor da equipe no personagem?~~ Respondida na F6: não fica no personagem; marcação verde/vermelha na ilha (seções 3.3 e 7.6).
 12. ~~Final melhor de 3: sim ou não?~~ Respondida: sim, e na final as vidas param de contar (seção 4.7).
 13. Preços em Robux e passe VIP.
-14. Plantas baixas dos 4 mapas e paletas.
+14. Plantas baixas dos mapas: Praça aprovada; Porto, Fábrica e Torre em aprovação (F10). ~~Paletas.~~ Respondida na F10: as do KIT-MODULAR.
 15. ~~Temas das primeiras skins.~~ Respondida na F9: Areia, Floresta, Oceano e Ouro, só em armas (seção 11).
 
 ---
@@ -1334,4 +1335,8 @@ Detalhes de implementação decididos durante o desenvolvimento (não são regra
 | **Uma planta por mapa** em `Shared/Maps/Islands/<Mapa>` (função que monta a área de duelo no quadro da ilha); o `WorldBuilder` usa a do mapa ou, sem planta ainda, o desenho cinza da F3. As **bases** (iguais em todas as ilhas: chão, mureta, parede da frente de 7 com a passagem, rocha) e a âncora do nome ficam em `Shared/Maps/IslandCommon`. Ilhas com simetria de giro montam uma metade e a outra com o quadro girado 180° (`IslandCommon.rotated`). | Cada mapa muda sem mexer nos outros; as bases e as regras de nascer são as mesmas para todos. |
 | **Medidas da planta** tiradas do desenho do dono na escala da área de duelo (140 studs de base a base). Bases 36 × 42 e passagem de 14 (`MapConfig.World`), medidas na planta da Praça. Coordenadas da planta ficam no módulo do mapa (são o desenho do nível, não números de balanceamento). | Planta do dono = fonte da verdade; o bloco cinza é conferido de cima, lado a lado com o desenho. |
 | **Peças novas do `Build`:** parede entre dois pontos (`wall`), retângulo e triângulo de chão em coordenadas da ilha (`floorRect`, `floorTriangle`) e rampa (`ramp`, uma `WedgePart`). A rocha embaixo da ilha fica sempre por dentro do contorno do chão (nos recortes ela aparecia de cima). | Plantas com chanfros e diagonais. |
-| **Minimapa:** por enquanto pula os triângulos de chão (desenhava retângulos errados); o desenho certo dos chanfros entra quando cada mapa for ligado de vez. | Provisório, anotado para não esquecer. |
+| **Minimapa:** os triângulos de chão (chanfros e diagonais) são desenhados em 10 faixas finas, porque a interface do Roblox não tem triângulo. Peças de acabamento (`MapDetail`) ficam de fora. | Plantas com chanfros; milhares de peças de acabamento não podem virar milhares de quadros na interface. |
+| **Mundo salvo no place da Partida** (muda a decisão acima de "nada fica salvo no place"; pedido do dono do projeto). O código em `Shared/Maps` continua sendo a fonte; `WorldBuilder.bake()` monta o mundo em `Workspace.MatchWorld` no modo de edição (comando no README) e o place é salvo com ele. Ao iniciar, o servidor monta uma cópia em memória e compara com a salva (`WorldBuilder.sameWorld`: quantidade de peças e somas de posição, tamanho, cor, transparência, colisão e giro); se forem iguais usa a salva, senão monta de novo, avisa no Output e marca `RebuiltAtStart` (um teste acusa). O que for mexido à mão dentro de `MatchWorld` se perde na próxima montagem. | O dono quer abrir o place e ver o mapa. O código como fonte mantém o histórico no git e deixa vários mapas avançarem ao mesmo tempo; a conferência no início impede que um place velho vá para os jogadores. |
+| **Kits em código:** cada componente do KIT-MODULAR é uma função em `Shared/Maps/Kits/<Mapa>` que devolve um `Model` (em vez de um modelo guardado em `ReplicatedStorage/Kits`). O módulo da ilha devolve `{ style, build }` (`IslandCommon.Island`): `style` dá as cores das bases e `build` monta a área de duelo. | Mesma razão: tudo no git, e a planta não muda quando o acabamento de um componente muda. |
+| **Peças de acabamento** (`Build.Detail`): juntas, tábuas, ferrugem, molduras. Não colidem, não bloqueiam tiro, não fazem sombra e levam o atributo `MapDetail`. A peça que colide é sempre uma caixa simples por baixo. Cilindros são prismas de 6 ou 8 lados feitos de blocos cruzados (`Build.prism`). | Colisão e validação de tiro simples e baratas; visual do kit sem textura (KIT-MODULAR 1). |
+| **Zonas e pontos de escudo no mapa:** `IslandCommon.zone` cria uma caixa invisível com o atributo `MapZone` (id em `Strings.Zones`) e, nas metades, `MapZoneSide` (Leste/Oeste); `IslandCommon.shieldPoint` cria a placa de 6 lados com a tag `ShieldPoint`. Nesta etapa são só as marcas no mapa: o nome da zona no ping e a regra de recarga do escudo entram depois das plantas aprovadas. | FASES F10: ilhas com zonas nomeadas e pontos de escudo. |

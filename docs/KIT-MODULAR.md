@@ -6,15 +6,15 @@
 
 ## 0. Como usar (para o Claude Code)
 
-- Cada componente abaixo vira um **Model reutilizável** em `ReplicatedStorage/Kits/<Mapa>/<Componente>` (ex.: `Kits/Porto/Conteiner_Laranja`), com `PrimaryPart` na base, centralizado.
+- Cada componente abaixo vira uma **função reutilizável** em `src/shared/Maps/Kits/<Mapa>.luau`, que devolve um `Model` (ex.: `Kits.Porto.Conteiner`). A ilha é montada por código e fica salva no place da Partida (GDD 20, F10; README "Mapa salvo no place").
 - Medidas em **studs**. As pranchas mostram a forma; este documento manda nas medidas e cores.
 - As ilhas são montadas posicionando esses Models. Não modelar peça única fora do kit sem registrar aqui.
-- Se o Studio MCP estiver conectado, construir os componentes no Studio e tirar captura de tela para conferir com a prancha.
+- Com o Studio MCP conectado: montar o mundo no place (`WorldBuilder.bake`) e tirar captura de tela para conferir com a prancha.
 
 ## 1. Regras de todos os kits `[DECIDIDO]`
 
 - Grade de 1 stud; medidas inteiras ou de meio stud.
-- Material liso (SmoothPlastic), **sem textura**. Detalhes (tijolos, ferrugem, musgo, sujeira, ondulação) = peças finas ou manchas de **cor chapada**.
+- Material liso (SmoothPlastic), **sem textura** (confirmado pelo dono do projeto na F10). Detalhes (tijolos, ferrugem, musgo, sujeira, ondulação) = peças finas ou manchas de **cor chapada**. O bloco cinza das plantas é só a etapa de aprovação: o mapa final leva todo o detalhe do kit.
 - Cenário **menos saturado** que os personagens.
 - **Proibido:** Neon, PointLight/SurfaceLight coloridos, partículas decorativas, vermelho puro (cor do inimigo), sangue, logotipos e texto escrito em objetos.
 - Personagem = 5 studs. **Cobertura cheia ≥ 6 studs**; **meia altura = 3 studs**; cobertura a cada ~10 studs nas rotas.
@@ -249,7 +249,7 @@ Prancha: `docs/referencias/visuais/kit-praca.png`
 - **Medidas:** Ø 5,6 × 8,8 studs
 - **Função:** Cobertura parcial
 - Tronco de 6 lados + copa em 3 camadas de 7 lados.
-- Copa sem colisão de tiro? Decidir em teste; tronco sempre colide.
+- Copa sem colisão e sem bloquear tiro; só o tronco colide `[DECIDIDO]` (F10, confirmar em teste).
 - Vista de cima (mirante) é a principal marca da Praça.
 
 ### Poste De Luz
@@ -347,5 +347,5 @@ Prancha: `docs/referencias/visuais/guia-arma-primeira-pessoa.png`. Regras de enq
 
 ## 7. Em aberto
 
-- Copa da árvore da Praça bloqueia tiro? (decidir em teste)
-- Plantas baixas de cada ilha (montar com o dono do projeto antes de construir).
+- ~~Copa da árvore da Praça bloqueia tiro?~~ Respondida na F10: não (seção 4); confirmar em teste.
+- Plantas baixas: Praça aprovada; Porto, Fábrica e Torre com contorno do dono e interior em aprovação (F10).

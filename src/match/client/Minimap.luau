@@ -30,6 +30,9 @@ local MatchClient = require(script.Parent.MatchClient)
 local CFG = UiConfig.Minimap
 local COLORS = Theme.Minimap
 local WORLD_FOLDER = WorldBuilder.FolderName
+local DETAIL_ATTRIBUTE = WorldBuilder.DetailAttribute -- peças de acabamento dos kits: fora do minimapa
+-- Faixas usadas para desenhar cada triângulo de chão (a interface não tem triângulo)
+local TRIANGLE_STRIPS = 10
 
 local Minimap = {}
 
@@ -72,6 +75,32 @@ local function dot(name: string, color: Color3, size: number): Frame
 	return f
 end
 
+-- Triângulo de chão (chanfros e diagonais das plantas): uma WedgePart deitada (Build.flatTriangle),
+-- com o ângulo reto em (-Y, +Z) local. É desenhado em faixas finas paralelas a um cateto, cada uma
+-- mais curta que a anterior.
+local function drawGroundTriangle(island: number, wedge: WedgePart)
+	local h, d = wedge.Size.Y / 2, wedge.Size.Z / 2
+	local corner = toMap(island, wedge.CFrame * Vector3.new(0, -h, d))
+	local legA = toMap(island, wedge.CFrame * Vector3.new(0, h, d)) - corner
+	local legB = toMap(island, wedge.CFrame * Vector3.new(0, -h, -d)) - corner
+	local rotation = math.deg(math.atan2(legA.Y, legA.X))
+	local thickness = legB.Magnitude / TRIANGLE_STRIPS
+	for i = 0, TRIANGLE_STRIPS - 1 do
+		local t = (i + 0.5) / TRIANGLE_STRIPS
+		local strip = Ui.frame("Ground", map)
+		strip:SetAttribute("Static", true)
+		strip.AnchorPoint = Vector2.new(0.5, 0.5)
+		local mid = corner + legB * t + legA * ((1 - t) / 2)
+		strip.Position = UDim2.fromScale(mid.X, mid.Y)
+		strip.Rotation = rotation
+		-- um fio a mais na espessura, para não aparecer fresta entre as faixas
+		strip.Size = UDim2.fromScale(legA.Magnitude * (1 - t), thickness * 1.15)
+		strip.BackgroundTransparency = 0
+		strip.BackgroundColor3 = COLORS.Island
+		strip.ZIndex = 1
+	end
+end
+
 -- Desenha as construções da ilha: peças acima do chão, vistas de cima.
 local function drawIsland(island: number)
 	for _, child in map:GetChildren() do
@@ -90,7 +119,7 @@ local function drawIsland(island: number)
 		return
 	end
 	for _, part in folder:GetDescendants() do
-		if not part:IsA("BasePart") or part.Transparency >= 0.9 then
+		if not part:IsA("BasePart") or part.Transparency >= 0.9 or part:GetAttribute(DETAIL_ATTRIBUTE) then
 			continue
 		end
 		-- Chão (área de duelo e bases) embaixo; construções acima do chão por cima. Peças rasas e a
@@ -100,8 +129,9 @@ local function drawIsland(island: number)
 		if not ground and top < center.Y + 1 then
 			continue
 		end
-		if ground and not part:IsA("Part") then
-			continue -- triângulos de chão (chanfros): desenho próprio quando cada mapa for ligado
+		if ground and part:IsA("WedgePart") then
+			drawGroundTriangle(island, part)
+			continue
 		end
 		local rect = Ui.frame(if ground then "Ground" else "Block", map)
 		rect:SetAttribute("Static", true)

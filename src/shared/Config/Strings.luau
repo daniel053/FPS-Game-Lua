@@ -458,6 +458,33 @@ local Strings = {
 		mirante = "Mirante",
 	},
 
+	-- Zonas dos mapas, usadas nos pings (GDD 15.1 e 15.4 a 15.7)
+	Zones = {
+		base = "Base",
+		meio = "Meio",
+		-- Praça
+		passarela = "Passarela",
+		muro = "Muro",
+		canteiro = "Canteiro",
+		-- Porto
+		patio = "Pátio",
+		guindaste = "Guindaste",
+		pier = "Píer",
+		-- Fábrica
+		esteira = "Esteira",
+		controle = "Controle",
+		deposito = "Depósito",
+		-- Torre (o Pátio é o mesmo nome do Porto)
+		muralha = "Muralha",
+		escadaria = "Escadaria",
+		topo = "Topo",
+		ponte = "Ponte",
+	},
+	ZoneSides = {
+		east = "Leste",
+		west = "Oeste",
+	},
+
 	Teams = {
 		Azul = "Azul",
 		Laranja = "Laranja",

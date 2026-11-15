@@ -6,7 +6,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local CharacterConfig = require(Shared.Config.CharacterConfig)
+local IslandCommon = require(Shared.Maps.IslandCommon)
 local MapConfig = require(Shared.Config.MapConfig)
+local Strings = require(Shared.Config.Strings)
 local WorldBuilder = require(Shared.Maps.WorldBuilder)
 local WorldLayout = require(Shared.Match.WorldLayout)
 
@@ -163,5 +165,57 @@ return function(t: any)
 			end
 		end
 		world:Destroy()
+	end)
+
+	t.test("cada ilha tem zonas com nome (Strings.Zones) e 2 pontos de escudo simétricos", function()
+		local world = WorldBuilder.build()
+		for i = 1, WorldLayout.islandCount() do
+			local folder = world:FindFirstChild(`Island{i}`) :: Instance
+			local frame = WorldLayout.islandFrame(i)
+			local zones, bodyZones = 0, 0
+			local pads: { Vector3 } = {}
+			for _, item in folder:GetDescendants() do
+				local zoneId = item:GetAttribute(IslandCommon.ZoneAttribute)
+				if zoneId ~= nil then
+					zones += 1
+					t.ok(Strings.Zones[zoneId] ~= nil, `ilha {i}: zona "{zoneId}" tem nome em Strings.Zones`)
+					if zoneId ~= "base" then
+						bodyZones += 1
+					end
+				end
+				if item.Name == "ShieldPoint" and item:IsA("Model") then
+					table.insert(pads, frame:PointToObjectSpace(item:GetPivot().Position))
+				end
+			end
+			t.ok(bodyZones >= 3, `ilha {i}: {bodyZones} zonas na área de duelo (mínimo 3)`)
+			t.eq(#pads, MapConfig.General.ShieldPickupsPerMap, `ilha {i}: pontos de escudo`)
+			if #pads == 2 then
+				-- simétricos: espelhados (x, z) → (-x, z) ou girados (x, z) → (-x, -z)
+				local a, b = pads[1], pads[2]
+				t.ok(near(a.X, -b.X, 0.1) and near(math.abs(a.Z), math.abs(b.Z), 0.1), `ilha {i}: escudos simétricos`)
+			end
+		end
+		world:Destroy()
+	end)
+
+	t.test("peças de acabamento não colidem nem bloqueiam tiro", function()
+		local world = WorldBuilder.build()
+		for _, part in world:GetDescendants() do
+			if part:IsA("BasePart") and part:GetAttribute(WorldBuilder.DetailAttribute) then
+				t.ok(not part.CanCollide and not part.CanQuery, `{part:GetFullName()} é acabamento`)
+			end
+		end
+		world:Destroy()
+	end)
+
+	t.test("o mundo salvo no place da Partida está em dia com o código", function()
+		local saved = workspace:FindFirstChild(WorldBuilder.FolderName)
+		if saved == nil then
+			return -- lobby e tutorial não têm o mundo da partida
+		end
+		t.ok(
+			saved:GetAttribute(WorldBuilder.RebuiltAttribute) ~= true,
+			"a cópia salva estava velha: montar de novo (README, 'Mapa salvo no place') e salvar o place"
+		)
 	end)
 end

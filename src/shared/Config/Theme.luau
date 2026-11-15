@@ -132,6 +132,9 @@ local Theme = {
 		IslandRoof = hex("#7C8191"),
 		IslandRamp = hex("#ADB1BC"),
 		IslandUnderside = hex("#6F7486"),
+		-- Ponto de recarga de escudo no chão dos mapas (azul do escudo, sem brilho)
+		ShieldPad = hex("#7FBFF5"),
+		ShieldPadRim = hex("#4A5368"),
 		IslandLabel = hex("#4A5068"),
 		Zone = hex("#8B5CF6"), -- parede da zona: roxo do acento, bem transparente
 		Virada = hex("#F5B700"), -- selo e avisos da Rodada da Virada
@@ -155,6 +158,19 @@ local Theme = {
 			ToldoPetroleo = hex("#3C8C8C"),
 			Agua = hex("#4FA3C7"),
 			Madeira = hex("#B98A5A"), -- caixas de madeira (mesma madeira do kit do Porto)
+			-- Tons de acabamento da arte final (F10)
+			Piso = hex("#D9CFBC"), -- lajota clara do chão da praça
+			PisoFaixa = hex("#C6BAA4"), -- juntas e faixas das lajotas
+			PedraEscura = hex("#948D82"), -- juntas e frisos da pedra
+			TijoloEscuro = hex("#A3715A"), -- juntas do tijolo
+			TelhaEscura = hex("#A8663F"), -- linhas das telhas e cumeeira
+			MadeiraEscura = hex("#8E6540"), -- moldura e travessa das caixas, postes da barraca
+			Tronco = hex("#8A5E40"),
+			FolhasClaras = hex("#6DB07A"), -- camada do meio da copa
+			Janela = hex("#56627D"), -- vidro chapado das janelas
+			Metal = hex("#4A5368"), -- poste de luz e pés do banco
+			Terra = hex("#A08A6E"), -- rocha logo abaixo do chão
+			TerraEscura = hex("#7F6D58"), -- rocha mais funda
 		},
 		Porto = {
 			Chapa = hex("#6F8FA6"),
@@ -170,6 +186,7 @@ local Theme = {
 			ConteinerPetroleo = hex("#3C7A8C"),
 			ConteinerMusgo = hex("#6E8F4E"),
 			ConteinerMostarda = hex("#D9A93A"),
+			Rocha = hex("#857E73"), -- rocha embaixo da ilha (concreto escurecido)
 		},
 		Fabrica = {
 			Painel = hex("#8FA3B8"),
@@ -181,6 +198,8 @@ local Theme = {
 			Janela = hex("#BFE3FF"),
 			Metal = hex("#4A5368"),
 			Aviso = hex("#F2C230"),
+			Piso = hex("#C4C7CC"), -- chão de concreto liso do galpão (F10, planta)
+			Rocha = hex("#6B6F7E"), -- rocha embaixo da ilha (F10, planta)
 		},
 		Torre = {
 			Pedra = hex("#A8A29A"),
@@ -192,6 +211,7 @@ local Theme = {
 			Estandarte = hex("#E9E3D5"),
 			Roxo = hex("#6A4FB0"),
 			Chama = hex("#E8913A"),
+			ChamaClara = hex("#F2C230"), -- ponta amarela da chama da tocha (prancha do kit)
 		},
 	},
 
