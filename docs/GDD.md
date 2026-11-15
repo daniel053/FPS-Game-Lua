@@ -980,26 +980,43 @@ Paleta:
 - **Decoração** `[DECIDIDO]` (F10): sobrados e árvores ficam **fora** da área de duelo, como moldura; postes e bancos dentro, nas bordas, sem criar cobertura nova nas rotas. A copa da árvore não bloqueia tiro (só o tronco); confirmar em teste.
 - **Cartas que brilham:** Impulso para subir na passarela sem a rampa; Tremor em quem desce a rampa. `[PROPOSTA]`
 
-### 15.5 Fábrica `[PROPOSTA]`
-- **Tema:** fábrica colorida, com caixas, tubos, guindaste de ponte e **esteiras em movimento**.
-- **Ideia central:** esteiras em sentidos opostos carregam quem pisa nelas; caixas sobre a esteira são cobertura que se move.
-- **Zonas:** *Esteira Norte* e *Esteira Sul*; *Depósito* (prateleiras altas, combate de perto); *Sala de Controle* (centro, nível 1, passarelas).
-- **Cartas que brilham:** Tremor nas passarelas estreitas; escopetas no Depósito.
+### 15.5 Fábrica — planta `[DECIDIDO]` (F10, dono do projeto); medidas e alturas `[PROPOSTA]`
+- **Tema:** fábrica colorida, com caixas, tubos e **esteiras em movimento** (arte com o kit da Fábrica, KIT-MODULAR 3).
+- **Ideia central:** esteiras carregam quem pisa nelas; caixas sobre a esteira são cobertura que se move.
+- **Planta** (contorno em `docs/referencias/f10/fabrica-0-planta-do-dono.png`, bloco aprovado em `fabrica-1-de-cima.jpg` e `fabrica-2-do-mirante.jpg`; código em `Shared/Maps/Islands/Fabrica`): cintura estreita no meio, chanfro de um lado e degrau reto do outro, com **simetria de giro**. Cada metade tem:
+  - **Controle** (centro, nível 1, 6 studs): plataforma atravessada na frente da base, com rampa de frente para a base; as duas plataformas se ligam por uma passarela com grade, e passa-se por baixo dela;
+  - **Depósito**: prateleiras altas em linha, uma máquina, um corredor de prateleiras atrás e tubulação na parede do fundo;
+  - **Esteira**: duas esteiras em linha com um vão de 6 entre elas, andando para fora, com caixas de papelão em cima;
+  - um **ponto de escudo** no meio de cada corredor lateral.
+- **Zonas** `[DECIDIDO]` (F10): *Controle*, *Depósito*, *Esteira* e *Meio*, com Leste/Oeste, mais *Base*.
+- **Cartas que brilham:** Tremor na passarela estreita; escopetas no Depósito. `[PROPOSTA]`
 
-### 15.6 Porto `[PROPOSTA]`
-- **Tema:** porto com contêineres, guindaste, píer de madeira e água.
-- **Zonas:** *Corredor dos Contêineres* (rota esquerda); *Píer* (rota direita, aberto); *Guindaste* (centro, nível 2, linha de visão longa, sobe por escada ou Impulso); *Armazém* (centro, nível 0, combate de perto, telhado transparente para o mirante).
+### 15.6 Porto — planta `[DECIDIDO]` (F10, dono do projeto); medidas e alturas `[PROPOSTA]`
+- **Tema:** porto com contêineres, guindaste, píer de madeira e água (arte com o kit do Porto, KIT-MODULAR 2).
+- **Planta** (contorno em `docs/referencias/f10/porto-0-planta-do-dono.png`, bloco aprovado em `porto-1-de-cima.jpg` e `porto-2-do-mirante.jpg`; código em `Shared/Maps/Islands/Porto`): retângulo com um recorte de água no meio das bordas norte e sul, com **simetria de giro**.
+  - **Guindaste** (centro): pilha de contêineres em ponte; a rota do meio passa por baixo (vão de 8). Cada ponta é uma plataforma (nível 1, 8,5) com escada do chão e outra até o topo (nível 2, 17, linha de visão longa).
+  - **Pátio** (leste e oeste): dois contêineres em pé, em linha, com um portão de 8 entre eles; um deles fica na frente da porta da base e quebra a linha reta base a base. Parede de chapa e caixas de madeira do lado mais aberto.
+  - **Píer** (nos dois recortes): tablado de madeira sobre a água, sem mureta, com o **ponto de escudo** no meio.
+- **Sem Armazém** (não está na planta aprovada): o Porto não tem área coberta.
+- **Zonas** `[DECIDIDO]` (F10): *Guindaste*, *Píer*, *Pátio* e *Meio*, com Leste/Oeste, mais *Base*.
 - **Especial:** cair na água volta à base.
-- **Cartas que brilham:** Luneta e Mata-Pato no Guindaste; Nuvem nas portas do Armazém.
+- **Cartas que brilham:** Luneta e Mata-Pato no Guindaste; Nuvem no portão do Pátio. `[PROPOSTA]`
 
-### 15.7 Torre `[PROPOSTA]`
-- **Tema:** torre/castelinho em ruínas no alto da ilha, com muralhas, escadarias e pontes.
+### 15.7 Torre — planta `[DECIDIDO]` (F10, dono do projeto); medidas e alturas `[PROPOSTA]`
+- **Tema:** torre/castelinho em ruínas no alto da ilha, com muralhas, escadarias e ponte (arte com o kit da Torre, KIT-MODULAR 5).
 - **Ideia central:** o mapa mais vertical; disputa pelo alto da torre.
-- **Zonas:** *Pátio* (nível 0); *Muralhas* (flancos, nível 1); *Escadaria* (meio); *Topo da Torre* (centro, nível 3, aberto, exposto); *Ponte Levadiça* (liga as duas bases por baixo).
-- **Cartas que brilham:** Impulso para chegar ao topo sem a escadaria; Tremor em quem desce a escadaria.
+- **Planta** (contorno em `docs/referencias/f10/torre-0-planta-do-dono.png`, bloco aprovado em `torre-1-de-cima.jpg` e `torre-2-do-mirante.jpg`; código em `Shared/Maps/Islands/Torre`): **simetria espelhada** (a única ilha assim: o contorno do dono só é simétrico desse jeito), com um vão central em colchete.
+  - **Topo** (centro, 12 studs, com ameias, aberto e exposto), igual para os dois times;
+  - **Escadaria**: dois lances espelhados encostados no Topo, um de cada time; única subida sem carta;
+  - **Ponte**: tábuas sobre o vão, coladas no Topo (rota do meio, sem cobertura); cair no vão volta à base;
+  - **Muralha** (nível 1, 8,5): caminho de ronda do lado oposto ao mirante, com uma escada em cada ponta e a guarita no meio;
+  - **Pátio** (nível 0, do lado do mirante): só peças baixas (escombros).
+  - Dois **pontos de escudo** no eixo do meio: um no Pátio e um na Muralha.
+- **Zonas** `[DECIDIDO]` (F10): *Topo*, *Escadaria*, *Ponte*, *Muralha*, *Pátio* e *Meio*, com Leste/Oeste onde há duas, mais *Base*.
+- **Cartas que brilham:** Impulso para chegar ao topo sem a escadaria; Tremor em quem desce a escadaria. `[PROPOSTA]`
 
 ### 15.8 Em aberto
-- Plantas do Porto, da Fábrica e da Torre: o dono deu o contorno e deixou o interior livre; cada uma é aprovada em bloco colorido antes da arte (F10).
+- ~~Plantas do Porto, da Fábrica e da Torre.~~ Respondida na F10: aprovadas em bloco colorido pelo dono do projeto (15.5 a 15.7). Falta conferir em jogo, em primeira pessoa: largura dos corredores, cantos cegos e tempo da base ao centro.
 - ~~Quais mapas são maiores e quais menores.~~ Respondida na F10: as 4 ilhas têm o mesmo tamanho (15.3).
 - ~~Paleta de cada mapa.~~ Respondida na F10: as do KIT-MODULAR (seção 14).
 
@@ -1099,7 +1116,7 @@ Ordem resumida: F0 Base → F1 Dados do jogador → F2 Combate → F3 Loop da pa
 11. ~~Onde fica a cor da equipe no personagem?~~ Respondida na F6: não fica no personagem; marcação verde/vermelha na ilha (seções 3.3 e 7.6).
 12. ~~Final melhor de 3: sim ou não?~~ Respondida: sim, e na final as vidas param de contar (seção 4.7).
 13. Preços em Robux e passe VIP.
-14. Plantas baixas dos mapas: Praça aprovada; Porto, Fábrica e Torre em aprovação (F10). ~~Paletas.~~ Respondida na F10: as do KIT-MODULAR.
+14. ~~Plantas baixas dos mapas.~~ Respondida na F10: as 4 aprovadas (seções 15.4 a 15.7). ~~Paletas.~~ Respondida na F10: as do KIT-MODULAR.
 15. ~~Temas das primeiras skins.~~ Respondida na F9: Areia, Floresta, Oceano e Ouro, só em armas (seção 11).
 
 ---

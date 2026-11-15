@@ -348,4 +348,4 @@ Prancha: `docs/referencias/visuais/guia-arma-primeira-pessoa.png`. Regras de enq
 ## 7. Em aberto
 
 - ~~Copa da árvore da Praça bloqueia tiro?~~ Respondida na F10: não (seção 4); confirmar em teste.
-- Plantas baixas: Praça aprovada; Porto, Fábrica e Torre com contorno do dono e interior em aprovação (F10).
+- ~~Plantas baixas.~~ Respondida na F10: as 4 aprovadas pelo dono do projeto (GDD 15.4 a 15.7).

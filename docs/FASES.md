@@ -387,5 +387,5 @@ Só seguir para a F5 quando a partida for divertida em blocos cinza.
 | ~~Raridade muda poder? (GDD 8.9)~~ Respondida na F9: não | — |
 | ~~Segunda moeda (GDD 18, DADOS 11)~~ Respondida na F9: não por enquanto | — |
 | ~~Tutorial pode ser pulado? (GDD 18)~~ Respondida na F6: só as configurações | — |
-| Plantas do Porto, da Fábrica e da Torre (GDD 15.8): em aprovação. ~~Tamanhos~~ respondido na F10: mesmo tamanho | F10 |
+| ~~Plantas do Porto, da Fábrica e da Torre (GDD 15.8)~~ Respondida na F10: aprovadas. ~~Tamanhos~~ respondido na F10: mesmo tamanho | — |
 | Preços em Robux (GDD 10.3) | F11 |
