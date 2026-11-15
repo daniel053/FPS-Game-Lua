@@ -187,6 +187,17 @@ local Theme = {
 			ConteinerMusgo = hex("#6E8F4E"),
 			ConteinerMostarda = hex("#D9A93A"),
 			Rocha = hex("#857E73"), -- rocha embaixo da ilha (concreto escurecido)
+			-- Tons de acabamento da arte final (F10)
+			ChapaEscura = hex("#5A7A91"), -- ondulação da parede de chapa
+			ConcretoEscuro = hex("#9E978B"), -- juntas do piso do cais
+			MadeiraEscura = hex("#8E6540"), -- estacas e frestas do píer
+			MadeiraClara = hex("#C99B6B"), -- tábuas alternadas do píer
+			AguaClara = hex("#6FB8D6"), -- ondinhas chapadas
+			GuindasteEscuro = hex("#B8851C"), -- diagonais da treliça
+			ConteinerLaranjaEscuro = hex("#B8632E"), -- ondulação e quadro de cada contêiner
+			ConteinerPetroleoEscuro = hex("#306475"),
+			ConteinerMusgoEscuro = hex("#5A7740"),
+			ConteinerMostardaEscuro = hex("#B88E2E"),
 		},
 		Fabrica = {
 			Painel = hex("#8FA3B8"),

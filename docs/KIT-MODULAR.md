@@ -104,6 +104,15 @@ Prancha: `docs/referencias/visuais/kit-porto.png`
 - Amarelo de guindaste com ferrugem só no pé.
 - Topo = plataforma do sniper (nível 2 do mapa Porto).
 
+**Peças de apoio do Porto (F10, em `Kits/Porto`):**
+- **Escada de metal:** colide como rampa lisa (melhor no celular); degraus em chapas finas e longarinas amarelas nas laterais.
+- **Faixa de aviso:** 1 stud de largura, amarela com listras escuras a cada 2 studs, nas beiras que dão para a água.
+- **Água:** placa chapada 3 studs abaixo do cais, com ondinhas mais claras; não colide (quem cai volta à base).
+- **Vaga pintada:** contorno amarelo no chão em volta de cada contêiner do pátio, para ler o pátio de cima.
+- **Juntas do piso:** linhas de concreto mais escuro a cada 14 studs.
+- A **Caixa de Madeira** é a mesma da Praça (um código só).
+- Na **Torre do Guindaste** só o miolo (2 × 2) e a plataforma colidem; a treliça, a lança, a cabine e o gancho são acabamento.
+
 ## 3. Fábrica
 
 Prancha: `docs/referencias/visuais/kit-fabrica.png`

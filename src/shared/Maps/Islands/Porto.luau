@@ -1,6 +1,6 @@
 --!strict
--- Porto (GDD 15.6): planta em bloco colorido (F10), a partir do desenho do dono do projeto
--- (docs/referencias/f10/porto-0-planta-do-dono.png).
+-- Porto (GDD 15.6): planta aprovada pelo dono do projeto (F10), a partir do desenho dele
+-- (docs/referencias/f10/porto-0-planta-do-dono.png), com a arte do kit (KIT-MODULAR 2).
 --
 -- Pátio de contêineres com SIMETRIA DE GIRO (o que existe numa metade existe girado 180° na outra):
 --   * Guindaste (centro): pilha em ponte, fina e comprida no sentido norte-sul. Dois contêineres no
@@ -34,6 +34,8 @@ local HALF_Z = 52.5
 local NOTCH = { HalfWidth = 21, Depth = 8.5 } -- 42 × 8,5 no desenho
 local QUAY_Z = HALF_Z - NOTCH.Depth -- 44: beira do cais (onde o concreto acaba no recorte)
 local WATER_DROP = 3 -- a água fica 3 studs abaixo do chão
+local JOINT_STEP = 14 -- juntas do piso de concreto (só acabamento)
+local JOINT_Z = 22
 
 -- Pilha do Guindaste (no centro, comprimento no sentido norte-sul). Ocupa |x| ≤ 4, |z| ≤ 24; o vão
 -- por baixo é |z| ≤ 4; o contêiner de cima é |z| ≤ 10.
@@ -104,9 +106,12 @@ local function half(frame: CFrame, folder: Instance, front: Kit.CorDeConteiner, 
 		Build.wall("Rail", frame, edge[1], edge[2], rail, 1, PALETTE.Metal, folder)
 	end
 
-	-- Pátio
-	Kit.Conteiner(folder, at(YARD_CONTAINERS.Front.X, YARD_CONTAINERS.Front.Y, 90), front)
-	Kit.Conteiner(folder, at(YARD_CONTAINERS.North.X, YARD_CONTAINERS.North.Y, 90), north)
+	-- Pátio: cada contêiner na sua vaga pintada
+	for _, spot in { { at = YARD_CONTAINERS.Front, cor = front }, { at = YARD_CONTAINERS.North, cor = north } } do
+		local origin = at(spot.at.X, spot.at.Y, 90)
+		Kit.Conteiner(folder, origin, spot.cor)
+		Kit.Vaga(folder, origin)
+	end
 	Kit.ParedeDeChapa(folder, at(SHEET_WALL.X, SHEET_WALL.Y, 90))
 	for _, crate in CRATES do
 		Kit.CaixaDeMadeira(folder, at(crate[1], crate[2]), crate[3])
@@ -161,6 +166,19 @@ local function floor(frame: CFrame, folder: Instance)
 	end
 	for _, rect in rects do
 		IslandCommon.ground(Build.floorRect("Floor", frame, rect[1], rect[2], t, PALETTE.Concreto, folder, 0, options))
+	end
+
+	-- Juntas do piso (acabamento): uma a cada 14 studs de base a base e duas ao comprido
+	local joint = { Width = 0.25, Height = 0.03 }
+	for k = -4, 4 do
+		local x = k * JOINT_STEP
+		local a, b = v2(x - joint.Width / 2, -QUAY_Z), v2(x + joint.Width / 2, QUAY_Z)
+		Build.floorRect("Junta", frame, a, b, joint.Height, PALETTE.ConcretoEscuro, folder, joint.Height, Build.Detail)
+	end
+	for _, sz in { -1, 1 } do
+		local z = sz * JOINT_Z
+		local a, b = v2(-HALF_X, z - joint.Width / 2), v2(HALF_X, z + joint.Width / 2)
+		Build.floorRect("Junta", frame, a, b, joint.Height, PALETTE.ConcretoEscuro, folder, joint.Height, Build.Detail)
 	end
 
 	-- Rocha embaixo, sempre por dentro do contorno do chão (nada embaixo dos recortes: quem cai na
