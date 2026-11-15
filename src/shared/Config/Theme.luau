@@ -230,6 +230,11 @@ local Theme = {
 			Roxo = hex("#6A4FB0"),
 			Chama = hex("#E8913A"),
 			ChamaClara = hex("#F2C230"), -- ponta amarela da chama da tocha (prancha do kit)
+			-- Tons de acabamento da arte final (F10)
+			PedraJunta = hex("#8F8981"), -- juntas dos blocos de pedra
+			PedraSombra = hex("#696359"), -- juntas sobre a pedra escura
+			PedraClara = hex("#BDB7AE"), -- degraus alternados, lajes do caminho e topo dos merlões
+			MadeiraEscura = hex("#7A5334"), -- frestas das tábuas
 		},
 	},
 

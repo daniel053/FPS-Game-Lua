@@ -1,6 +1,7 @@
 --!strict
--- Torre (GDD 15.7): PLANTA em bloco colorido (F10), sobre o contorno do dono do projeto
--- (`docs/referencias/f10/torre-0-planta-do-dono.png`, medido em pixels: 148 px = 140 studs).
+-- Torre (GDD 15.7): planta aprovada pelo dono do projeto (F10), sobre o contorno dele
+-- (`docs/referencias/f10/torre-0-planta-do-dono.png`, medido em pixels: 148 px = 140 studs), com a
+-- arte do kit (KIT-MODULAR 5).
 --
 -- Simetria ESPELHADA (x → -x): o contorno do dono só é simétrico assim (lado -Z chanfrado, lado +Z
 -- reto com um recorte). A metade +X é montada com `lado = 1` e a outra com `lado = -1`; as peças do
@@ -27,6 +28,7 @@ local WORLD = MapConfig.World
 local COR = Theme.Maps.Torre
 
 local v2 = Vector2.new
+local LADOS = { -1, 1 }
 
 type Rect = { x0: number, x1: number, z0: number, z1: number }
 type Peca = { x: number, z: number, giro: number }
@@ -104,6 +106,20 @@ local PORTA_PATIO = { X = 36, Z = 27 } -- porta em arco solta, z de 22 a 32
 -- Mureta em ruína (meia altura) entre a faixa da Escadaria e o Pátio de fora (o traço do dono)
 local MURETA_PATIO = { X = 21.5, Z = 31, Comprimento = 12, Altura = 3.5 }
 
+-- Acabamento do chão (não muda cobertura nem rota): lajes na cabeça da Ponte (do vão até o muro do
+-- portão), e manchas de musgo rentes ao chão { x, z, largura, fundo }.
+local CAMINHO = { De = 25, Ate = 43, Laje = 3, Vao = 0.4 }
+local MUSGO_NO_CHAO = {
+	{ 12, -22, 5, 3 },
+	{ 40, -40, 4, 6 },
+	{ 60, -20, 6, 3 },
+	{ 52, 10, 4, 4 },
+	{ 30, 20, 5, 3 },
+	{ 62, 44, 6, 4 },
+	{ 14, 46, 4, 5 },
+	{ 40, 34, 3, 5 },
+}
+
 local ESCOMBROS: { Peca } = {
 	{ x = 31, z = -9, giro = 90 }, -- cabeça da Ponte
 	{ x = 33, z = 7, giro = 90 }, -- Meio, a caminho da Escadaria
@@ -166,6 +182,45 @@ local function metade(frame: CFrame, folder: Instance, lado: number)
 			local min, max = retangulo(lado, r)
 			Build.floorRect("Underside", frame, min, max, altura, COR.PedraEscura, folder, topo, semSombra)
 		end
+	end
+
+	-- Acabamento do chão: lajes do caminho (duas fileiras, na largura da Ponte) e musgo
+	local laje = CAMINHO.Laje
+	local x = CAMINHO.De
+	local fileira = 0
+	while x + laje <= CAMINHO.Ate do
+		for _, dz in LADOS do
+			local z = PONTE.Z + dz * (laje + CAMINHO.Vao) / 2
+			local a, b = p(x, z - laje / 2), p(x + laje, z + laje / 2)
+			Build.floorRect(
+				"Laje",
+				frame,
+				v2(math.min(a.X, b.X), a.Y),
+				v2(math.max(a.X, b.X), b.Y),
+				0.04,
+				if (fileira + (if dz == 1 then 1 else 0)) % 2 == 0 then COR.PedraClara else COR.Pedra,
+				folder,
+				0.04,
+				Build.Detail
+			)
+		end
+		x += laje + CAMINHO.Vao
+		fileira += 1
+	end
+	for _, mancha in MUSGO_NO_CHAO do
+		local a = p(mancha[1] - mancha[3] / 2, mancha[2] - mancha[4] / 2)
+		local b = p(mancha[1] + mancha[3] / 2, mancha[2] + mancha[4] / 2)
+		Build.floorRect(
+			"Musgo",
+			frame,
+			v2(math.min(a.X, b.X), a.Y),
+			v2(math.max(a.X, b.X), b.Y),
+			0.03,
+			COR.Musgo,
+			folder,
+			0.03,
+			Build.Detail
+		)
 	end
 
 	-- Mureta (3) nas bordas de fora e também na beira do vão, menos na cabeça da Ponte: a queda é
@@ -332,6 +387,8 @@ local function meio(frame: CFrame, folder: Instance)
 		folder,
 		topo
 	)
+	-- Juntas de pedra na face do Topo que dá para a Ponte (o baluarte é maciço: só a face)
+	Kit.Juntas(folder, em(0, 0, 0, (topo - t) / 2), pen.Meio * 2, topo + t, 0)
 	Kit.Ameias(folder, em(0, 0.5, 0, topo), pen.Meio * 2) -- face do vão (em cima da Ponte)
 	Kit.Ameias(folder, em(0, TOPO.SacadaAte - 0.5, 0, topo), TOPO.SacadaMeio * 2 - 2) -- ponta da sacada
 	Kit.Estandarte(folder, em(0, 3, 0, topo))

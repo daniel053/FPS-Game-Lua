@@ -1,7 +1,11 @@
 --!strict
--- Kit da Torre (KIT-MODULAR seção 5): castelinho em ruínas. Etapa de PLANTA: cada componente é um
--- bloco simples, já na cor e nas medidas do kit. As assinaturas são as finais: na etapa de arte o
--- detalhe (blocos de pedra, musgo, tábuas, correntes) entra aqui dentro, sem mexer na planta.
+-- Kit da Torre (KIT-MODULAR seção 5): castelinho em ruínas. Um componente por função, cada um
+-- devolve um Model.
+--
+-- As peças que colidem são as da planta aprovada (blocos e rampas simples). O acabamento (juntas
+-- dos blocos de pedra, musgo, tábuas, correntes, folhas de porta) é `Build.Detail`: não colide,
+-- não bloqueia tiro e sai no máximo ~0,15 stud da peça que colide. Cores só de `Theme.Maps.Torre`;
+-- material liso, sem neon, sem luz e sem texto.
 --
 -- Convenção de todos os componentes:
 --   * `origem` = quadro no centro da base do componente (use `Build.pivot`), no nível do piso;
@@ -13,6 +17,8 @@ local Build = require(script.Parent.Parent.Build)
 local Theme = require(script.Parent.Parent.Parent.Config.Theme)
 
 local COR = Theme.Maps.Torre
+local DETALHE = Build.Detail
+local LADOS = { -1, 1 }
 
 local Kit = {}
 
@@ -47,6 +53,60 @@ local function principal(model: Model, part: BasePart): Model
 	return model
 end
 
+-- Blocos grandes do kit (3,2 × 1,6), em fileiras alternadas
+local BLOCO = { Comprimento = 3.2, Altura = 1.6, Junta = 0.12 }
+
+-- Juntas dos blocos de pedra numa parede. `centro` é o centro da parede: largura no X local, altura
+-- no Y, espessura no Z. As juntas atravessam a espessura e aparecem 0,05 para fora nas duas faces.
+-- Para uma face só (parede maciça), passe o centro NA face e `espessura` = 0.
+function Kit.Juntas(parent: Instance, centro: CFrame, largura: number, altura: number, espessura: number, cor: Color3?)
+	local tom = cor or COR.PedraJunta
+	local fiadas = math.max(1, math.floor(altura / BLOCO.Altura + 0.5))
+	local passo = altura / fiadas
+	local fundo = espessura + 0.1
+	for i = 1, fiadas do
+		local y = -altura / 2 + i * passo
+		if i < fiadas then
+			Build.block(
+				"Junta",
+				Vector3.new(largura - 0.04, BLOCO.Junta, fundo),
+				centro * CFrame.new(0, y, 0),
+				tom,
+				parent,
+				DETALHE
+			)
+		end
+		local x = -largura / 2 + (if i % 2 == 0 then BLOCO.Comprimento else BLOCO.Comprimento / 2)
+		while x <= largura / 2 - 0.8 do
+			Build.block(
+				"Junta",
+				Vector3.new(BLOCO.Junta, passo, fundo),
+				centro * CFrame.new(x, y - passo / 2, 0),
+				tom,
+				parent,
+				DETALHE
+			)
+			x += BLOCO.Comprimento
+		end
+	end
+end
+
+-- Manchas de musgo na base de uma parede (só embaixo): `pe` é o meio do pé da parede, largura no X.
+local function musgoNaBase(model: Model, pe: CFrame, largura: number, espessura: number)
+	local manchas = { { -0.3, 0.32, 0.9 }, { 0.12, 0.2, 0.5 }, { 0.36, 0.16, 1.2 } } -- { posição, largura, altura }
+	for _, mancha in manchas do
+		local w = math.max(0.8, largura * mancha[2])
+		Build.block(
+			"Musgo",
+			Vector3.new(w, mancha[3], espessura + 0.2),
+			pe * CFrame.new(largura * mancha[1], mancha[3] / 2, 0),
+			COR.Musgo,
+			model,
+			DETALHE
+		)
+	end
+end
+
 -- Muralha De Pedra (16 × 3 × 10): bloqueia visão. Comprimento no X local. Em ruína a altura varia:
 -- 10 = muralha inteira; 3,5 = mureta de meia altura.
 function Kit.MuralhaDePedra(parent: Instance, origem: CFrame, comprimento: number?, altura: number?): Model
@@ -58,15 +118,28 @@ function Kit.MuralhaDePedra(parent: Instance, origem: CFrame, comprimento: numbe
 	local corpo =
 		Build.block("Corpo", Vector3.new(l, h - capa, e), origem * CFrame.new(0, (h - capa) / 2, 0), COR.Pedra, model)
 	Build.block("Capa", Vector3.new(l, capa, e), origem * CFrame.new(0, h - capa / 2, 0), COR.PedraEscura, model)
-	-- Musgo só na base (mancha chapada, 0,1 para fora da face para não piscar)
-	Build.block(
-		"Musgo",
-		Vector3.new(l * 0.4, 0.8, e + 0.2),
-		origem * CFrame.new(-l * 0.2, 0.4, 0),
-		COR.Musgo,
-		model,
-		Build.Detail
-	)
+	Kit.Juntas(model, origem * CFrame.new(0, (h - capa) / 2, 0), l, h - capa, e)
+	-- Musgo só na base (manchas chapadas, 0,1 para fora da face para não piscar)
+	musgoNaBase(model, origem, l, e)
+	-- Ruína: pedras soltas que sobraram em cima da capa, numa ponta
+	if l >= 5 then
+		Build.block(
+			"PedraSolta",
+			Vector3.new(BLOCO.Comprimento, 0.8, e - 0.4),
+			origem * CFrame.new(-l / 2 + 1.8, h + 0.4, 0),
+			COR.Pedra,
+			model,
+			DETALHE
+		)
+		Build.block(
+			"PedraSolta",
+			Vector3.new(1.4, 0.5, e - 0.8),
+			origem * CFrame.new(-l / 2 + 4.4, h + 0.25, 0.1),
+			COR.PedraJunta,
+			model,
+			DETALHE
+		)
+	end
 	return principal(model, corpo)
 end
 
@@ -92,6 +165,14 @@ function Kit.Ameias(parent: Instance, origem: CFrame, comprimento: number): Mode
 			origem * CFrame.new(x, M.Peitoril + dente / 2, 0),
 			COR.PedraEscura,
 			model
+		)
+		Build.block(
+			"MerlaoTopo",
+			Vector3.new(merlao.X + 0.1, 0.12, merlao.Z + 0.1),
+			origem * CFrame.new(x, merlao.Y + 0.02, 0),
+			COR.PedraClara,
+			model,
+			DETALHE
 		)
 	end
 	return principal(model, peitoril)
@@ -119,6 +200,8 @@ function Kit.MuralhaComAmeias(parent: Instance, origem: CFrame, comprimento: num
 	-- Frente: mísula + fileira de ameias
 	Build.block("Misula", Vector3.new(l, 1, 1), origem * CFrame.new(0, h - 0.5, w / 2 + 0.5), COR.PedraEscura, model)
 	Kit.Ameias(model, origem * CFrame.new(0, h, w / 2 + 0.5), l)
+	Kit.Juntas(model, origem * CFrame.new(0, (h - 1) / 2, 0), l, h - 1, w)
+	musgoNaBase(model, origem, l, w)
 	return principal(model, corpo)
 end
 
@@ -142,9 +225,9 @@ function Kit.Escadaria(parent: Instance, origem: CFrame, altura: number?, largur
 			"Degrau",
 			Vector3.new(livre, passo, fundo),
 			origem * CFrame.new(0, (i - 1) * passo, (i - 0.5) * fundo),
-			COR.Pedra,
+			if i % 2 == 0 then COR.Pedra else COR.PedraClara,
 			model,
-			Build.Detail
+			DETALHE
 		)
 	end
 	-- Mureta lateral dos dois lados, 1,5 acima dos degraus (um bloco baixo + uma cunha por cima)
@@ -188,8 +271,42 @@ function Kit.PonteLevadica(parent: Instance, origem: CFrame, comprimento: number
 		COR.Madeira,
 		model
 	)
-	-- Longarinas de ferro embaixo (acabamento; as correntes entram na etapa de arte)
-	for _, lado in { -1, 1 } do
+	-- Frestas entre as tábuas (a cada 1,5)
+	local frestas = math.floor((l / 2 - 0.75) / 1.5)
+	for k = -frestas, frestas do
+		Build.block(
+			"Fresta",
+			Vector3.new(w + 0.04, espessura + 0.04, 0.12),
+			origem * CFrame.new(0, -espessura / 2, k * 1.5),
+			COR.MadeiraEscura,
+			model,
+			DETALHE
+		)
+	end
+	-- Longarinas de ferro embaixo, e uma corrente de cada poste até a beira da ponte
+	for _, lado in LADOS do
+		for _, ponta in LADOS do
+			local alto = Vector3.new(lado * (w / 2 + 0.4), 3.8, ponta * (l / 2 + 1))
+			local baixo = Vector3.new(lado * (w / 2 - 0.2), 0.1, ponta * (l / 2 - 5))
+			Build.block(
+				"Corrente",
+				Vector3.new(0.2, 0.2, (alto - baixo).Magnitude),
+				origem * CFrame.lookAt((alto + baixo) / 2, baixo),
+				COR.Ferro,
+				model,
+				DETALHE
+			)
+			Build.block(
+				"PosteCinta",
+				Vector3.new(0.95, 0.4, 0.95),
+				origem * CFrame.new(alto.X, 3.7, alto.Z),
+				COR.Ferro,
+				model,
+				DETALHE
+			)
+		end
+	end
+	for _, lado in LADOS do
 		Build.block(
 			"Longarina",
 			Vector3.new(0.4, 0.4, l),
@@ -229,6 +346,48 @@ function Kit.PortaEmArco(parent: Instance, origem: CFrame, largura: number?, vao
 			model
 		)
 		primeira = primeira or part
+		Kit.Juntas(model, part.CFrame, ombreira, h, e)
+		-- Canto do arco: uma cunha em cada canto de cima da passagem (só acabamento)
+		local cunha = 1.4
+		Build.wedge(
+			"ArcoCanto",
+			Vector3.new(e + 0.1, cunha, cunha),
+			origem
+				* CFrame.fromMatrix(
+					Vector3.new(lado * (v / 2 - cunha / 2), vaoAltura - cunha / 2, 0),
+					Vector3.new(0, 0, lado),
+					Vector3.new(0, -1, 0),
+					Vector3.new(lado, 0, 0)
+				),
+			COR.PedraEscura,
+			model,
+			DETALHE
+		)
+		-- Folha da porta aberta, encostada na parede (face -Z: as tochas ficam na +Z): tábuas com 2 cintas de ferro
+		local folha = math.min(v / 2, ombreira - 0.4)
+		local folhaAltura = vaoAltura - 0.3
+		local meio = origem * CFrame.new(lado * (v / 2 + 0.2 + folha / 2), folhaAltura / 2, -(e / 2 + 0.1))
+		Build.block("Folha", Vector3.new(folha, folhaAltura, 0.2), meio, COR.Madeira, model, DETALHE)
+		for _, y in { -folhaAltura / 4, folhaAltura / 4 } do
+			Build.block(
+				"Cinta",
+				Vector3.new(folha + 0.06, 0.35, 0.28),
+				meio * CFrame.new(0, y, 0),
+				COR.Ferro,
+				model,
+				DETALHE
+			)
+		end
+		for k = -1, 1, 2 do
+			Build.block(
+				"Tabua",
+				Vector3.new(0.08, folhaAltura, 0.24),
+				meio * CFrame.new(k * folha / 6, 0, 0),
+				COR.MadeiraEscura,
+				model,
+				DETALHE
+			)
+		end
 	end
 	Build.block(
 		"Arco",
@@ -316,6 +475,7 @@ function Kit.Escombros(parent: Instance, origem: CFrame, espelhado: boolean?): M
 	local s = if espelhado then -1 else 1
 	local muro = M.EscombrosMuro
 	local corpo = Build.block("Muro", muro, origem * CFrame.new(0, muro.Y / 2, 0), COR.Pedra, model)
+	Kit.Juntas(model, corpo.CFrame, muro.X, muro.Y, muro.Z)
 	Build.block(
 		"Toco",
 		Vector3.new(2, 2, muro.Z),

@@ -356,6 +356,14 @@ Prancha: `docs/referencias/visuais/kit-torre.png`
 - Cobertura de meia altura no Pátio.
 - Musgo em manchas, sem textura.
 
+**Peças de apoio da Torre (F10, em `Kits/Torre`):**
+- **Juntas de pedra:** blocos de 3,2 × 1,6 em fileiras alternadas, desenhados por linhas finas mais escuras (uma peça serve às duas faces da parede).
+- **Ameias:** peitoril contínuo de 1,5 com merlões; cada merlão tem o topo mais claro, para ler de cima.
+- **Escadaria:** quem anda pisa numa rampa lisa; os degraus em tons alternados são acabamento.
+- **Porta em Arco na planta:** passagem aberta, com as duas folhas de tábuas abertas e encostadas na parede (do lado oposto às tochas) e os cantos do arco em cunha. A colisão continua um vão reto de 4 × 6,5.
+- **Ponte:** uma só, de 47 × 5, atravessando o vão; frestas entre as tábuas e uma corrente de cada poste até a beira.
+- **Chão:** lajes na cabeça da Ponte e manchas de musgo rentes ao chão (só pintura).
+
 **Regra específica:** toda altura nova precisa de uma subida sem carta (escada ou rampa).
 
 ## 6. Arma em primeira pessoa
