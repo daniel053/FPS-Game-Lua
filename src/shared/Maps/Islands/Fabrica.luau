@@ -1,6 +1,6 @@
 --!strict
--- Fábrica (GDD 15.5): planta em bloco colorido, a partir do desenho do dono do projeto (F10,
--- `docs/referencias/f10/fabrica-0-planta-do-dono.png`), com as peças do kit (KIT-MODULAR 3).
+-- Fábrica (GDD 15.5): planta aprovada pelo dono do projeto (F10), a partir do desenho dele
+-- (`docs/referencias/f10/fabrica-0-planta-do-dono.png`), com a arte do kit (KIT-MODULAR 3).
 --
 -- Simetria de giro: o que existe numa metade existe girado 180° na outra (justo para os dois
 -- times). Cada metade (a base fica em x > 70) tem:
@@ -116,6 +116,22 @@ local function half(frame: CFrame, folder: Instance, side: "east" | "west")
 		)
 	)
 
+	-- Juntas do piso (acabamento): uma a cada 14 studs, na largura da cintura
+	for k = 1, 4 do
+		local x = k * 14
+		Build.floorRect(
+			"Junta",
+			frame,
+			v2(x - 0.12, -WAIST),
+			v2(x + 0.12, WAIST),
+			0.03,
+			PALETTE.PisoFaixa,
+			folder,
+			0.03,
+			Build.Detail
+		)
+	end
+
 	-- Rocha embaixo, sempre por dentro do contorno do chão: 3 placas logo abaixo, 2 mais fundo
 	local rock: { { min: Vector2, max: Vector2, top: number, height: number } } = {
 		{ min = v2(0, -34), max = v2(66, 34), top = -t, height = 10 },
@@ -171,7 +187,7 @@ local function half(frame: CFrame, folder: Instance, side: "east" | "west")
 		Kit.PalletComTambores(folder, Build.pivot(frame, pallet.at, pallet.yaw))
 	end
 
-	-- Esteiras e caixas (paradas nesta etapa; o sentido fica no atributo da correia)
+	-- Esteiras e caixas (montadas paradas; o servidor da partida liga o movimento: `Conveyors`)
 	for _, at in CONVEYORS do
 		Kit.Esteira(folder, Build.pivot(frame, at, CONVEYOR_YAW))
 	end

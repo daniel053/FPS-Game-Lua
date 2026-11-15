@@ -84,6 +84,11 @@ local MapConfig = {
 		MiranteBarrierHeight = 14, -- barreira invisível nas bordas
 	},
 
+	-- Fábrica (GDD 15.5) [PROPOSTA]: esteiras carregam quem pisa e as caixas de papelão.
+	Fabrica = {
+		ConveyorSpeed = 8, -- studs/s (metade da corrida do personagem)
+	},
+
 	-- Céu e luz (ESTILO T4: céu claro e nuvens baixas; GDD 14: dia) [PROPOSTA]
 	Sky = {
 		ClockTime = 14,

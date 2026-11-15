@@ -189,6 +189,14 @@ Prancha: `docs/referencias/visuais/kit-fabrica.png`
 - Cores do mapa: azul-acinzentado e laranja.
 - Agrupar perto das esteiras e do Depósito.
 
+**Peças de apoio da Fábrica (F10, em `Kits/Fabrica`):**
+- **Plataforma de Controle** (28 × 6 × 6): bloco fechado de tijolo (cobertura cheia para quem está no chão), com janelas chapadas, piso de grade em cima (nível 1) e guarda-corpo amarelo, com um vão de 6 no meio de cada lado comprido.
+- **Rampa de Acesso** (6 de largura): subida sem carta até o nível 1, com travessas antiderrapantes e laterais amarelas.
+- **Faixa de segurança:** contorno amarelo pintado no chão em volta de cada esteira.
+- Na **Prateleira Alta** o miolo que colide é uma caixa só (bloqueia a visão inteira); as caixas variadas são acabamento dos dois lados.
+
+**Esteira em jogo (F10):** a correia carrega quem pisa a `MapConfig.Fabrica.ConveyorSpeed` (8 studs/s `[PROPOSTA]`). As caixas de papelão andam presas num trilho ao longo da correia (ninguém as empurra nem derruba) e, no fim, voltam ao início.
+
 **Regra específica:** setas e faixas zebradas indicam movimento e perigo; nunca texto escrito.
 
 ## 4. Praça

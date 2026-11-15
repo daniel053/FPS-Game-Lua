@@ -211,6 +211,13 @@ local Theme = {
 			Aviso = hex("#F2C230"),
 			Piso = hex("#C4C7CC"), -- chão de concreto liso do galpão (F10, planta)
 			Rocha = hex("#6B6F7E"), -- rocha embaixo da ilha (F10, planta)
+			-- Tons de acabamento da arte final (F10)
+			PainelEscuro = hex("#7589A0"), -- ondulação do painel e linhas da grade
+			TijoloEscuro = hex("#9C6549"), -- juntas do tijolo
+			MaquinaEscura = hex("#4A7D62"), -- frisos da máquina e flanges dos tubos verdes
+			TubosEscuro = hex("#B8632E"), -- flanges dos tubos laranja
+			PapelaoEscuro = hex("#A88352"), -- fita das caixas e frestas do pallet
+			PisoFaixa = hex("#AEB2B9"), -- juntas do piso do galpão
 		},
 		Torre = {
 			Pedra = hex("#A8A29A"),

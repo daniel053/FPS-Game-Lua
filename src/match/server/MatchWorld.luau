@@ -7,6 +7,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
+local Conveyors = require(script.Parent.Conveyors)
 local WorldBuilder = require(Shared.Maps.WorldBuilder)
 local WorldLayout = require(Shared.Match.WorldLayout)
 
@@ -30,6 +31,10 @@ function MatchWorld.build()
 		end
 	end
 	WorldBuilder.hideSpawn(workspace)
+	local world = workspace:FindFirstChild(WorldBuilder.FolderName)
+	if world then
+		Conveyors.start(world)
+	end
 end
 
 -- Ponto aleatório perto do centro do mirante, olhando para fora.
