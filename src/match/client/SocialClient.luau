@@ -221,7 +221,11 @@ local function showPing(data: SocialTypes.PingData)
 		{ key = key, attachment = attachment, gui = gui, distance = distance, expiresAt = data.expiresAt }
 	)
 	Minimap.addPing(key, data.island, data.position, info.icon, color, data.expiresAt)
-	Captions.show(string.format(S.PingCaption, if mine then S.You else data.name, info.label), color)
+	local who = if mine then S.You else data.name
+	local caption = if data.zone
+		then string.format(S.PingCaptionZone, who, info.label, data.zone)
+		else string.format(S.PingCaption, who, info.label)
+	Captions.show(caption, color)
 	if not mine then
 		CombatEffects.playSound(AudioConfig.Ping)
 	end

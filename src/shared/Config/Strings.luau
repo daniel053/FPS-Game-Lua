@@ -297,6 +297,7 @@ local Strings = {
 		} :: { [string]: string },
 		-- Legendas
 		PingCaption = "%s: %s", -- "Ana: Inimigo aqui"
+		PingCaptionZone = "%s: %s · %s", -- "Ana: Inimigo aqui · Muro Leste"
 		PhraseCaption = "%s: %s",
 		You = "Você",
 		Meters = "%d m",

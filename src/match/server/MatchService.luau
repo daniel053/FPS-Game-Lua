@@ -43,6 +43,7 @@ local Combatants = require(script.Parent.Parent.Combat.Combatants)
 local LobbyReturn = require(script.Parent.LobbyReturn)
 local MatchRewards = require(script.Parent.MatchRewards)
 local MatchWorld = require(script.Parent.MatchWorld)
+local ShieldPoints = require(script.Parent.ShieldPoints)
 local TeamService = require(script.Parent.Parent.Combat.TeamService)
 
 type Phase = MatchTypes.Phase
@@ -969,6 +970,7 @@ local function playRound()
 
 	-- COMBATE
 	combatStartedAt = serverNow()
+	ShieldPoints.reset() -- pontos de escudo acesos no começo de cada rodada
 	setPhase("Combat", MatchConfig.CombatMaxTime)
 	announceAll({ kind = "RoundStart" })
 	checkDuels()

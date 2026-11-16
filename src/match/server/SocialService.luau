@@ -18,6 +18,7 @@ local Remotes = require(Shared.Remotes)
 local SocialConfig = require(Shared.Config.SocialConfig)
 local SocialRules = require(Shared.Social.SocialRules)
 local SocialTypes = require(Shared.Social.SocialTypes)
+local Zones = require(Shared.Maps.Zones)
 
 local DataService = require(ServerScriptService.Common.DataService)
 local ProfileRules = require(ServerScriptService.Common.Data.ProfileRules)
@@ -110,6 +111,7 @@ local function onPing(player: Player, s: State, arg: unknown, now: number)
 		kind = kind :: string,
 		position = position :: Vector3,
 		island = island,
+		zone = Zones.name(Zones.at(position :: Vector3)),
 		expiresAt = workspace:GetServerTimeNow() + SocialConfig.Ping.Seconds,
 	}
 	send({ player, partnerOf(player) }, "Ping", data)

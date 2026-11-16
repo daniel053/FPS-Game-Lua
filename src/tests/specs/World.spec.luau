@@ -9,7 +9,9 @@ local CharacterConfig = require(Shared.Config.CharacterConfig)
 local IslandCommon = require(Shared.Maps.IslandCommon)
 local MapConfig = require(Shared.Config.MapConfig)
 local Strings = require(Shared.Config.Strings)
+local ShieldPointRules = require(Shared.Match.ShieldPointRules)
 local WorldBuilder = require(Shared.Maps.WorldBuilder)
+local Zones = require(Shared.Maps.Zones)
 local WorldLayout = require(Shared.Match.WorldLayout)
 
 local WORLD = MapConfig.World
@@ -196,6 +198,63 @@ return function(t: any)
 			end
 		end
 		world:Destroy()
+	end)
+
+	t.test("zona de um ponto: todo ponto de escudo e toda base caem numa zona com nome", function()
+		local world = WorldBuilder.build()
+		for i = 1, WorldLayout.islandCount() do
+			local folder = world:FindFirstChild(`Island{i}`) :: Instance
+			local parts = folder:GetDescendants()
+			for _, item in parts do
+				if item.Name == "ShieldPoint" and item:IsA("Model") then
+					local zoneId, side = Zones.find(item:GetPivot().Position + Vector3.new(0, 1, 0), parts)
+					t.ok(zoneId ~= nil, `ilha {i}: ponto de escudo dentro de uma zona`)
+					t.ok(Zones.name(zoneId, side) ~= nil, `ilha {i}: zona "{zoneId}" com nome`)
+				end
+			end
+			for side = 1, 2 do
+				local spawn = WorldLayout.baseSpawn(i, side, 1).Position
+				local zoneId = Zones.find(spawn, parts)
+				t.eq(zoneId, "base", `ilha {i} lado {side}: nascer fica na zona Base`)
+			end
+			-- fora da ilha não há zona
+			t.eq(Zones.find(WorldLayout.miranteCenter(), parts), nil, `ilha {i}: mirante sem zona`)
+		end
+		world:Destroy()
+	end)
+
+	t.test("nome da zona: com e sem lado; zona desconhecida não tem nome", function()
+		t.eq(Zones.name("muro", "east"), `{Strings.Zones.muro} {Strings.ZoneSides.east}`)
+		t.eq(Zones.name("guindaste", nil), Strings.Zones.guindaste)
+		t.eq(Zones.name("nao_existe", "west"), nil)
+		t.eq(Zones.name(nil, nil), nil)
+	end)
+
+	t.test("ponto de escudo: só vivo, com escudo incompleto, em cima e com o ponto aceso", function()
+		local max = CharacterConfig.Health.MaxShield
+		t.ok(ShieldPointRules.canPickup(true, 0, true), "sem escudo pega")
+		t.ok(ShieldPointRules.canPickup(true, max - 1, true), "escudo incompleto pega")
+		t.ok(not ShieldPointRules.canPickup(true, max, true), "escudo cheio não gasta o ponto")
+		t.ok(not ShieldPointRules.canPickup(false, 0, true), "derrubado não pega")
+		t.ok(not ShieldPointRules.canPickup(true, 0, false), "ponto apagado não dá escudo")
+
+		local pad = Vector3.new(10, 0, 20)
+		local radius, height = MapConfig.General.ShieldPickupRadius, MapConfig.General.ShieldPickupHeight
+		t.ok(ShieldPointRules.inReach(pad, pad + Vector3.new(0, 3, 0)), "em cima")
+		t.ok(ShieldPointRules.inReach(pad, pad + Vector3.new(radius, 3, 0)), "na beira")
+		t.ok(not ShieldPointRules.inReach(pad, pad + Vector3.new(radius + 0.5, 3, 0)), "ao lado")
+		t.ok(not ShieldPointRules.inReach(pad, pad + Vector3.new(0, height + 1, 0)), "muito acima (outro nível)")
+		t.ok(not ShieldPointRules.inReach(pad, pad + Vector3.new(0, -1, 0)), "embaixo")
+	end)
+
+	t.test("ponto de escudo: reacende em 20 s (nem um instante antes)", function()
+		local seconds = MapConfig.General.ShieldPickupRespawnSeconds
+		t.eq(seconds, 20)
+		t.ok(ShieldPointRules.isActive(nil, 0), "nunca usado: aceso")
+		local readyAt = ShieldPointRules.readyAfter(100)
+		t.eq(readyAt, 100 + seconds)
+		t.ok(not ShieldPointRules.isActive(readyAt, 100 + seconds - 0.01), "ainda apagado")
+		t.ok(ShieldPointRules.isActive(readyAt, 100 + seconds), "aceso de novo")
 	end)
 
 	t.test("peças de acabamento não colidem nem bloqueiam tiro", function()

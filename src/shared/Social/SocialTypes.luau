@@ -25,6 +25,7 @@ export type PingData = {
 	kind: string,
 	position: Vector3,
 	island: number,
+	zone: string?, -- nome da zona do mapa onde o ping caiu ("Muro Leste"), se houver
 	expiresAt: number, -- tempo do servidor
 }
 

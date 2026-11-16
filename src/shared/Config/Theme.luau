@@ -134,6 +134,7 @@ local Theme = {
 		IslandUnderside = hex("#6F7486"),
 		-- Ponto de recarga de escudo no chão dos mapas (azul do escudo, sem brilho)
 		ShieldPad = hex("#7FBFF5"),
+		ShieldPadOff = hex("#6B7389"), -- ponto usado, esperando reacender
 		ShieldPadRim = hex("#4A5368"),
 		IslandLabel = hex("#4A5068"),
 		Zone = hex("#8B5CF6"), -- parede da zona: roxo do acento, bem transparente

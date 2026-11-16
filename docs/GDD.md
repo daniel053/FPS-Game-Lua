@@ -926,10 +926,10 @@ Alvo: **30 fps estáveis num Android básico de ~3 anos**. `[PROPOSTA]`
 | Base até o centro | ~6 s andando |
 | Linha de visão longa | 1 por mapa, sempre com rota alternativa coberta |
 | Cobertura | a cada ~10 studs em qualquer rota |
-| Recarga de escudo | 2 pontos simétricos, reativam em 20 s |
+| Recarga de escudo | 2 pontos simétricos, reativam em 20 s. Quem passa em cima com o escudo incompleto fica com o escudo cheio na hora e o ponto apaga; com o escudo cheio o ponto não é gasto. Todos acendem no começo de cada rodada (F10) |
 | Proteção na base | 3 s de invulnerabilidade após o teleporte |
 | Queda para fora | volta à base sem morrer, perde o escudo |
-| Nomes de lugares | cada zona com nome curto e visível (usado nos pings) |
+| Nomes de lugares | cada zona com nome curto e visível (usado nos pings: a legenda do ping mostra a zona, ex.: "Ana: Inimigo aqui · Muro Leste") (F10) |
 
 Observação para primeira pessoa: corredores com no mínimo 8 studs de largura e portas com 6, para não dar sensação de aperto; cuidado com cantos cegos muito fechados.
 
@@ -1361,3 +1361,7 @@ Detalhes de implementação decididos durante o desenvolvimento (não são regra
 | **Esteiras da Fábrica** (`match/server/Conveyors`): o mundo é montado com tudo ancorado; ao iniciar a partida o servidor dá velocidade de superfície à correia (`AssemblyLinearVelocity` numa peça ancorada: o Roblox carrega o personagem) e solta cada caixa num trilho (`PrismaticConstraint` com motor, preso à base da esteira e não à correia, senão as velocidades somam). O servidor é o dono da física das caixas; no fim da correia a caixa volta ao início. Conferido no Play: caixa e boneco a 8 studs/s. | Movimento suave no cliente sem enviar posição a cada quadro; o tiro é validado contra a posição real da caixa no servidor; a comparação do mundo salvo com o código continua valendo (tudo ancorado no place). |
 | **Arte da Fábrica:** acabamento dentro de `Kits/Fabrica`, sem mudar as peças que colidem da planta aprovada. Fábrica com a arte: ~1.920 peças (limite de 3.000). | KIT-MODULAR 1 e 3. |
 | **Arte da Torre:** acabamento dentro de `Kits/Torre` (`Kit.Juntas` desenha os blocos de pedra em qualquer parede), sem mudar as peças que colidem da planta aprovada. Torre com a arte: ~1.150 peças (limite de 3.000). | KIT-MODULAR 1 e 5. |
+| **Zona no ping** (`Shared/Maps/Zones`): o servidor acha a zona do ponto marcado (caixas invisíveis com a tag `MapZone`) e manda o nome pronto em `PingData.zone`; o cliente só mostra na legenda. Pontos no eixo do meio da ilha caem na fronteira entre Leste e Oeste e levam o nome de um dos lados. | Servidor é a autoridade; quem marcou e o parceiro leem o mesmo nome. |
+| **Pontos de escudo** (`match/server/ShieldPoints`, regras puras em `Shared/Match/ShieldPointRules`): a cada 0,1 s o servidor confere os combatentes vivos que estão numa ilha; alcance de 3 studs do centro da placa e até 6 acima (`MapConfig.General.ShieldPickupRadius/Height` `[PROPOSTA]`). O ponto usado fica escuro (`Theme.Match.ShieldPadOff`) e com o atributo `ShieldPointActive` = false. | GDD 15.1. O cliente não pede nada: não há o que explorar. |
+| **Telhados para o mirante:** nenhuma das 4 plantas aprovadas tem área coberta, então não há telhado para deixar transparente. O mecanismo (`IslandCommon.roof` + `MiranteView`) continua pronto para um mapa futuro. | GDD 6.5. |
+| **Testes automáticos depois de mudar `Shared`:** rodar no Play (servidor), não no modo de edição, que guarda os módulos antigos (README). | Na F10 os testes do mundo só enxergaram os kits novos no Play. |
