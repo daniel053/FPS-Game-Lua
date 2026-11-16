@@ -246,6 +246,7 @@ Proibido em todo o resto: fundos, textos, ícones, barras, botões comuns, HUD.
 
 - **Esquerda:** grupo (até 2 jogadores): avatar, nome, ícone do elo, estado (Pronto / Escolhendo). Botão **Convidar amigos**.
 - **Centro:** cena 3D com as ilhas flutuantes ao fundo (só ambientação). A ilha central é plana.
+  - **Lobby 3D** `[DECIDIDO]` (F10, dono do projeto): o jogador fica numa **pracinha flutuante própria**, no estilo da Praça (piso de lajota, mureta com pilares, árvores, postes, bancos, barracas e estandartes no roxo do jogo), em primeira pessoa. Nasce perto da beira da frente, que tem a mureta baixa, olhando para o mirante e as 4 ilhas de duelo de verdade, mais abaixo. Medidas e posições `[PROPOSTA]` em `MapConfig.Lobby`. Fotos: `docs/referencias/f10/lobby-1-vista-de-quem-nasce.jpg` e `lobby-2-ilha-do-lobby.jpg`.
 - **Direita:** cartão do modo ("Duelo em dupla"), imagem, prontos "x/2", botão principal **Jogar** (entra na fila). Na fila, o botão vira "Procurando partida… 5/7" com opção de cancelar.
 - **Topo direito:** moedas (ícone amarelo) e engrenagem de configurações. Não há segunda moeda por enquanto `[DECIDIDO]` (F9).
 - **Navegação:** Jogar, Arsenal (T5), Cartas (T1), Ranking, Loja.

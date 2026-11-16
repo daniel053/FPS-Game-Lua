@@ -282,11 +282,12 @@ local function fill(world: Instance, pause: (() -> ())?)
 	end
 end
 
--- Monta o mundo inteiro numa pasta (sem pai). Quem chama põe no Workspace.
-function WorldBuilder.build(): Folder
+-- Monta o mundo inteiro numa pasta (sem pai). Quem chama põe no Workspace. `pause` (opcional) roda
+-- entre as partes, para não travar quem monta em jogo (o fundo do lobby).
+function WorldBuilder.build(pause: (() -> ())?): Folder
 	local world = Instance.new("Folder")
 	world.Name = WorldBuilder.FolderName
-	fill(world)
+	fill(world, pause)
 	return world
 end
 

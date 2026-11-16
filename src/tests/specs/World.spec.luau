@@ -9,6 +9,7 @@ local CharacterConfig = require(Shared.Config.CharacterConfig)
 local IslandCommon = require(Shared.Maps.IslandCommon)
 local MapConfig = require(Shared.Config.MapConfig)
 local Strings = require(Shared.Config.Strings)
+local LobbyBuilder = require(Shared.Maps.LobbyBuilder)
 local ShieldPointRules = require(Shared.Match.ShieldPointRules)
 local WorldBuilder = require(Shared.Maps.WorldBuilder)
 local Zones = require(Shared.Maps.Zones)
@@ -255,6 +256,33 @@ return function(t: any)
 		t.eq(readyAt, 100 + seconds)
 		t.ok(not ShieldPointRules.isActive(readyAt, 100 + seconds - 0.01), "ainda apagado")
 		t.ok(ShieldPointRules.isActive(readyAt, 100 + seconds), "aceso de novo")
+	end)
+
+	t.test("lobby: ilha e fundo dentro do orçamento, sem neon e sem vermelho; o fundo não colide", function()
+		local holder = Instance.new("Folder")
+		local island = LobbyBuilder.island(holder, CFrame.new(MapConfig.Lobby.Center))
+		local backdrop = LobbyBuilder.backdrop(CFrame.new(MapConfig.Lobby.Center))
+		local counts = {}
+		local roots: { [string]: Instance } = { island = island, backdrop = backdrop }
+		for name, root in roots do
+			local count = 0
+			for _, part in root:GetDescendants() do
+				if part:IsA("BasePart") then
+					count += 1
+					t.ok(part.Material ~= Enum.Material.Neon, `lobby {name}: {part.Name} sem neon`)
+					t.ok(not isRed(part.Color), `lobby {name}: {part.Name} sem vermelho`)
+					if name == "backdrop" then
+						t.ok(not part.CanCollide and not part.CanQuery, `fundo: {part.Name} não colide`)
+						t.ok(part.Transparency < 1, `fundo: {part.Name} sem peça invisível`)
+					end
+				end
+			end
+			counts[name] = count
+		end
+		t.ok(counts.island <= MapConfig.Lobby.IslandMaxParts, `ilha do lobby: {counts.island} peças`)
+		t.ok(counts.backdrop <= MapConfig.Lobby.BackdropMaxParts, `fundo do lobby: {counts.backdrop} peças`)
+		holder:Destroy()
+		backdrop:Destroy()
 	end)
 
 	t.test("peças de acabamento não colidem nem bloqueiam tiro", function()

@@ -5,7 +5,7 @@
 --   * esquerda: a dupla (avatar, nome, elo, Pronto/Esperando), + CONVIDAR AMIGOS e SAIR DA DUPLA;
 --   * direita: cartão "Duelo em dupla", x/2 prontos e o botão JOGAR, que vira
 --     "Procurando partida… 5/7" com CANCELAR;
---   * centro: o cenário (ilhas cinza flutuantes, LobbyBackdrop), livre;
+--   * centro: o cenário (a pracinha do lobby e as ilhas de duelo ao fundo, LobbyBackdrop), livre;
 --   * embaixo: navegação JOGAR, ARSENAL (T5), CARTAS (T1), MAPAS (T4), RANKING (F9) e LOJA (em breve: F11);
 --   * janela de convite (jogadores do servidor + convite nativo do Roblox) e convite recebido.
 -- Celular: só toque. PC: atalhos sempre visíveis ([Enter] jogar/cancelar, [G] convidar,

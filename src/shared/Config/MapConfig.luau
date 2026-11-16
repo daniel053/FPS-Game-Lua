@@ -91,6 +91,25 @@ local MapConfig = {
 		ConveyorSpeed = 8, -- studs/s (metade da corrida do personagem)
 	},
 
+	-- Lobby 3D (ESTILO T3) [PROPOSTA] (F10): a pracinha onde o jogador fica e o mundo da partida ao fundo.
+	Lobby = {
+		Center = Vector3.new(0, 0, 0), -- centro da ilha do lobby, no topo do piso
+		IslandSize = Vector2.new(84, 64), -- largura × fundo
+		IslandChamfer = 14, -- cantos chanfrados
+		IslandThickness = 4,
+		TileStep = 7, -- lajotas do piso
+		Rail = 3, -- mureta dos lados e do fundo
+		FrontRail = 1, -- mureta baixa do lado da vista: de pé na beira dá para olhar as ilhas lá embaixo
+		BarrierHeight = 14, -- barreira invisível na borda
+		SpawnZ = -25, -- nasce a 7 studs da beira da frente, olhando para a vista (-Z)
+		-- Fundo: o mundo da partida deslocado (mirante na altura do lobby, 420 à frente; as ilhas
+		-- ficam 70 abaixo, e a mais perto aparece a uns 20° para baixo de quem está na beira)
+		WorldOffset = Vector3.new(0, -70, -420),
+		BackdropMinFace = 4, -- peças de acabamento com a maior face menor que isto (studs²) ficam de fora
+		BackdropMaxParts = 4500, -- orçamento do fundo (conferido em teste)
+		IslandMaxParts = 600, -- orçamento da ilha do lobby
+	},
+
 	-- Céu e luz (ESTILO T4: céu claro e nuvens baixas; GDD 14: dia) [PROPOSTA]
 	Sky = {
 		ClockTime = 14,
