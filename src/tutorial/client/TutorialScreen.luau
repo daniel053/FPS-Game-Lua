@@ -20,6 +20,7 @@ local TextUtil = require(Shared.TextUtil)
 local Theme = require(Shared.Config.Theme)
 local TutorialConfig = require(Shared.Config.TutorialConfig)
 local TutorialTypes = require(Shared.Tutorial.TutorialTypes)
+local CardArt = require(Shared.Ui.CardArt)
 local Ui = require(Shared.Ui.Ui)
 local WeaponConfig = require(Shared.Config.WeaponConfig)
 
@@ -253,13 +254,13 @@ local function openModal(
 	selectForGamepad(primaryButton)
 end
 
--- Carta grande (borda na cor da carta; sem moldura de raridade: GDD 8.9 [ABERTO])
+-- Carta grande (borda na cor da carta), com a arte (F10) em cima do nome
 local function bigCard(parent: Frame, cardId: string, animate: boolean)
 	local def = CardConfig.get(cardId)
 	local names = Strings.Cards[cardId]
 	local color = Theme.Cards[cardId] or Theme.Color.Accent
 	local card = Ui.raised("Card", parent)
-	card.Size = UDim2.fromOffset(240, 190)
+	card.Size = UDim2.fromOffset(240, 250)
 	card.AnchorPoint = Vector2.new(0.5, 0)
 	card.Position = UDim2.fromScale(0.5, 0)
 	local stroke = card:FindFirstChildOfClass("UIStroke")
@@ -270,6 +271,10 @@ local function bigCard(parent: Frame, cardId: string, animate: boolean)
 	Ui.corner(card, 10)
 	Ui.padding(card, 12)
 	Ui.list(card, Enum.FillDirection.Vertical, 6).HorizontalAlignment = Enum.HorizontalAlignment.Center
+	local art = Ui.frame("Art", card)
+	art.Size = UDim2.fromOffset(60, 56)
+	art.LayoutOrder = 0
+	CardArt.draw(art, cardId, color)
 	local name = text("Name", Theme.Font.Title, Theme.TextSize.Title + 4, color, card, 32)
 	name.Text = TextUtil.upper(names and names.name or cardId)
 	name.LayoutOrder = 1
@@ -281,7 +286,7 @@ local function bigCard(parent: Frame, cardId: string, animate: boolean)
 	local desc = text("Description", Theme.Font.Body, Theme.TextSize.Body, Theme.Color.TextSecondary, card, 90)
 	desc.Text = names and names.description or ""
 	desc.LayoutOrder = 3
-	parent.Size = UDim2.new(1, 0, 0, 190)
+	parent.Size = UDim2.new(1, 0, 0, 250)
 	if animate then
 		local scale = Instance.new("UIScale")
 		scale.Scale = 0.6

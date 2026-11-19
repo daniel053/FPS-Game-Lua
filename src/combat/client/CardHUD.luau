@@ -31,6 +31,7 @@ local InputDevice = require(script.Parent.Parent.Common.InputDevice)
 local PlayerDataClient = require(script.Parent.Parent.Common.PlayerDataClient)
 local Widgets = require(script.Parent.Parent.Common.Ui.Widgets)
 local CardController = require(script.Parent.CardController)
+local CardArt = require(Shared.Ui.CardArt)
 local MatchUi = require(Shared.Ui.Ui)
 
 type CardKey = string -- "C", "Q", "E" ou "X" (Types.CardKey); string por causa do verificador de tipos
@@ -186,7 +187,15 @@ local function makeTile(view: CardView, size: number, parent: Instance, round: b
 	nameLimit.MaxTextSize = Theme.TextSize.Label
 	nameLimit.Parent = name
 
+	-- Arte da carta (F10), apagada, atrás do número
+	local art = MatchUi.frame("Art", button)
+	art.AnchorPoint = Vector2.new(0.5, 0.5)
+	art.Position = UDim2.fromScale(0.5, 0.6)
+	art.Size = UDim2.fromScale(0.62, 0.62)
+	CardArt.draw(art, view.id, color, Theme.Hud.CardArtTransparency)
+
 	local value = MatchUi.label("Value", Theme.Font.Number, Theme.TextSize.Title, Theme.Color.TextPrimary, button)
+	MatchUi.outlineText(value)
 	value.AnchorPoint = Vector2.new(0.5, 0.5)
 	value.Position = UDim2.fromScale(0.5, 0.62)
 	value.Size = UDim2.new(1, 0, 0, 26)

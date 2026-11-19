@@ -189,7 +189,7 @@ Proibido em todo o resto: fundos, textos, ícones, barras, botões comuns, HUD.
 - **Botão GIRAR** sempre visível embaixo da carta: vira a carta para ver o verso (visualização, GDD 8.9) `[DECIDIDO]` (F9). No PC, tecla R. Se um dia virar sorteio: mostrar custo e chances **antes** de girar.
 - Aba **Skins de cartas / versos** no rodapé: desativada; o catálogo inicial da F9 só tem skins de arma.
 - Cartas que o jogador não tem: escurecidas com cadeado.
-- Arte das cartas: F10. Até lá, fundo na cor da carta e a tecla grande no meio.
+- **Arte das cartas** `[DECIDIDO]` (F10): um desenho próprio de cada carta, feito com formas simples na cor da carta (Nuvem: nuvem com a bolinha em arco; Impulso: duas setas para cima saindo do chão; Tremor: rachadura em zigue-zague com pedras saltando; Renascer: seta circular em volta de um losango). A tecla fica num chip no canto de cima. O mesmo desenho aparece no HUD (apagado, atrás do número de cargas), no modal de preparação (pequeno, antes do nome) e no tutorial. Foto: `docs/referencias/f10/cartas-1-arte.jpg`.
 - Celular: arrastar para os lados troca a carta. PC: setas ou roda do mouse.
 
 ### T2 · Modal de preparação (carta + arma)

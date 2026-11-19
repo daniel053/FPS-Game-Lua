@@ -40,6 +40,7 @@ export type TremoredData = { untilT: number }
 export type FxName =
 	"NuvemThrow" -- NuvemThrowData
 	| "TremorWave" -- TremorWaveData
+	| "ImpulsoLaunch" -- ImpulsoLaunchData
 	| "RenascerReturn" -- RenascerReturnData
 
 -- caster: quem usou (legendas "Inimigo usou …", ESTILO 5)
@@ -53,6 +54,8 @@ export type TremorWaveData = {
 	speed: number,
 	caster: Player?,
 }
+
+export type ImpulsoLaunchData = { feet: Vector3, caster: Player? }
 
 export type RenascerReturnData = { from: Vector3, to: Vector3, caster: Player? }
 

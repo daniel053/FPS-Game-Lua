@@ -250,10 +250,27 @@ local Theme = {
 		card_tremor = hex("#F2A93B"), -- âmbar
 		card_renascer = hex("#6EE7B7"), -- verde-menta
 		Smoke = hex("#E6E3F2"), -- a nuvem em si (fosca, sem neon)
+		SmokeShade = hex("#D3CEE6"), -- bolas de baixo da nuvem (F10)
+		TremorRock = hex("#9C8A73"), -- pedras do Tremor (foscas, cor de terra) (F10)
 		Locked = hex("#5A6280"), -- ult com cadeado, carta sem carga
 	} :: { [string]: Color3 },
 	SmokeTransparency = 0.03, -- quase opaca: bloqueia a visão de quem está na ilha
 	CardFxTransparency = 0.3, -- onda do Tremor, marca do Renascer, arco da Nuvem
+	-- Efeitos finais das cartas (F10): tamanhos e tempos [PROPOSTA]
+	CardFx = {
+		NuvemBallSize = 0.9,
+		NuvemTrailEvery = 0.04, -- segundos entre as bolinhas do rastro
+		NuvemTrailSeconds = 0.3,
+		NuvemGrowSeconds = 0.3,
+		NuvemFadeSeconds = 0.6,
+		ImpulsoRingSize = 8,
+		ImpulsoSeconds = 0.45,
+		ImpulsoStreakRise = 7,
+		TremorRockStep = 2.5, -- uma fileira de pedras a cada 2,5 studs
+		TremorRockRise = 0.18,
+		TremorRockSink = 0.5,
+		RenascerColumnHeight = 9,
+	},
 
 	-- Fontes (ESTILO 2.3) [PROPOSTA]
 	Font = {
@@ -373,6 +390,7 @@ local Theme = {
 		MinimapSize = 132,
 		MinimapSizeSmall = 104,
 		CardTile = 60,
+		CardArtTransparency = 0.55, -- arte da carta atrás do número de cargas (F10)
 		HintKeyGap = 14,
 	},
 

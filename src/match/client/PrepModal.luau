@@ -27,6 +27,7 @@ local MatchTypes = require(Shared.Match.MatchTypes)
 local Strings = require(Shared.Config.Strings)
 local TextUtil = require(Shared.TextUtil)
 local Theme = require(Shared.Config.Theme)
+local CardArt = require(Shared.Ui.CardArt)
 local Ui = require(Shared.Ui.Ui)
 local WeaponConfig = require(Shared.Config.WeaponConfig)
 local WeaponStats = require(Shared.Combat.WeaponStats)
@@ -351,8 +352,14 @@ local function abilityCard(id: string, order: number, index: number?, note: stri
 	local content = card.content
 	content.Size = UDim2.new(1, -12, 1, -12)
 
+	-- Arte da carta (F10), pequena, antes do nome
+	local art = Ui.frame("Art", content)
+	art.Size = UDim2.fromOffset(24, 24)
+	art.Position = UDim2.fromOffset(-2, -2)
+	CardArt.draw(art, id, color)
 	local title = Ui.label("Name", Theme.Font.Title, Theme.TextSize.PrimaryButton, color, content)
-	title.Size = UDim2.new(1, -28, 0, 22)
+	title.Position = UDim2.fromOffset(26, 0)
+	title.Size = UDim2.new(1, -28 - 26, 0, 22)
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.Text = TextUtil.upper((Strings.Cards[id] or { name = id }).name)
 	-- A tecla é parte da carta (fixa, GDD 8.3): sempre aparece

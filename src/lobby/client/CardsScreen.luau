@@ -21,6 +21,7 @@ local CardConfig = require(Shared.Config.CardConfig)
 local Strings = require(Shared.Config.Strings)
 local TextUtil = require(Shared.TextUtil)
 local Theme = require(Shared.Config.Theme)
+local CardArt = require(Shared.Ui.CardArt)
 local Ui = require(Shared.Ui.Ui)
 
 local PlayerDataClient = require(script.Parent.Parent.Common.PlayerDataClient)
@@ -175,13 +176,21 @@ local function makeTile(def: CardConfig.CardDef): Frame
 	local innerStroke = Ui.stroke(inner, color, 1)
 	innerStroke.Transparency = 0.5
 
-	local key = Ui.label("Key", Theme.Font.Title, 76, Theme.Color.TextPrimary, face)
-	key.AnchorPoint = Vector2.new(0.5, 0.5)
-	key.Position = UDim2.fromScale(0.5, 0.42)
-	key.Size = UDim2.fromScale(1, 0.5)
-	key.Text = def.key
-	key.TextStrokeColor3 = color
-	key.TextStrokeTransparency = 0.4
+	-- Arte da carta (F10) no meio; a tecla fixa num chip no canto de cima
+	local artHolder = Ui.frame("Art", face)
+	artHolder.AnchorPoint = Vector2.new(0.5, 0.5)
+	artHolder.Position = UDim2.fromScale(0.5, 0.44)
+	artHolder.Size = UDim2.fromScale(0.78, 0.56)
+	if CardArt.draw(artHolder, def.id, color) == nil then
+		local key = Ui.label("Key", Theme.Font.Title, 76, Theme.Color.TextPrimary, artHolder)
+		key.Size = UDim2.fromScale(1, 1)
+		key.Text = def.key
+		key.TextStrokeColor3 = color
+		key.TextStrokeTransparency = 0.4
+	end
+	local keyChip = Ui.keyChip(def.key, face)
+	keyChip.AnchorPoint = Vector2.new(1, 0)
+	keyChip.Position = UDim2.new(1, -10, 0, 10)
 	if rarity then
 		local icon = Ui.label("Rarity", Theme.Font.Title, Theme.TextSize.Body, frameColor(def), face)
 		icon.Position = UDim2.fromOffset(12, 10)

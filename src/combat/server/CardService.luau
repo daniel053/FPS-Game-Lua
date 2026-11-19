@@ -381,13 +381,24 @@ local function useRenascer(player: Player, combatant: Combatants.Combatant, _dir
 	end)
 end
 
+-- Impulso (Q): o salto é do cliente; o servidor só avisa todos, para o efeito aparecer para todos.
+local function useImpulso(player: Player, combatant: Combatants.Combatant, _direction: Vector3?, _def: CardDef)
+	local root = rootOf(combatant.model)
+	if root == nil then
+		return
+	end
+	local feet = root.Position - Vector3.new(0, feetOffset(combatant.model), 0)
+	local fx: CardTypes.ImpulsoLaunchData = { feet = feet, caster = player }
+	fxEvent:FireAllClients("ImpulsoLaunch", fx)
+end
+
 -- Pedidos ------------------------------------------------------------------------------------------
 
 type Effect = (player: Player, combatant: Combatants.Combatant, direction: Vector3?, def: CardDef) -> ()
 
 local EFFECTS: { [string]: Effect } = {
 	card_nuvem = useNuvem,
-	card_impulso = function() end, -- o salto é aplicado pelo cliente; aqui só a carga
+	card_impulso = useImpulso, -- o salto é aplicado pelo cliente; aqui a carga e o efeito para todos
 	card_tremor = useTremor,
 	card_renascer = useRenascer,
 }
