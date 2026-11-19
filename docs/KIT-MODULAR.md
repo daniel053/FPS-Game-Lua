@@ -278,7 +278,7 @@ Prancha: `docs/referencias/visuais/kit-praca.png`
 
 **Regra específica:** mapa de estreia: formas mais simples e leitura mais fácil.
 
-**Na planta aprovada (F10, GDD 15.4):** Coreto e Chafariz **não entram** (decisão do dono). Entram a **Caixa de Madeira** do kit do Porto (6 × 6 × 6, mesma madeira `#B98A5A`), o **Muro de Tijolo** em versão comprida (20 × 2 × 4) e a **passarela elevada** (nível 1, 5 studs, com rampas), que ainda precisa de um componente próprio no kit (piso de pedra, guarda-corpo, rampa).
+**Na planta aprovada (F10, GDD 15.4):** Coreto e Chafariz **não entram** (decisão do dono). Entram a **Caixa de Madeira** do kit do Porto (6 × 6 × 6, mesma madeira `#B98A5A`), o **Muro de Tijolo** em versão comprida (20 × 2 × 4) e a **passarela elevada** (nível 1, 5 studs, com rampas), que virou um componente próprio do kit (`Kits.Praca.Passarela`: piso de pedra, guarda-corpo e rampa nas duas pontas).
 
 ## 5. Torre
 

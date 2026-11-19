@@ -43,7 +43,7 @@
 | F7 | Interface final | Telas T1–T6 no estilo definitivo | ✅ |
 | F8 | Social e voz | Dupla se comunica e continua junta | ✅ |
 | F9 | Elo, economia e arsenal | Progressão completa | ✅ |
-| F10 | Mapas e arte | 4 ilhas, mirante, personagem, armas | ⏳ em teste |
+| F10 | Mapas e arte | 4 ilhas, mirante, personagem, armas | ✅ |
 | ⭐ | **Marco: beta fechado** | Teste com jogadores de fora | ☐ |
 | F11 | Robux e lançamento | Jogo público | ☐ |
 
@@ -347,6 +347,20 @@ Só seguir para a F5 quando a partida for divertida em blocos cinza.
 - Nenhum neon fora das exceções.
 - 30 fps estáveis no celular de referência com 16 jogadores.
 
+**Resumo (F10 concluída pelo dono do projeto):**
+- Plantas das 4 ilhas aprovadas em bloco e construídas com a arte dos kits (Praça, Porto, Fábrica, Torre), com zonas nomeadas nos pings, pontos de escudo que recarregam e esteiras em movimento na Fábrica. Mirante octogonal com piso de vidro, céu e mar de nuvens. Mundo salvo no place da Partida.
+- Lobby 3D: pracinha flutuante no estilo da Praça, com o mundo da partida ao fundo.
+- Armas da F7 aprovadas como finais; mãos e braços novos e enquadramento automático contra o guia.
+- Efeitos finais e arte das 4 cartas.
+- 36 sons sintetizados por código, no estilo FPS tático (a versão retrô foi recusada).
+- Versão leve dos mapas (gráfico baixo ou quadros baixos) e medidor de desempenho no painel TESTE.
+
+**Ficou para o marco do beta fechado** (não bloqueou a F10, a pedido do dono):
+- Enviar os 36 sons ao Roblox e preencher `AudioAssets` (até lá tocam os provisórios; cartas e escudo ficam sem som).
+- Medir os 30 fps no celular de referência com 16 jogadores (o aparelho ainda não foi definido).
+- Testar em partida, no aparelho, o que foi conferido só no Studio: arma e mãos, efeitos das cartas de perto, legenda do ping com a zona.
+- Música da Rodada da Virada (`AudioConfig.ViradaMusic` vazio).
+
 ---
 
 ## ⭐ Marco: beta fechado
@@ -388,4 +402,6 @@ Só seguir para a F5 quando a partida for divertida em blocos cinza.
 | ~~Segunda moeda (GDD 18, DADOS 11)~~ Respondida na F9: não por enquanto | — |
 | ~~Tutorial pode ser pulado? (GDD 18)~~ Respondida na F6: só as configurações | — |
 | ~~Plantas do Porto, da Fábrica e da Torre (GDD 15.8)~~ Respondida na F10: aprovadas. ~~Tamanhos~~ respondido na F10: mesmo tamanho | — |
+| Sons finais enviados ao Roblox e ligados em `AudioAssets` (README, "Sons") | Beta fechado |
+| Celular de referência e teste de 30 fps com 16 jogadores (GDD 13.2) | Beta fechado |
 | Preços em Robux (GDD 10.3) | F11 |

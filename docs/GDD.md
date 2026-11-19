@@ -1,10 +1,19 @@
 # [NOME DO JOGO] — Documento de Game Design (GDD)
 
-> **Versão:** 0.5 (rascunho para discussão)
+> **Versão:** 0.6 (rascunho para discussão)
 > **Documentos irmãos:** `docs/ESTILO-E-TELAS.md` (telas e estilo), `docs/FASES.md` (fases de desenvolvimento), `docs/DADOS-JOGADOR.md` (dados salvos)
 > **Plataforma:** Roblox, mobile em primeiro lugar (também PC e console)
 > **Público:** 8 a 30 anos
 > **Gênero:** tiro em **primeira pessoa**, arena 2v2, formato torneio por eliminação
+
+### Mudanças desde a v0.5 (F10)
+
+- **Mapas:** plantas da Praça, do Porto, da Fábrica e da Torre aprovadas e construídas com os kits; zonas com nome nos pings; pontos de escudo que recarregam; esteiras da Fábrica em movimento (seções 15.4 a 15.7 e 15.1).
+- **Mirante octogonal** com piso de vidro e **lobby 3D** numa pracinha flutuante com o mundo ao fundo (seção 6.5 e ESTILO T3).
+- **Primeira pessoa:** armas da F7 aprovadas como finais; mãos e braços finais (seção 3.1).
+- **Cartas:** efeitos finais e arte própria de cada carta (seção 8.4).
+- **Sons:** sintetizados por código, estilo FPS tático, nada retrô (seção 7.7).
+- **Desempenho:** versão leve dos mapas no gráfico baixo ou com quadros baixos (seção 13.2).
 
 ### Mudanças desde a v0.4
 
