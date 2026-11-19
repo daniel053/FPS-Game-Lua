@@ -86,6 +86,19 @@ local MapConfig = {
 		MiranteBarrierHeight = 14, -- barreira invisível nas bordas
 	},
 
+	-- Desempenho (GDD 13.2) [PROPOSTA] (F10): versão leve dos mapas. As peças de acabamento pequenas
+	-- (maior face menor que DetailMinFace studs²) somem na tela de quem está no gráfico baixo do Roblox
+	-- (nível 1 a LightQualityMax) ou, no gráfico automático, quando a média fica abaixo de LowFps por
+	-- LowFpsSeconds seguidos. Nada que colide some; sinais (setas, faixas de aviso) nunca somem.
+	Performance = {
+		TargetFps = 30,
+		LightQualityMax = 3,
+		LowFps = 27,
+		LowFpsSeconds = 5,
+		DetailMinFace = 4,
+		MaxVisiblePartsLight = 1500, -- por ilha, na versão leve (conferido em teste)
+	},
+
 	-- Fábrica (GDD 15.5) [PROPOSTA]: esteiras carregam quem pisa e as caixas de papelão.
 	Fabrica = {
 		ConveyorSpeed = 8, -- studs/s (metade da corrida do personagem)

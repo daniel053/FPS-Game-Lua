@@ -897,6 +897,17 @@ local Strings = {
 
 		-- Seção da partida (F3, só no place Partida)
 		MatchTitle = "PARTIDA (TESTE)",
+		-- Desempenho (F10, GDD 13.2)
+		PerformanceTitle = "DESEMPENHO",
+		PerformanceLine = "Quadros: %d por segundo\nMapa: %s\nPeças escondidas: %d",
+		PerformanceForce = "ALTERNAR VERSÃO LEVE",
+		DetailModes = {
+			Full = "completo",
+			FullAuto = "completo (gráfico automático)",
+			LowQuality = "leve (gráfico baixo)",
+			LowFps = "leve (quadros baixos)",
+			Forced = "leve (painel de teste)",
+		} :: { [string]: string },
 		MatchInfo = "Etapa: %s · Rodada %d · Jogadores de teste: %d",
 		StartNow = "COMEÇAR AGORA",
 		SkipRound = "PULAR RODADA",

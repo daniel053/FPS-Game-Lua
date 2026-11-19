@@ -303,11 +303,17 @@ end
 -- no X local, deitada em cima do piso em `origin`. Só acabamento.
 function Kit.FaixaDeAviso(parent: Instance, origin: CFrame, comprimento: number): Model
 	local model = Build.model("FaixaDeAviso", parent)
-	model.PrimaryPart =
-		Build.block("Faixa", v3(comprimento, 0.1, 1), origin * CFrame.new(0, 0.05, 0), PALETTE.Aviso, model, DETAIL)
+	model.PrimaryPart = Build.block(
+		"Faixa",
+		v3(comprimento, 0.1, 1),
+		origin * CFrame.new(0, 0.05, 0),
+		PALETTE.Aviso,
+		model,
+		Build.Signal
+	)
 	local x = -comprimento / 2 + 1.5
 	while x + 0.5 <= comprimento / 2 do
-		Build.block("Listra", v3(1, 0.04, 1), origin * CFrame.new(x, 0.11, 0), PALETTE.Metal, model, DETAIL)
+		Build.block("Listra", v3(1, 0.04, 1), origin * CFrame.new(x, 0.11, 0), PALETTE.Metal, model, Build.Signal)
 		x += 2
 	end
 	return model
@@ -582,7 +588,7 @@ function Kit.Vaga(parent: Instance, origin: CFrame): Model
 			origin * CFrame.new(0, 0.02, sign * width / 2),
 			PALETTE.Aviso,
 			model,
-			DETAIL
+			Build.Signal
 		)
 		model.PrimaryPart = model.PrimaryPart or long
 		Build.block(
@@ -591,7 +597,7 @@ function Kit.Vaga(parent: Instance, origin: CFrame): Model
 			origin * CFrame.new(sign * length / 2, 0.02, 0),
 			PALETTE.Aviso,
 			model,
-			DETAIL
+			Build.Signal
 		)
 	end
 	return model

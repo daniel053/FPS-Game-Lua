@@ -10,6 +10,7 @@ local IslandCommon = require(Shared.Maps.IslandCommon)
 local MapConfig = require(Shared.Config.MapConfig)
 local Strings = require(Shared.Config.Strings)
 local LobbyBuilder = require(Shared.Maps.LobbyBuilder)
+local MapDetail = require(Shared.Maps.MapDetail)
 local ShieldPointRules = require(Shared.Match.ShieldPointRules)
 local WorldBuilder = require(Shared.Maps.WorldBuilder)
 local Zones = require(Shared.Maps.Zones)
@@ -283,6 +284,31 @@ return function(t: any)
 		t.ok(counts.backdrop <= MapConfig.Lobby.BackdropMaxParts, `fundo do lobby: {counts.backdrop} peças`)
 		holder:Destroy()
 		backdrop:Destroy()
+	end)
+
+	t.test("versão leve: só some acabamento pequeno, nunca sinal; cada ilha fica no orçamento", function()
+		local world = WorldBuilder.build()
+		local signals = 0
+		for i = 1, WorldLayout.islandCount() do
+			local folder = world:FindFirstChild(`Island{i}`) :: Instance
+			local visible = 0
+			for _, part in folder:GetDescendants() do
+				if part:IsA("BasePart") then
+					if MapDetail.isOptional(part) then
+						t.ok(not part.CanCollide and not part.CanQuery, `{part:GetFullName()}: some e não colide`)
+					elseif part.Transparency < 1 then
+						visible += 1
+					end
+					if part:GetAttribute("MapSignal") then
+						signals += 1
+						t.ok(not MapDetail.isOptional(part), `{part.Name}: sinal nunca some`)
+					end
+				end
+			end
+			t.ok(visible <= MapConfig.Performance.MaxVisiblePartsLight, `ilha {i}: {visible} peças na versão leve`)
+		end
+		t.ok(signals > 0, "setas e faixas de aviso marcadas como sinal")
+		world:Destroy()
 	end)
 
 	t.test("peças de acabamento não colidem nem bloqueiam tiro", function()

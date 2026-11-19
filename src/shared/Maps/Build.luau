@@ -12,11 +12,17 @@ export type PartOptions = {
 	-- Peça de acabamento (junta de tijolo, tábua, ferrugem, moldura): não colide, não bloqueia tiro,
 	-- não faz sombra e não entra no minimapa. Sempre encostada numa peça que colide.
 	detail: boolean?,
+	-- Acabamento que AJUDA A JOGAR (setas da esteira, faixas de aviso de queda, vagas): nunca some na
+	-- versão leve dos mapas (MapDetailLevel).
+	signal: boolean?,
 }
 
 Build.DetailAttribute = "MapDetail"
+Build.SignalAttribute = "MapSignal"
 -- Atalho para as peças de acabamento.
 Build.Detail = { detail = true } :: PartOptions
+-- Atalho para as peças de acabamento que sinalizam algo (nunca somem).
+Build.Signal = { detail = true, signal = true } :: PartOptions
 
 local function apply(part: BasePart, name: string, color: Color3, parent: Instance, options: PartOptions?)
 	part.Name = name
@@ -43,6 +49,9 @@ local function apply(part: BasePart, name: string, color: Color3, parent: Instan
 			part.CanTouch = false
 			part.CastShadow = false
 			part:SetAttribute(Build.DetailAttribute, true)
+		end
+		if options.signal then
+			part:SetAttribute(Build.SignalAttribute, true)
 		end
 	end
 	part.Parent = parent

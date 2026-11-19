@@ -40,7 +40,7 @@ local function zebra(model: Model, origin: CFrame, length: number, height: numbe
 			origin * CFrame.new(x, 0, 0),
 			C.Metal,
 			model,
-			DETAIL
+			Build.Signal
 		)
 		x += 1
 	end
@@ -168,7 +168,7 @@ function Kit.Esteira(parent: Instance, origin: CFrame): Model
 				surface * CFrame.new(x, 0.03, side * 0.52) * CFrame.Angles(0, side * math.rad(38), 0),
 				C.Aviso,
 				model,
-				DETAIL
+				Build.Signal
 			)
 		end
 	end
@@ -177,8 +177,22 @@ function Kit.Esteira(parent: Instance, origin: CFrame): Model
 		Build.block("Pe", v3(1, top - 0.5, 3.7), origin * CFrame.new(x, (top - 0.5) / 2, 0), C.Borracha, model, DETAIL)
 	end
 	for _, side in SIGNS do
-		Build.block("Seguranca", v3(22.4, 0.04, 0.4), origin * CFrame.new(0, 0.02, side * 3), C.Aviso, model, DETAIL)
-		Build.block("Seguranca", v3(0.4, 0.04, 5.6), origin * CFrame.new(side * 11, 0.02, 0), C.Aviso, model, DETAIL)
+		Build.block(
+			"Seguranca",
+			v3(22.4, 0.04, 0.4),
+			origin * CFrame.new(0, 0.02, side * 3),
+			C.Aviso,
+			model,
+			Build.Signal
+		)
+		Build.block(
+			"Seguranca",
+			v3(0.4, 0.04, 5.6),
+			origin * CFrame.new(side * 11, 0.02, 0),
+			C.Aviso,
+			model,
+			Build.Signal
+		)
 	end
 	return finish(model, base, origin)
 end
