@@ -126,6 +126,31 @@ function metal(freqs, tau, seed, seconds = 0.2) {
 	return out;
 }
 
+// "Crack" mecânico: duas peças de metal encaixando (trava do pente, ferrolho batendo). É o som
+// principal da recarga. Camadas: impacto seco (ruído agudo de 3 ms), um segundo contato logo depois
+// (a trava fechando: é o que dá o "cra-ck"), o corpo metálico (parciais desafinadas, curtas), um
+// "toc" de peso em médios e saturação para ficar firme.
+// weight: peso do encaixe (0 a 1.5); tone: afinação do metal (Hz); gap: tempo entre os dois contatos.
+function clack(seed, { tone = 2200, weight = 1, gap = 0.008, bright = 1 } = {}) {
+	const len = 0.25;
+	const out = buffer(len);
+	const hit = (at, gain, sd) =>
+		mix(out, envelope(biquad(whiteNoise(0.03, sd), "hp", 1500), { attack: 0.0002, tau: 0.003 }), at, gain * bright);
+	hit(0, 1.2, seed);
+	hit(gap, 0.8, seed + 1);
+	mix(out, metal([tone, tone * 1.47, tone * 2.09, tone * 2.83], 0.03, seed + 2, len), 0, 0.9);
+	mix(out, metal([tone * 1.13, tone * 1.71], 0.02, seed + 3, len), gap, 0.5);
+	mix(out, envelope(biquad(whiteNoise(len, seed + 4), "bp", 480, 2.5), { attack: 0.0005, tau: 0.022 }), 0, 1.4 * weight);
+	mix(out, thump(220, 120, 0.025, len), 0, 0.35 * weight);
+	return saturate(out, 2.2);
+}
+
+// Metal deslizando (pente saindo do encaixe, ferrolho sendo puxado contra a mola).
+function slide(seconds, seed, f0, f1, gain = 1) {
+	const n = biquad(whiteNoise(seconds, seed), "bp", (t) => f0 * Math.pow(f1 / f0, Math.min(t / seconds, 1)), 3);
+	return envelope(n, { attack: seconds * 0.4, hold: 0, tau: seconds * 0.35 }).map((v) => v * gain);
+}
+
 // Sino de FM (metal desafinado, para habilidades e interface): portadora + moduladora não inteira.
 function bell(f, { ratio = 1.41, index = 2.5, tau = 0.4, seconds = 1.2, attack = 0.004 }) {
 	const out = buffer(seconds);
@@ -322,25 +347,31 @@ const SOUNDS = {
 		mix(out, thump(110, 60, 0.07), 0.12, 0.5);
 		return finish(room(out, 0.35, 0.2));
 	},
-	// Recarga: pente saindo (clique + atrito), pente entrando (batida firme) e ferrolho
+	// Recarga (pedido do dono, F10): três encaixes de metal bem marcados, "crack ... crack ... crack-CRACK".
+	//   1) aperta a trava e o pente SAI: crack seco + o pente deslizando para fora;
+	//   2) o pente ENTRA: crack firme, com mais peso (o pente batendo no fundo do encaixe);
+	//   3) o ferrolho: puxa para trás contra a mola (crack + deslizada) e solta para a frente (CRACK forte),
+	//      que é o que põe a bala na câmara.
 	recarga: () => {
-		const out = buffer(0.9);
-		mix(out, metal(MECH_RIFLE, 0.02, 81), 0, 0.5);
-		mix(out, envelope(biquad(whiteNoise(0.15, 82), "bp", 2500, 1.5), { attack: 0.01, tau: 0.04 }), 0.03, 0.25);
-		mix(out, metal([1900, 2800, 4100], 0.025, 83), 0.38, 0.7);
-		mix(out, thump(150, 90, 0.03), 0.38, 0.4);
-		mix(out, metal(MECH_HEAVY, 0.03, 84), 0.62, 0.6);
-		mix(out, metal(MECH_RIFLE, 0.02, 85), 0.7, 0.5);
-		return finish(room(out, 0.25, 0.12), 0.7);
+		const out = buffer(1.5);
+		mix(out, clack(81, { tone: 2600, weight: 0.6 }), 0.0, 0.9); // trava do pente
+		mix(out, slide(0.12, 82, 1800, 900, 0.35), 0.02); // pente saindo
+		mix(out, slide(0.1, 83, 900, 1700, 0.3), 0.42); // pente entrando no encaixe
+		mix(out, clack(84, { tone: 2100, weight: 1.3, gap: 0.011 }), 0.52, 1.0); // pente travado
+		mix(out, clack(85, { tone: 3000, weight: 0.5, gap: 0.006 }), 0.9, 0.7); // ferrolho: puxa
+		mix(out, slide(0.13, 86, 1500, 3200, 0.4), 0.91); // contra a mola
+		mix(out, clack(87, { tone: 1900, weight: 1.5, gap: 0.009, bright: 1.2 }), 1.07, 1.1); // solta: bala na câmara
+		return finish(room(out, 0.22, 0.1), 0.8);
 	},
-	// Sacar: tecido + clique metálico
+	// Sacar: tecido + o ferrolho conferido (um crack curto)
 	sacar: () => {
-		const out = buffer(0.35);
-		mix(out, envelope(biquad(whiteNoise(0.2, 91), "bp", 1800, 0.8), { attack: 0.03, tau: 0.04 }), 0, 0.4);
-		mix(out, metal(MECH_RIFLE, 0.02, 92), 0.12, 0.8);
-		return finish(room(out, 0.2, 0.1), 0.6);
+		const out = buffer(0.4);
+		mix(out, envelope(biquad(whiteNoise(0.2, 91), "bp", 1800, 0.8), { attack: 0.03, tau: 0.04 }), 0, 0.35);
+		mix(out, clack(92, { tone: 2600, weight: 0.6 }), 0.1, 0.8);
+		return finish(room(out, 0.2, 0.1), 0.65);
 	},
-	sem_municao: () => finish(room(metal([3100, 4700, 6900], 0.022, 93, 0.12), 0.15, 0.1), 0.55),
+	// Sem munição: o percussor batendo em vazio (clique seco e leve)
+	sem_municao: () => finish(room(clack(93, { tone: 3300, weight: 0.25, gap: 0.004, bright: 0.7 }), 0.12, 0.08), 0.55),
 	// Marcador de acerto: "tic" seco e brilhante (um toque metálico pequeno)
 	acerto: () => finish(room(metal([3600, 5400, 7600], 0.03, 94, 0.15), 0.12, 0.08), 0.6),
 	// Escudo quebrado: energia que estilhaça (estalo + cacos agudos + queda de energia)
