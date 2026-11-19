@@ -370,6 +370,8 @@ Prancha: `docs/referencias/visuais/kit-torre.png`
 
 Prancha: `docs/referencias/visuais/guia-arma-primeira-pessoa.png`. Regras de enquadramento, posição do modelo por categoria e versão para celular estão na prancha; valores `[PROPOSTA]`, ajustar em teste.
 
+**Na F10** `[DECIDIDO]` (dono do projeto): os modelos low poly das 18 armas e do Bastão feitos na F7 (`Shared/Combat/WeaponModels`) são os **modelos finais**. Entraram as mãos e os braços finais (luva escura com dedos, polegar e indicador, punho da luva e manga neutra com punho dobrado, sem cor de equipe: a faixa da prancha saiu na F6) e o enquadramento automático: cada arma é conferida contra as regras da prancha e, se não couber, fica um pouco menor (`ViewModelFit`). As posições por categoria foram ajustadas para os modelos (mais compridos que os da prancha) em `CombatConfig.ViewModel.Offsets`. Fotos: `docs/referencias/f10/arma-*.jpg`.
+
 ## 7. Em aberto
 
 - ~~Copa da árvore da Praça bloqueia tiro?~~ Respondida na F10: não (seção 4); confirmar em teste.

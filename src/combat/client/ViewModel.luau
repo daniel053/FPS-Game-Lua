@@ -5,7 +5,9 @@
 --   * luvas escuras e manga neutra (sem cor de equipe: aliado e inimigo pela marcação, GDD 7.6);
 --   * pistola com uma mão; as outras armas com duas;
 --   * balanço ao andar, recuo ao atirar, abaixa perto de parede, some com a mira de sniper aberta;
---   * no celular, 10% menor e mais baixa.
+--   * no celular, 10% menor e mais baixa;
+--   * cada arma se encaixa no quadro do guia (cano fora do centro, nada no centro livre nem fora da
+--     zona da arma): a que não cabe fica menor (ViewModelFit, F10). O Bastão fica de fora (é erguido).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -15,6 +17,7 @@ local Shared = ReplicatedStorage.Shared
 local CombatConfig = require(Shared.Config.CombatConfig)
 local CombatNames = require(Shared.Combat.CombatNames)
 local Types = require(Shared.Types)
+local ViewModelFit = require(Shared.Combat.ViewModelFit)
 local WeaponShapes = require(Shared.Combat.WeaponShapes)
 
 local InputDevice = require(script.Parent.Parent.Common.InputDevice)
@@ -46,6 +49,15 @@ wallParams.FilterType = Enum.RaycastFilterType.Exclude
 
 -- Construção -------------------------------------------------------------------------------------
 
+-- Posição da arma em relação à câmera (por categoria; no celular, menor e mais baixa).
+local function offsetFor(kind: string, touch: boolean): Vector3
+	local offset = VM.Offsets[kind] or VM.Offsets.Rifle
+	if touch then
+		offset = offset * VM.TouchScale + Vector3.new(0, VM.TouchExtraDown, 0)
+	end
+	return offset
+end
+
 local function destroyModel()
 	if model then
 		model:Destroy()
@@ -72,8 +84,13 @@ local function build(kind: string, shape: Shape)
 	for _, spec in shape.parts do
 		WeaponShapes.makePart(spec).Parent = newModel
 	end
-	if InputDevice.get() == "Touch" then
-		newModel:ScaleTo(VM.TouchScale)
+	local touch = InputDevice.get() == "Touch"
+	local scale = if touch then VM.TouchScale else 1
+	if kind ~= "Melee" then
+		scale *= ViewModelFit.scale(shape.parts, shape.muzzle, offsetFor(kind, touch), scale)
+	end
+	if scale ~= 1 then
+		newModel:ScaleTo(scale)
 	end
 	model = newModel
 	currentKind = kind
@@ -162,10 +179,7 @@ local function update(dt: number)
 		reduce = CombatConfig.Effects.ReducedEffectsScale
 	end
 
-	local offset = VM.Offsets[currentKind or "Rifle"] or VM.Offsets.Rifle
-	if InputDevice.get() == "Touch" then
-		offset = offset * VM.TouchScale + Vector3.new(0, VM.TouchExtraDown, 0)
-	end
+	local offset = offsetFor(currentKind or "Rifle", InputDevice.get() == "Touch")
 
 	-- Balanço ao andar
 	local speed = humanoid.MoveDirection.Magnitude

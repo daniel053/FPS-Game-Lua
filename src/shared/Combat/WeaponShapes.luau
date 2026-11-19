@@ -4,6 +4,11 @@
 -- Cada arma usa o seu modelo detalhado (WeaponModels) com as cores do Theme.WeaponLook; a forma simples
 -- por categoria só aparece para uma arma que ainda não tenha modelo. Com as mãos (primeira pessoa),
 -- a mão direita fica na empunhadura do modelo e a esquerda no guarda-mão.
+--
+-- Mãos e braços (F10): luva escura de blocos (dorso, dedos que dão a volta, polegar, indicador
+-- esticado ao lado do guarda-mato), punho da luva e manga neutra que engrossa até o cotovelo, com o
+-- punho dobrado. A manga não tem cor de equipe (GDD 3.3). A câmera vê o lado esquerdo da arma, então
+-- os dedos e o polegar ficam desse lado; o dorso da mão direita fica do lado de fora.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -43,11 +48,91 @@ local function segment(from: Vector3, to: Vector3, thickness: number, color: Col
 	}
 end
 
-local function arm(hand: Vector3, elbow: Vector3, parts: { PartSpec })
-	table.insert(parts, box(Vector3.new(0.3, 0.3, 0.34), hand, COLORS.Glove))
-	local wrist = hand + (elbow - hand).Unit * 0.2
-	table.insert(parts, segment(wrist, elbow, 0.34, COLORS.Sleeve))
+-- Peça no quadro da mão: `at` e o giro são locais ao quadro `frame`.
+local function piece(parts: { PartSpec }, frame: CFrame, size: Vector3, at: Vector3, color: Color3, turn: CFrame?)
+	table.insert(parts, { size = size, cframe = frame * CFrame.new(at) * (turn or CFrame.identity), color = color })
 end
+
+-- Antebraço do pulso ao cotovelo: punho da luva, punho dobrado da manga e a manga, engrossando.
+local function forearm(parts: { PartSpec }, wrist: Vector3, elbow: Vector3)
+	local dir = (elbow - wrist).Unit
+	local cuffEnd = wrist + dir * 0.16
+	table.insert(parts, segment(wrist, cuffEnd, 0.27, COLORS.Glove))
+	table.insert(parts, segment(cuffEnd - dir * 0.02, cuffEnd + dir * 0.03, 0.29, COLORS.GloveShade))
+	local foldEnd = cuffEnd + dir * 0.14
+	table.insert(parts, segment(cuffEnd, foldEnd, 0.37, COLORS.SleeveShade))
+	local mid = foldEnd + (elbow - foldEnd) * 0.5
+	table.insert(parts, segment(foldEnd, mid, 0.34, COLORS.Sleeve))
+	table.insert(parts, segment(mid, elbow, 0.4, COLORS.Sleeve))
+	-- costura ao comprido, virada para a câmera (lado de cima)
+	table.insert(
+		parts,
+		segment(foldEnd + Vector3.new(0, 0.17, 0), elbow + Vector3.new(0, 0.2, 0), 0.03, COLORS.SleeveShade)
+	)
+end
+
+-- Mão direita na empunhadura. `frame`: origem no meio da empunhadura, Y ao longo dela (para cima),
+-- -Z para a frente (cano). Devolve o pulso (embaixo e atrás da empunhadura).
+local function rightHand(parts: { PartSpec }, frame: CFrame, indexFinger: boolean): Vector3
+	local g, shade, pad = COLORS.Glove, COLORS.GloveShade, COLORS.GlovePad
+	-- dorso (lado de fora, +X) e a dobra entre polegar e indicador, atrás e em cima
+	piece(parts, frame, Vector3.new(0.08, 0.32, 0.3), Vector3.new(0.12, -0.01, 0.03), g)
+	piece(parts, frame, Vector3.new(0.02, 0.2, 0.18), Vector3.new(0.165, 0, 0.03), pad)
+	piece(parts, frame, Vector3.new(0.26, 0.09, 0.1), Vector3.new(0.02, 0.12, 0.15), g)
+	-- 3 dedos dando a volta na frente e terminando do lado esquerdo (o que a câmera vê)
+	for i, y in { 0.05, -0.05, -0.15 } do
+		piece(parts, frame, Vector3.new(0.27, 0.085, 0.09), Vector3.new(0.005, y, -0.15), g)
+		piece(parts, frame, Vector3.new(0.08, 0.085, 0.2), Vector3.new(-0.115, y, -0.07), g)
+		piece(parts, frame, Vector3.new(0.085, 0.03, 0.06), Vector3.new(-0.115, y, -0.13), pad)
+		if i < 3 then
+			piece(parts, frame, Vector3.new(0.285, 0.012, 0.1), Vector3.new(0.005, y - 0.05, -0.15), shade)
+			piece(parts, frame, Vector3.new(0.09, 0.012, 0.21), Vector3.new(-0.115, y - 0.05, -0.07), shade)
+		end
+	end
+	-- polegar do lado esquerdo, deitado para a frente
+	piece(
+		parts,
+		frame,
+		Vector3.new(0.075, 0.08, 0.24),
+		Vector3.new(-0.11, 0.15, 0.0),
+		g,
+		CFrame.Angles(math.rad(-12), 0, 0)
+	)
+	piece(parts, frame, Vector3.new(0.08, 0.04, 0.06), Vector3.new(-0.11, 0.17, -0.1), pad)
+	-- indicador esticado ao lado do guarda-mato (fora do gatilho até atirar)
+	if indexFinger then
+		piece(
+			parts,
+			frame,
+			Vector3.new(0.07, 0.07, 0.22),
+			Vector3.new(-0.1, 0.13, -0.24),
+			g,
+			CFrame.Angles(math.rad(12), 0, 0)
+		)
+	end
+	return (frame * CFrame.new(0.04, -0.2, 0.12)).Position
+end
+
+-- Mão esquerda embaixo do guarda-mão. `at` = o ponto de apoio do modelo. Os dedos sobem pelo lado
+-- esquerdo (o que a câmera vê); o polegar sobe pelo outro. Devolve o pulso.
+local function leftHand(parts: { PartSpec }, at: Vector3): Vector3
+	local frame = CFrame.new(at)
+	local g, shade, pad = COLORS.Glove, COLORS.GloveShade, COLORS.GlovePad
+	piece(parts, frame, Vector3.new(0.3, 0.09, 0.32), Vector3.new(0, -0.03, 0), g) -- palma
+	piece(parts, frame, Vector3.new(0.22, 0.03, 0.2), Vector3.new(0, -0.08, 0.02), pad)
+	piece(parts, frame, Vector3.new(0.08, 0.2, 0.3), Vector3.new(-0.15, 0.07, -0.01), g) -- dedos
+	for _, z in { -0.075, 0, 0.075 } do
+		piece(parts, frame, Vector3.new(0.085, 0.2, 0.012), Vector3.new(-0.15, 0.07, z), shade)
+	end
+	piece(parts, frame, Vector3.new(0.085, 0.035, 0.3), Vector3.new(-0.15, 0.16, -0.01), pad) -- pontas
+	piece(parts, frame, Vector3.new(0.07, 0.16, 0.22), Vector3.new(0.15, 0.05, 0.04), g) -- polegar
+	return at + Vector3.new(-0.02, -0.08, 0.2)
+end
+
+-- Inclinação da empunhadura dos modelos (WeaponModels: -15° a -18°, base para trás).
+local GRIP_TILT = CFrame.Angles(math.rad(-16), 0, 0)
+local RIGHT_ELBOW = Vector3.new(0.3, -1.3, 0.8)
+local LEFT_ELBOW = Vector3.new(-0.7, -1.3, 0.1)
 
 -- Cores da arma: as da skin (tema do ShopCatalog, Theme.SkinLook) por cima das da arma. Skin
 -- desconhecida ou de outra arma = cores padrão.
@@ -94,13 +179,16 @@ local function fallback(category: Types.WeaponCategory, c: WeaponModels.Look): W
 	return { parts = parts, muzzle = Vector3.new(0, 0.2, -2.0), leftHand = Vector3.new(0, -0.05, -1.0), grip = grip }
 end
 
-local function withHands(built: WeaponModels.Built, withArms: boolean): Shape
+-- `gripFrame` (opcional): quadro da mão direita, quando a empunhadura não é a de pistola (Bastão).
+local function withHands(built: WeaponModels.Built, withArms: boolean, gripFrame: CFrame?): Shape
 	local parts = built.parts
 	if withArms then
-		arm(built.grip + Vector3.new(0, -0.05, 0.05), Vector3.new(0.3, -1.3, 0.8), parts)
+		local frame = gripFrame or (CFrame.new(built.grip) * GRIP_TILT)
+		local wrist = rightHand(parts, frame, gripFrame == nil)
+		forearm(parts, wrist, RIGHT_ELBOW)
 		local left = built.leftHand
 		if left then
-			arm(left, Vector3.new(-0.7, -1.3, 0.1), parts)
+			forearm(parts, leftHand(parts, left), LEFT_ELBOW)
 		end
 	end
 	return { parts = parts, muzzle = built.muzzle, leftHand = built.leftHand }
@@ -126,12 +214,14 @@ function WeaponShapes.melee(withArms: boolean, skinId: string?): Shape
 	for _, spec in built.parts do
 		spec.cframe = MELEE_TILT * spec.cframe
 	end
+	-- A mão fecha em volta do cabo (que fica no eixo Z do taco): o Y da mão vai para a ponta
+	local handle = MELEE_TILT * CFrame.new(0, 0, 0.05) * CFrame.Angles(math.rad(-90), 0, 0)
 	return withHands({
 		parts = built.parts,
 		muzzle = MELEE_TILT * built.muzzle,
 		leftHand = nil,
 		grip = Vector3.new(0, 0, 0.05),
-	}, true)
+	}, true, handle)
 end
 
 -- Forma pelo ID da arma (WeaponConfig).

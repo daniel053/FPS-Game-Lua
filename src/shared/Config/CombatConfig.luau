@@ -137,14 +137,17 @@ local CombatConfig = {
 	-- Arma em primeira pessoa (guia-arma-primeira-pessoa.png) [PROPOSTA]
 	-- Deslocamento do modelo em studs (direita, cima, frente) em relação à câmera.
 	ViewModel = {
+		-- Posição de cada categoria em relação à câmera (direita, cima, frente). Partiu da tabela do guia
+		-- e foi ajustada na F10 para os modelos detalhados (mais compridos que os do guia) caberem no
+		-- quadro sem encolher: mais para a direita e, nos fuzis e snipers, mais baixo e mais perto.
 		Offsets = {
-			Pistol = Vector3.new(0.7, -0.7, -1.3),
+			Pistol = Vector3.new(0.85, -0.7, -1.3),
 			SMG = Vector3.new(0.85, -0.8, -1.45),
-			Shotgun = Vector3.new(0.9, -0.85, -1.55),
-			LightRifle = Vector3.new(0.9, -0.85, -1.6),
-			Rifle = Vector3.new(0.9, -0.85, -1.6),
-			MachineGun = Vector3.new(1.0, -0.95, -1.6),
-			Sniper = Vector3.new(0.85, -0.9, -1.7),
+			Shotgun = Vector3.new(0.95, -0.85, -1.55),
+			LightRifle = Vector3.new(1.2, -1.0, -1.4),
+			Rifle = Vector3.new(1.1, -0.85, -1.55),
+			MachineGun = Vector3.new(1.1, -0.95, -1.6),
+			Sniper = Vector3.new(1.15, -1.0, -1.5),
 			Melee = Vector3.new(0.8, -0.8, -1.2),
 		} :: { [string]: Vector3 },
 		TouchScale = 0.9, -- celular: arma 10% menor...
@@ -156,6 +159,18 @@ local CombatConfig = {
 		WallCheckDistance = 3, -- perto de parede, a arma abaixa
 		WallLowerAngle = 35, -- graus
 		ReloadDipAngle = 25,
+		-- Regras de enquadramento do guia (F10), numa tela de referência 16:9; posições de 0 a 1, da
+		-- esquerda e de cima. A arma que não cabe fica menor (ViewModelFit). [PROPOSTA]
+		Frame = {
+			RefAspect = 16 / 9,
+			MuzzleMinX = 0.6, -- ponta do cano: até 60% da largura (o guia pede ~61-62%; o centro livre manda)...
+			MuzzleMinY = 0.6, -- ...e nunca acima de 60% da altura
+			ZoneMinX = 0.58, -- ZONA DA ARMA: de 58% a 100% da largura...
+			ZoneMinY = 0.52, -- ...e de 52% a 100% da altura
+			CenterRadius = 0.2, -- CENTRO LIVRE: raio de 20% da altura em volta da retícula
+			MinScale = 0.8,
+			ScaleStep = 0.02,
+		},
 	},
 
 	-- Arena de teste cinza da F2. Desligada na F3: o servidor monta o mirante e as 4 ilhas e roda a

@@ -8,9 +8,12 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local CharacterConfig = require(Shared.Config.CharacterConfig)
+local CombatConfig = require(Shared.Config.CombatConfig)
 local Strings = require(Shared.Config.Strings)
+local ViewModelFit = require(Shared.Combat.ViewModelFit)
 local WeaponConfig = require(Shared.Config.WeaponConfig)
 local WeaponMath = require(Shared.Combat.WeaponMath)
+local WeaponShapes = require(Shared.Combat.WeaponShapes)
 
 local FULL = CharacterConfig.Health.MaxHp + CharacterConfig.Health.MaxShield
 local TOLERANCE = 0.10
@@ -107,5 +110,37 @@ return function(t: any)
 				t.eq(scoped, hip, `{def.id} muda a velocidade com a mira`)
 			end
 		end
+	end)
+	t.test("primeira pessoa: cada arma cabe no quadro do guia, no PC e no celular", function()
+		local VM = CombatConfig.ViewModel
+		local ids = {}
+		for _, round in { 1, 3, 4 } do
+			for _, list in { WeaponConfig.getPrimariesForRound(round), WeaponConfig.getSecondariesForRound(round) } do
+				for _, id in list do
+					ids[id] = true
+				end
+			end
+		end
+		local count = 0
+		for id in ids do
+			local def = WeaponConfig.get(id) :: any
+			local shape = WeaponShapes.forId(id, true, nil)
+			for _, touch in { false, true } do
+				local base = if touch then VM.TouchScale else 1
+				local offset = VM.Offsets[def.category]
+				if touch then
+					offset = offset * VM.TouchScale + Vector3.new(0, VM.TouchExtraDown, 0)
+				end
+				local scale = ViewModelFit.scale(shape.parts, shape.muzzle, offset, base)
+				local report = ViewModelFit.measure(shape.parts, shape.muzzle, offset, scale * base)
+				t.ok(
+					report.fits,
+					`{id} ({if touch then "celular" else "PC"}): cano {report.muzzle}, esquerda {report.left}, topo {report.top}, centro {report.center}, escala {scale}`
+				)
+				t.ok(scale >= 0.9, `{id}: escala {scale} (a arma não pode ficar pequena demais)`)
+			end
+			count += 1
+		end
+		t.eq(count, 18, "as 18 armas de fogo")
 	end)
 end
