@@ -23,6 +23,7 @@ local CardConfig = require(Shared.Config.CardConfig)
 local CardTypes = require(Shared.Cards.CardTypes)
 local MatchTypes = require(Shared.Match.MatchTypes)
 local Remotes = require(Shared.Remotes)
+local AudioConfig = require(Shared.Config.AudioConfig)
 local Theme = require(Shared.Config.Theme)
 
 local PlayerDataClient = require(script.Parent.Parent.Common.PlayerDataClient)
@@ -91,7 +92,10 @@ end
 
 -- Nuvem ------------------------------------------------------------------------------------------
 
+local SOUNDS = AudioConfig.Cards
+
 local function onNuvemThrow(data: CardTypes.NuvemThrowData)
+	CombatEffects.playSoundAt(SOUNDS.NuvemThrow, data.origin)
 	local ball = fxPart("NuvemBola", Enum.PartType.Ball, COLORS.card_nuvem, true)
 	ball.Size = Vector3.one * FX.NuvemBallSize
 	ball.Position = data.origin
@@ -145,6 +149,7 @@ local function onSmokeAdded(instance: Instance)
 	end
 	local smoke = instance
 	local radius = smoke.Size.X / 2
+	CombatEffects.playSoundAt(SOUNDS.NuvemPuff, smoke.Position)
 	local puffs: { BasePart } = {}
 	for i, offset in PUFFS do
 		local puff = fxPart("NuvemBola", Enum.PartType.Ball, if i <= 5 then COLORS.Smoke else COLORS.SmokeShade, false)
@@ -184,6 +189,7 @@ end
 -- Tremor -----------------------------------------------------------------------------------------
 
 local function onTremorWave(data: CardTypes.TremorWaveData)
+	CombatEffects.playSoundAt(SOUNDS.Tremor, data.origin)
 	if data.length <= 0.1 then
 		return
 	end
@@ -238,6 +244,7 @@ end
 
 local function onImpulsoLaunch(data: CardTypes.ImpulsoLaunchData)
 	local color = COLORS.card_impulso
+	CombatEffects.playSoundAt(SOUNDS.Impulso, data.feet)
 	groundRing(data.feet + Vector3.new(0, 0.1, 0), color, 1.5, FX.ImpulsoRingSize, FX.ImpulsoSeconds)
 	local streaks = if reduced() then 3 else 6
 	for i = 1, streaks do
@@ -259,6 +266,7 @@ local function onMarkAdded(instance: Instance)
 	end
 	local mark = instance
 	mark.LocalTransparencyModifier = 1
+	CombatEffects.playSoundAt(SOUNDS.RenascerMark, mark.Position)
 	local center = mark.Position
 	local color = COLORS.card_renascer
 	local bars: { BasePart } = {}
@@ -290,6 +298,7 @@ end
 
 local function onRenascerReturn(data: CardTypes.RenascerReturnData)
 	local color = COLORS.card_renascer
+	CombatEffects.playSoundAt(SOUNDS.RenascerReturn, data.to)
 	local feet = data.to - Vector3.new(0, 2.8, 0)
 	groundRing(feet + Vector3.new(0, 0.1, 0), color, 1, 9, 0.45)
 	local column = fxPart("RenascerColuna", Enum.PartType.Cylinder, color, true)

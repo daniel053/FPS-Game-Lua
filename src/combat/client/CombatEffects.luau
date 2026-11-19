@@ -69,13 +69,14 @@ end
 -- Sons -------------------------------------------------------------------------------------------
 
 local function makeSound(def: AudioConfig.SoundDef, parent: Instance): Sound?
-	if def.id == "" then
+	local id, pitch = AudioConfig.resolve(def)
+	if id == "" then
 		return nil
 	end
 	local sound = Instance.new("Sound")
-	sound.SoundId = def.id
+	sound.SoundId = id
 	sound.Volume = def.volume * sfxVolume()
-	sound.PlaybackSpeed = def.pitch
+	sound.PlaybackSpeed = pitch
 	sound.Parent = parent
 	return sound
 end

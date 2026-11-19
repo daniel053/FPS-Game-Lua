@@ -60,6 +60,22 @@ local s = game.ReplicatedStorage.Shared:Clone() s.Parent = game.ServerStorage re
 
 - **Se esquecer**, nada quebra: ao iniciar, o servidor compara o mundo salvo com o que o código monta. Se estiverem diferentes, ele monta de novo e avisa no Output; o teste "o mundo salvo no place da Partida está em dia com o código" também acusa.
 
+## Sons
+
+Todos os sons do jogo são **gerados por código** (originais, GDD 7.7): `scripts/sons/gerar.js` escreve os arquivos em `assets/sons/`.
+
+```bash
+node scripts/sons/gerar.js
+```
+
+Enquanto um som não foi enviado ao Roblox, o jogo toca o som provisório. Para trocar pelos sons finais:
+
+1. No Studio: **Janela › Gerenciador de Assets › Importar em massa** e escolha todos os arquivos de `assets/sons/`.
+2. No Gerenciador de Assets, abra a pasta **Áudio**, selecione os sons importados e arraste para o **Workspace** (vira um `Sound` com o nome do arquivo para cada um).
+3. Peça ao Claude Code para ler os números e preencher `src/shared/Config/AudioAssets.luau` (ou preencha à mão: nome do arquivo = número do asset). Depois apague os `Sound` do Workspace.
+
+Cada som com número em `AudioAssets` passa a tocar o final sozinho (`AudioConfig.resolve`).
+
 ## Conferir o código antes de um commit
 
 ```bash
