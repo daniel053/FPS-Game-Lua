@@ -121,7 +121,7 @@ local ART: { [string]: Draw } = {
 		end
 	end,
 
-	card_tremor = function(canvas, main, dark, light)
+	card_tremor = function(canvas, main, _dark, light)
 		bar(canvas, light, 0.5, 0.74, 0.86, 0.05, 0) -- chão
 		-- rachadura em zigue-zague, da esquerda para a direita
 		local zig = { { 0.12, 0.7 }, { 0.3, 0.6 }, { 0.44, 0.76 }, { 0.6, 0.58 }, { 0.74, 0.74 }, { 0.9, 0.62 } }
