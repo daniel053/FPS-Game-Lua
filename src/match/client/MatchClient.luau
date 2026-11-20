@@ -2,6 +2,7 @@
 -- Estado da partida no cliente: guarda a última foto do servidor (MatchState), repassa os eventos
 -- (MatchEvent) e manda os pedidos (MatchRequest). Só mostra; quem decide é o servidor.
 
+local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -118,6 +119,30 @@ function MatchClient.partnerPlayer(): Player?
 	for _, other in Players:GetPlayers() do
 		if other ~= player and other:GetAttribute(CombatNames.Attr.TeamId) == teamId then
 			return other
+		end
+	end
+	return nil
+end
+
+-- Corpo do parceiro: o personagem do jogador ou, se o parceiro é um bot de preenchimento, o corpo
+-- dele (o combatente da minha dupla) [BOTS].
+function MatchClient.partnerModel(): Model?
+	local partner = MatchClient.partnerPlayer()
+	if partner and partner.Character then
+		return partner.Character
+	end
+	local teamId = MatchClient.myTeamId()
+	if teamId == nil then
+		return nil
+	end
+	for _, instance in CollectionService:GetTagged(CombatNames.CombatantTag) do
+		if
+			instance:IsA("Model")
+			and instance ~= player.Character
+			and instance.Parent ~= nil
+			and instance:GetAttribute(CombatNames.Attr.TeamId) == teamId
+		then
+			return instance
 		end
 	end
 	return nil

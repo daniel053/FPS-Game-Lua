@@ -10,6 +10,7 @@ Jogo de tiro em primeira pessoa no Roblox, duelos 2v2 em formato de torneio, low
 4. `docs/DADOS-JOGADOR.md` — tudo o que é salvo do jogador, como salvar e como migrar.
 5. `docs/KIT-MODULAR.md` e `docs/referencias/visuais/` — componentes dos 4 mapas (medidas, cores, regras) e guia da arma em primeira pessoa. Obrigatórios na F2 (arma) e na F10 (mapas).
 6. `docs/referencias/mockup-v1.png` — mockup de referência. Leia a seção 1 do guia de estilo antes de usá-lo: ele contém erros e nomes de outro jogo que **não** devem ser copiados.
+7. `docs/BOTS.md` — **bots de preenchimento (temporários)**: completam a fila e a partida quando há pouca gente. Como ajustar, como **desligar** (1 linha) e como **remover** de vez. Todo código deles tem a marca `[BOTS]`; não espalhe lógica de bot fora desses pontos.
 
 ## Regras que valem sempre
 

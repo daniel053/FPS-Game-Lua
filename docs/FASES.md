@@ -25,6 +25,7 @@
 - Números em `Config`, cores em `Theme`, textos em `Strings`.
 - Servidor é a autoridade.
 - Visual "cinza" (blocos simples) é aceito até a F10. Lógica e controles precisam estar certos antes da arte.
+- **Bots de preenchimento (temporários):** ver `docs/BOTS.md` (seção "Extra" abaixo). Código só nos pontos marcados `[BOTS]`, para poder desligar e remover fácil.
 
 ---
 
@@ -44,6 +45,7 @@
 | F8 | Social e voz | Dupla se comunica e continua junta | ✅ |
 | F9 | Elo, economia e arsenal | Progressão completa | ✅ |
 | F10 | Mapas e arte | 4 ilhas, mirante, personagem, armas | ✅ |
+| Extra | **Bots de preenchimento** (temporário, `docs/BOTS.md`) | Ninguém espera mais de 35 s; sala completa com bots fracos | ⏳ aguarda teste |
 | ⭐ | **Marco: beta fechado** | Teste com jogadores de fora | ☐ |
 | F11 | Robux e lançamento | Jogo público | ☐ |
 
@@ -363,6 +365,30 @@ Só seguir para a F5 quando a partida for divertida em blocos cinza.
 
 ---
 
+## Extra · Bots de preenchimento (temporário)
+
+> **Leia `docs/BOTS.md`** antes de mexer em fila, partida, combate ou cartas: lá está como os bots funcionam, como **desligar** (`BotConfig.Enabled = false`) e como **remover** de vez (checklist). Todo código deles tem a marca `[BOTS]`.
+
+**Objetivo:** com pouca gente no jogo (começo), ninguém fica preso na fila e toda partida tem as 4 ilhas cheias.
+
+**Pedido do dono do projeto** (depois da F10): bots que entram na fila com o tempo (o primeiro aos 10 s) e completam a sala em até 35 s; cada bot é uma vaga vazia que um jogador de verdade toma; na partida, eles andam, atiram, usam armas e cartas, como um jogador **ruim**, fácil de derrubar (público do celular). Partida com bot: moedas normais, elo parado. Fácil de tirar quando o jogo tiver jogadores.
+
+**Feito:**
+- Fila: `QueueRules` com `Params.bots` (contagem que sobe com o tempo, partida em até 35 s, a partir de 1 pessoa); o lobby avisa a partida pelo `MatchHandoff.fillBots`.
+- Partida: a sala é completada até 16 com bots na hora de formar as duplas; cérebro em `src/match/server/Bots/` (visão, caminho, troca de tiros, recarga, pistola, corpo a corpo, cartas); placar com nome, elo e abates dos bots; "Partida casual: o elo não muda" na tela final.
+- Testes automáticos: `Bots.spec` (fila com e sem bots, mira, nomes, armas e cartas).
+
+**Critérios de aceite:**
+- Sozinho na fila: a contagem sobe a partir dos 10 s e a partida sai em até 35 s.
+- Duas contas na fila: as duas caem na mesma partida (cada uma ocupa a vaga de um bot).
+- Na partida, os bots andam pelo mapa, atiram, recarregam, trocam de arma e usam cartas; dá para derrubá-los com facilidade no celular.
+- Elo não muda em partida com bot; moedas sim.
+- `BotConfig.Enabled = false` volta a fila e a partida ao comportamento do GDD 6.2 sem mexer em mais nada.
+
+**Status:** implementado; falta o teste do dono do projeto (Studio: place Partida, Play sozinho; jogo publicado: Lobby → JOGAR sozinho).
+
+---
+
 ## ⭐ Marco: beta fechado
 
 - Convidar um grupo de jogadores de fora (crianças e adultos, celular e PC).
@@ -405,3 +431,4 @@ Só seguir para a F5 quando a partida for divertida em blocos cinza.
 | Sons finais enviados ao Roblox e ligados em `AudioAssets` (README, "Sons") | Beta fechado |
 | Celular de referência e teste de 30 fps com 16 jogadores (GDD 13.2) | Beta fechado |
 | Preços em Robux (GDD 10.3) | F11 |
+| Bots de preenchimento ligados (`docs/BOTS.md`): desligar e depois remover quando a fila encher sozinha | — (decisão do dono do projeto) |

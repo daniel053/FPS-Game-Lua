@@ -49,18 +49,22 @@ local MatchRewards = {}
 local active = false
 local teamCount = 0
 local isPrivate = false
+local isCasual = false -- [BOTS] partida com bots de preenchimento: moedas normais, elo parado
 local tallies: { [Player]: Tally } = {}
 local leaverContext: ((player: Player) -> LeaverContext?)? = nil
 local settledCallback: ((player: Player, data: MatchTypes.RewardsData) -> ())? = nil
 
 -- Começo da partida (duplas formadas). `entries` = jogadores de verdade com a dupla e o parceiro.
+-- `casual` = partida com bots de preenchimento (docs/BOTS.md): não mexe no elo [BOTS].
 function MatchRewards.begin(
 	entries: { { player: Player, teamId: string, partnerUserId: number? } },
 	teams: number,
-	private: boolean
+	private: boolean,
+	casual: boolean?
 )
 	table.clear(tallies)
 	active = true
+	isCasual = casual == true
 	teamCount = teams
 	isPrivate = private
 	for _, entry in entries do
@@ -160,7 +164,8 @@ function MatchRewards.settle(player: Player, placement: number?, samePartner: bo
 		})
 	end)
 
-	local rank = if placement
+	-- [BOTS] partida com bots não passa pelo elo (nem conta como partida ranqueada)
+	local rank = if placement and not isCasual
 		then RankService.applyMatch(player, { placement = placement, teamCount = teamCount }, isPrivate)
 		else nil
 	DataService.saveNow(player)
@@ -180,6 +185,7 @@ function MatchRewards.settle(player: Player, placement: number?, samePartner: bo
 			privateCut = coins.privateCut,
 		},
 		ranked = rank ~= nil and rank.ranked,
+		casual = isCasual and not isPrivate, -- [BOTS]
 		rankDelta = if rank then rank.delta else 0,
 		rankPoints = if rank then rank.points else points,
 		rankTier = if rank then rank.tier else "",

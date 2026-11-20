@@ -1,10 +1,14 @@
 # [NOME DO JOGO] — Documento de Game Design (GDD)
 
-> **Versão:** 0.6 (rascunho para discussão)
-> **Documentos irmãos:** `docs/ESTILO-E-TELAS.md` (telas e estilo), `docs/FASES.md` (fases de desenvolvimento), `docs/DADOS-JOGADOR.md` (dados salvos)
+> **Versão:** 0.7 (rascunho para discussão)
+> **Documentos irmãos:** `docs/ESTILO-E-TELAS.md` (telas e estilo), `docs/FASES.md` (fases de desenvolvimento), `docs/DADOS-JOGADOR.md` (dados salvos), `docs/BOTS.md` (bots de preenchimento, temporários)
 > **Plataforma:** Roblox, mobile em primeiro lugar (também PC e console)
 > **Público:** 8 a 30 anos
 > **Gênero:** tiro em **primeira pessoa**, arena 2v2, formato torneio por eliminação
+
+### Mudanças desde a v0.6 (bots de preenchimento)
+
+- **Bots de preenchimento (temporários)** enquanto há pouca gente no jogo: ninguém espera mais de 35 s na fila; a partida é completada até 16 com bots fracos que andam, atiram e usam cartas; partida com bot não mexe no elo (seções 4.2, 6.2 e 9.2; como desligar e remover: `docs/BOTS.md`).
 
 ### Mudanças desde a v0.5 (F10)
 
@@ -188,6 +192,7 @@ Ordem de prioridade: `[PROPOSTA]`
 3. **Solo com solo**, pareando por elo parecido.
 4. **Jogador sem par** (número ímpar de jogadores, ex.: 7): **joga sozinho, 1v2**. Sem bot e sem nenhum bônus de escudo, vida ou dano. Conta como uma dupla de uma pessoa só, com 5 vidas como qualquer outra. `[DECIDIDO]`
    - Quem fica sem par: o de **maior elo** entre os que sobraram sem dupla (é quem melhor aguenta o 1v2). `[PROPOSTA]` (F3, `MatchConfig.OddPlayerSolo`)
+5. **Bots de preenchimento (temporário)** `[DECIDIDO]` pelo dono do projeto depois da F10: enquanto `BotConfig.Enabled` estiver ligado, a sala é completada com bots até **16** (8 duplas, as 4 ilhas com duelo) na hora de formar as duplas, então não sobra jogador sem par. Bots entram na formação como solos de elo 0. O bot é um jogador **ruim** de propósito (público do celular): anda pelo mapa, atira com mira atrasada e errada, usa as armas da rodada e as cartas (básica sorteada; Renascer a partir da 4ª rodada). Para quem joga, ele aparece como um jogador (nome, elo e abates no placar). Duelo só entre bots é jogado de verdade. Números `[PROPOSTA]` em `BotConfig`. Como desligar e remover: `docs/BOTS.md`.
 
 ### 4.3 Rodada (duelo 2v2)
 
@@ -324,6 +329,11 @@ Aparece no começo de **toda rodada**, com o jogador já **dentro do mapa**, liv
 - **Modo de teste (`DEV_`):** com 2 ou mais na fila, a partida sai em **5 s** (as faixas também se juntam em 5 s). `[DECIDIDO]` (F5)
 - A fila é **compartilhada entre todos os servidores de lobby** (não só o servidor onde o jogador está), para juntar gente mais rápido.
 - 7 jogadores formam 3 duplas e 1 jogador sem par, que joga sozinho (1v2), sem bônus, como na seção 4.2. `[DECIDIDO]`
+- **Bots de preenchimento (temporário)** `[DECIDIDO]` pelo dono do projeto (depois da F10), valores `[PROPOSTA]` em `BotConfig.Queue`. Enquanto estiverem ligados:
+  - **Ninguém espera mais de 35 s:** contado da chegada de quem espera há mais tempo, a partida sai com quem houver (a partir de 1 pessoa) e o servidor da partida completa com bots até 16. As regras acima continuam valendo e podem fazer a partida sair antes (e também são completadas com bots).
+  - **Cada bot é uma vaga vazia.** Na tela, a contagem sobe com o tempo como se gente estivesse chegando: o primeiro "bot" aos **10 s**, depois aos poucos até a sala cheia aos 35 s. Para o sistema a vaga continua livre: um jogador de verdade que chega ocupa o lugar do bot, e só os bots que faltam são criados quando a partida começa (quem não chegou da fila também vira bot).
+  - Separação por faixa (6.3) continua; com bots, uma faixa nunca chega a passar fome (sai em 35 s).
+  - Desligar e remover: `docs/BOTS.md`.
 
 ### 6.3 Separação por nível `[PROPOSTA]`
 
@@ -757,6 +767,7 @@ A tela de Cartas tem o botão **GIRAR**. É uma função importante do jogo.
 - Bronze não perde PE abaixo de 0.
 - Nas 10 primeiras partidas, o jogador não perde PE.
 - A partir de Mestre, as perdas dobram.
+- **Partida com bot de preenchimento (seção 4.2) não mexe no elo** nem conta como partida ranqueada; moedas e estatísticas valem normalmente. A tela final mostra "Partida casual: o elo não muda". `[DECIDIDO]` pelo dono do projeto (`BotConfig.Match.AffectsRank = false`).
 
 ### 9.3 Exibição
 
@@ -1402,3 +1413,18 @@ Detalhes de implementação decididos durante o desenvolvimento (não são regra
 | **Quinas redondas nas armas** (`WeaponShapes.smooth`): cada caixa do modelo com espessura ≥ 0,08 e comprimento ≥ 0,16 vira duas caixas cruzadas mais finas e 4 cilindros nas quinas ao longo do lado mais comprido (raio = 32% da menor espessura); as caixas vêm primeiro e mantêm o giro e a marca de pente (a recarga continua igual). Usado na arma em primeira pessoa e na vitrine grande do Arsenal; as 19 miniaturas da grade ficam retas para economizar peças. | Pedido do dono (armas menos quadradas) sem modelo novo nem malha enviada ao Roblox; serve para as 18 armas, o Bastão, as mãos e as skins. |
 | **Arte de fundo das cartas e palco da vitrine** (`Shared/Ui/CardBackdrop`, vitrine em `ArsenalScreen`): feitos com quadros da interface dentro de um `CanvasGroup`, que recorta peças giradas (o `ClipsDescendants` comum não recorta) e respeita o canto arredondado. O degradê do céu fica numa peça filha: um `UIGradient` direto no `CanvasGroup` tinge o grupo inteiro. Carta bloqueada usa `GroupColor3` para acinzentar. | Sem imagem enviada ao Roblox; escala em qualquer tamanho. |
 | **Parede invisível da base** (`match/server/BaseBarriers`, desenho em `match/client/BaseBarrierFx`, geometria em `WorldLayout.basePanels`, números em `MapConfig.BaseBarrier`, cores em `Theme.Match.BaseBarrierGlass/Line`): no lugar do jogador congelado, cada base tem 6 painéis invisíveis de 16 de altura (passagem, fundo, os dois lados e dois em cima das paredes da frente), montados pelo servidor numa pasta fora do `MatchWorld` (não muda o mapa salvo no place). Colidem só no sorteio e na preparação (`setPhase`) e não bloqueiam tiro, câmera nem toque. O servidor ainda confere a cada 0,1 s da preparação: quem estiver mais de 3 studs fora da própria base volta ao ponto de nascer. No cliente, os 4 painéis com vidro (a frente em cima das paredes fica de fora: a parede de verdade já mostra o limite) ganham um `SurfaceGui` nas duas faces: vidro azul-escuro bem transparente, mais forte embaixo, linhas finas subindo devagar e uma faixa clara a cada 3 s; aparece a partir de 7 studs e fica no máximo a 1,5. Sem material Neon e sem imagem; só os painéis perto de quem joga são animados. | Pedido do dono do projeto (ficar travado não era legal). Azul, não vermelho, porque vermelho é a cor do inimigo (ESTILO, `Theme.Maps`). O brilho de neon fora da interface (ESTILO 2.6 trata da interface) foi pedido pelo dono para este caso. |
+
+### Extra · Bots de preenchimento (temporário, `docs/BOTS.md`)
+
+| Decisão | Por quê |
+|---|---|
+| **Uma chave só** (`BotConfig.Enabled`) e todo código de bot com a marca `[BOTS]`: o novo fica em `Shared/Bots/BotRules` (contas puras), `match/server/Bots/` (serviço, cérebro e corpo) e `Config/BotConfig`; os ganchos em arquivos antigos são pequenos e listados no `docs/BOTS.md`. | O dono do projeto quer tirar os bots quando o jogo tiver gente: desligar é 1 linha; remover é apagar 2 pastas, 2 arquivos e desfazer os ganchos. |
+| **Na fila, o bot não existe**: `QueueRules` recebe `Params.bots` e só muda a contagem da tela (`BotRules.seatsShown`, rampa em fração da sala por segundo de espera) e a regra "sai em até `StartAfterSeconds`, a partir de 1 pessoa". O plano leva `fillBots = true` até o `MatchHandoff`. | "Cada bot é uma vaga vazia": nada de bot no MemoryStore; um jogador de verdade que chega simplesmente entra na partida e há um bot a menos. Sem estado escondido entre lobbies. |
+| **Os bots nascem no servidor da partida** (`MatchService.fillWithBots`, logo antes de formar as duplas): faltam `FillTo − presentes` membros `ai`. Quem não chegou da fila também vira bot; com bots, a partida segue a partir de 1 pessoa (em vez de `MinArrived` = 2). Sem composição (Studio), `Match.FillWithoutHandoff`. | Bots não podem ser teleportados; o lobby só diz "complete com bots". |
+| **Bot = combatente sem jogador** (`Combatants`, como os jogadores de teste), mas solto: `CharacterService.spawnBot(..., { free = true })` não ancora o corpo e deixa a física no servidor (`SetNetworkOwner(nil)`). Animações padrão do Roblox tocadas pelo servidor (`BotBody`), cores sorteadas de `Theme.Bots`, sem nada de catálogo. | Reaproveita vida, escudo, zona, queda, contorno, barra, espectar e minimapa sem código novo; ninguém de fora controla o corpo do bot. |
+| **Tiro do bot no servidor** (`BotAgent.shoot`): mesma máquina `WeaponState` (munição, cadência, recarga, aquecimento), mesmas contas de dano e espalhamento (`WeaponMath`), raio contra mapa + hitboxes; erro de mira em cone (`BotRules.aimErrorDegrees`), mira que segue o alvo atrasada, reação, rajadas, 60% da cadência e 60% do dano contra jogadores. O dano entra por `Combatants.applyDamage` sem jogador; quem leva o tiro recebe `Damaged` e todos veem o `ShotFx` do corpo do bot. | Servidor é a autoridade; a arma do bot obedece às mesmas regras da arma do jogador, só "mira mal". |
+| **Movimento:** `PathfindingService` (um `Path` por bot, refeito a cada 2,5 s ou quando o destino muda), destino sorteado no chão da ilha puxando para o lado do inimigo (depois de `HuntAfterSeconds` sem contato, vai até o inimigo vivo mais perto, como quem ouve os tiros), ida até onde viu o inimigo por último, volta para dentro da zona; na troca de tiros, strafe de lado (sem cair da ilha nem entrar em parede) e às vezes parado; `AlignOrientation` vira o corpo para o alvo. Preso 1,2 s: pula; preso de novo: outro destino. | Bot "comum" que circula o mapa como um jogador, sem cair da ilha nem ficar parado num canto. |
+| **Cartas do bot** (`CardService.castForNpc`): o bot cuida das cargas com a mesma `CardState`; o efeito é o mesmo do jogador. Nuvem e Tremor iguais; Impulso aplicado no servidor (o corpo é dele); Renascer guardado por combatente (`npcRenascers`) no mesmo guarda de queda. As legendas "Inimigo usou …" aceitam o corpo do bot como `caster`. | Uma regra só para as cartas; nada de efeito duplicado. |
+| **Placar e telas:** `MemberView` do bot vai com `isBot = not Disguise`, `rankTier` (sorteado de `DisplayTiers`) e `kills` (contados pelo `BotService`); UserId de mentira negativo (`-1001`…), que mostra a inicial no lugar da foto. Parceiro bot não é "parceiro" para o bônus de mesmo parceiro nem para "seguir juntos". | Para quem joga, o bot parece um jogador (pedido do dono), sem usar foto ou conta de ninguém. |
+| **Elo parado com bot:** `MatchRewards.begin(..., casual)` não chama `RankService.applyMatch` (nem conta partida ranqueada); `RewardsData.casual` faz a tela final mostrar `Strings.Rewards.Casual`. | Decisão do dono do projeto: moedas normais, elo parado (evita elo inflado por vitórias fáceis). |
+| **Duelo só de bots é jogado de verdade** (o sorteio de resultado dos jogadores de teste vale só para eles), com `VsBotErrorMultiplier` e `VsBotDamageMultiplier` para acabar mais rápido. | Quem está no mirante assiste a duelos de verdade nas 4 ilhas. |

@@ -314,10 +314,22 @@ function CharacterService.setFrozen(model: Model, frozen: boolean)
 	end
 end
 
+-- [BOTS] Bot de preenchimento (docs/BOTS.md): corpo com outra aparência e solto (anda pela física,
+-- controlado pelo servidor). Sem opções: o jogador de teste parado de sempre.
+export type BotSpawnOptions = { description: HumanoidDescription?, free: boolean? }
+
 -- Jogador de teste (só DEV_) e alvo do tutorial (F6): parado, com o corpo base, registrado como combatente.
-function CharacterService.spawnBot(name: string, teamId: string, island: number?, cframe: CFrame): Combatants.Combatant?
+function CharacterService.spawnBot(
+	name: string,
+	teamId: string,
+	island: number?,
+	cframe: CFrame,
+	options: BotSpawnOptions?
+): Combatants.Combatant?
+	local free = options ~= nil and options.free == true
+	local description = (options and options.description) or CharacterService.baseDescription()
 	local ok, model = pcall(function()
-		return Players:CreateHumanoidModelFromDescription(CharacterService.baseDescription(), Enum.HumanoidRigType.R15)
+		return Players:CreateHumanoidModelFromDescription(description, Enum.HumanoidRigType.R15)
 	end)
 	if not ok or model == nil then
 		warn(`[Personagem] Não foi possível criar o jogador de teste: {model}`)
@@ -333,7 +345,10 @@ function CharacterService.spawnBot(name: string, teamId: string, island: number?
 	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 	humanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
 	humanoid.BreakJointsOnDeath = false
-	root.Anchored = true
+	if free then
+		setupHumanoid(humanoid) -- mesma velocidade e pulo de um jogador
+	end
+	root.Anchored = not free
 	local feetToRoot = humanoid.HipHeight + root.Size.Y / 2
 	-- `cframe` vem 3 studs acima do chão (ponto de nascer): apoia os pés no chão
 	model:PivotTo(cframe * CFrame.new(0, feetToRoot - 3, 0))
@@ -350,6 +365,10 @@ function CharacterService.spawnBot(name: string, teamId: string, island: number?
 		folder.Parent = workspace
 	end
 	model.Parent = folder
+	if free then
+		-- A física do bot fica no servidor (nunca no cliente de quem chega perto)
+		root:SetNetworkOwner(nil)
+	end
 	model.Destroying:Connect(function()
 		Combatants.unregister(model)
 	end)

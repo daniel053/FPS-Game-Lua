@@ -12,7 +12,13 @@
 --
 -- "Quando a fila chegou a 7" não precisa ser guardado: é o horário de chegada da ficha que fez a
 -- conta passar de 7 (a conta é feita do zero a cada vez, com as fichas em ordem).
+--
+-- [BOTS] Com `Params.bots` (bots de preenchimento, docs/BOTS.md): ninguém espera mais que
+-- `bots.startAfter`; a partida sai com quem houver (a partir de 1) e o servidor completa com bots.
+-- Na contagem da tela, as vagas sobem com o tempo (BotRules.seatsShown); gente de verdade ocupa a
+-- vaga antes do bot. Sem `bots`, nada muda.
 
+local BotRules = require(script.Parent.Parent.Bots.BotRules)
 local QueueConfig = require(script.Parent.Parent.Config.QueueConfig)
 local RankRules = require(script.Parent.Parent.Progression.RankRules)
 
@@ -34,6 +40,7 @@ export type Params = {
 	flexibleAfter: number,
 	flexibleMin: number,
 	tierMergeAfter: number,
+	bots: BotRules.QueueParams?, -- [BOTS] nil = fila sem bots
 }
 
 export type Plan = {
@@ -41,6 +48,7 @@ export type Plan = {
 	ticketIds: { string },
 	userIds: { number },
 	duos: { { number } }, -- duplas fixas (fichas de 2)
+	fillBots: boolean, -- [BOTS] o servidor da partida completa a sala com bots
 }
 
 -- Estado de uma faixa para a tela ("Procurando partida… 5/7").
@@ -59,7 +67,8 @@ export type PlayerLevel = { points: number, matchesPlayed: number }
 
 local QueueRules = {}
 
-function QueueRules.params(isDev: boolean): Params
+-- `withBots` = bots de preenchimento ligados (a fila passa BotConfig.Enabled; os testes escolhem).
+function QueueRules.params(isDev: boolean, withBots: boolean?): Params
 	local p: Params = {
 		minPlayers = QueueConfig.MinPlayersToStart,
 		fillWait = QueueConfig.FillWaitSeconds,
@@ -67,6 +76,7 @@ function QueueRules.params(isDev: boolean): Params
 		flexibleAfter = QueueConfig.FlexibleAfterSeconds,
 		flexibleMin = QueueConfig.FlexibleMinPlayers,
 		tierMergeAfter = QueueConfig.TierMergeAfterSeconds,
+		bots = if withBots then BotRules.queueParams() else nil,
 	}
 	if isDev then
 		p.flexibleMin = QueueConfig.Dev.FlexibleMinPlayers
@@ -148,7 +158,7 @@ local function take(sortedTickets: { Ticket }, maxPlayers: number): { Ticket }
 end
 
 local function makePlan(pool: PoolId, chosen: { Ticket }): Plan
-	local plan: Plan = { pool = pool, ticketIds = {}, userIds = {}, duos = {} }
+	local plan: Plan = { pool = pool, ticketIds = {}, userIds = {}, duos = {}, fillBots = false }
 	for _, t in chosen do
 		table.insert(plan.ticketIds, t.id)
 		for _, userId in t.userIds do
@@ -161,21 +171,26 @@ local function makePlan(pool: PoolId, chosen: { Ticket }): Plan
 	return plan
 end
 
--- Uma faixa (ou a mistura). Devolve a partida a montar agora (ou nil) e o estado para a tela.
-function QueueRules.evaluatePool(
+local function oldestOf(list: { Ticket }): number
+	local oldest = math.huge
+	for _, t in list do
+		oldest = math.min(oldest, t.enqueuedAt)
+	end
+	return oldest
+end
+
+-- As regras da fila só com gente de verdade (GDD 6.2). `list` em ordem, `count` > 0.
+local function evaluateReal(
 	pool: PoolId,
-	tickets: { Ticket },
+	list: { Ticket },
+	count: number,
 	now: number,
 	p: Params,
 	force: boolean?
 ): (Plan?, PoolStatus)
-	local list = QueueRules.sorted(tickets)
-	local count = countOf(list)
-	if count == 0 then
-		return nil, { count = 0, target = p.minPlayers, startsAt = nil }
-	end
-
-	if force and count >= p.flexibleMin then
+	-- [BOTS] com bots, "começar já" (painel de teste) vale a partir de 1 jogador
+	local forceMin = if p.bots then 1 else p.flexibleMin
+	if force and count >= forceMin then
 		return makePlan(pool, take(list, p.maxPlayers)), { count = count, target = p.minPlayers, startsAt = now }
 	end
 
@@ -196,11 +211,7 @@ function QueueRules.evaluatePool(
 		return nil, { count = count, target = p.maxPlayers, startsAt = startAt }
 	end
 
-	local oldest = math.huge
-	for _, t in list do
-		oldest = math.min(oldest, t.enqueuedAt)
-	end
-	local flexAt = oldest + p.flexibleAfter
+	local flexAt = oldestOf(list) + p.flexibleAfter
 	if count >= p.flexibleMin then
 		if now >= flexAt then
 			return makePlan(pool, list), { count = count, target = p.minPlayers, startsAt = now }
@@ -208,6 +219,48 @@ function QueueRules.evaluatePool(
 		return nil, { count = count, target = p.minPlayers, startsAt = flexAt }
 	end
 	return nil, { count = count, target = p.minPlayers, startsAt = nil }
+end
+
+-- Uma faixa (ou a mistura). Devolve a partida a montar agora (ou nil) e o estado para a tela.
+function QueueRules.evaluatePool(
+	pool: PoolId,
+	tickets: { Ticket },
+	now: number,
+	p: Params,
+	force: boolean?
+): (Plan?, PoolStatus)
+	local list = QueueRules.sorted(tickets)
+	local count = countOf(list)
+	if count == 0 then
+		return nil, { count = 0, target = p.minPlayers, startsAt = nil }
+	end
+	local plan, status = evaluateReal(pool, list, count, now, p, force)
+	local bots = p.bots
+	if bots == nil then
+		return plan, status
+	end
+
+	-- [BOTS] Toda partida é completada com bots no servidor da partida.
+	if plan then
+		plan.fillBots = true
+		return plan, status
+	end
+	local oldest = oldestOf(list)
+	local botStartAt = oldest + bots.startAfter
+	if now >= botStartAt then
+		local botPlan = makePlan(pool, take(list, p.maxPlayers))
+		botPlan.fillBots = true
+		return botPlan, { count = bots.fillTo, target = bots.fillTo, startsAt = now }
+	end
+	-- Contagem da tela: as vagas dos bots sobem com o tempo; sala cheia só quando a partida sai.
+	local shown = math.max(count, math.min(BotRules.seatsShown(now - oldest, bots), bots.fillTo - 1))
+	local startsAt = math.min(status.startsAt or math.huge, botStartAt)
+	return nil,
+		{
+			count = shown,
+			target = if shown >= p.minPlayers then math.max(p.maxPlayers, bots.fillTo) else p.minPlayers,
+			startsAt = startsAt,
+		}
 end
 
 -- Faixa "passando fome": não junta 7 e a ficha mais antiga já esperou TierMergeAfterSeconds.

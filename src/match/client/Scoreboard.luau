@@ -85,17 +85,18 @@ local function livesText(snapshot: MatchTypes.Snapshot, team: MatchTypes.TeamVie
 	return string.rep(M.Life, team.lives) .. string.rep(M.LifeLost, math.max(0, MatchConfig.MaxLives - team.lives))
 end
 
--- Elo de cada jogador (atributo RankTier no Player, RankService, F9). Bots e quem saiu: nada.
-local function rankOf(userId: number): string?
-	local p = Players:GetPlayerByUserId(userId)
+-- Elo de cada jogador (atributo RankTier no Player, RankService, F9). Jogador de teste e quem saiu:
+-- nada. Bot de preenchimento: o que veio na foto da partida [BOTS].
+local function rankOf(member: MatchTypes.MemberView): string?
+	local p = Players:GetPlayerByUserId(member.userId)
 	local tier = p and p:GetAttribute(RankRules.Attr.Tier)
-	return if typeof(tier) == "string" then tier else nil
+	return if typeof(tier) == "string" then tier else member.rankTier
 end
 
-local function killsOf(userId: number): number
-	local p = Players:GetPlayerByUserId(userId)
+local function killsOf(member: MatchTypes.MemberView): number
+	local p = Players:GetPlayerByUserId(member.userId)
 	local kills = p and p:GetAttribute(CombatNames.Attr.Kills)
-	return if typeof(kills) == "number" then kills else 0
+	return if typeof(kills) == "number" then kills else (member.kills or 0)
 end
 
 local function header(order: number)
@@ -176,7 +177,7 @@ local function teamBlock(snapshot: MatchTypes.Snapshot, team: MatchTypes.TeamVie
 			elseif not member.connected then " · " .. S.Offline
 			else ""
 		label.RichText = true
-		local rank = rankOf(member.userId)
+		local rank = rankOf(member)
 		label.Text = (if rank then RankBadge.richIcon(rank) .. " " else "") .. RankBadge.escape(member.name .. suffix)
 		label.TextColor3 = if faded or not member.connected then Theme.Color.TextSecondary else Theme.Color.TextPrimary
 		local kills = Ui.label("Kills", Theme.Font.Number, Theme.TextSize.Body, Theme.Color.TextPrimary, row)
@@ -184,7 +185,7 @@ local function teamBlock(snapshot: MatchTypes.Snapshot, team: MatchTypes.TeamVie
 		kills.Position = UDim2.fromScale(1, 0)
 		kills.Size = UDim2.fromScale(0.4, 1)
 		kills.TextXAlignment = Enum.TextXAlignment.Right
-		kills.Text = string.format("%s %d", S.Kills, killsOf(member.userId))
+		kills.Text = string.format("%s %d", S.Kills, killsOf(member))
 		kills.TextColor3 = Theme.Color.TextSecondary
 	end
 end

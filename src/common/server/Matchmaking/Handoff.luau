@@ -22,6 +22,8 @@ export type MatchHandoff = {
 	-- Partida privada (servidores privados, F11): não mexe no elo e as moedas valem menos (GDD 6.6).
 	-- Ausente = partida normal da fila.
 	isPrivate: boolean?,
+	-- [BOTS] O servidor da partida completa a sala com bots (docs/BOTS.md). Ausente = sem bots.
+	fillBots: boolean?,
 }
 
 export type LobbyHandoff = {
@@ -84,6 +86,7 @@ function Handoff.readMatchAsync(privateServerId: string, timeoutSeconds: number)
 					pool = if typeof(raw.pool) == "string" then raw.pool else "",
 					createdAt = if typeof(raw.createdAt) == "number" then raw.createdAt else 0,
 					isPrivate = raw.isPrivate == true,
+					fillBots = raw.fillBots == true, -- [BOTS]
 				}
 			end
 		elseif not ok then

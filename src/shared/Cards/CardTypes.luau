@@ -43,8 +43,9 @@ export type FxName =
 	| "ImpulsoLaunch" -- ImpulsoLaunchData
 	| "RenascerReturn" -- RenascerReturnData
 
--- caster: quem usou (legendas "Inimigo usou …", ESTILO 5)
-export type NuvemThrowData = { origin: Vector3, velocity: Vector3, flight: number, gravity: number, caster: Player? }
+-- caster: quem usou (legendas "Inimigo usou …", ESTILO 5): o Player ou, num bot de preenchimento,
+-- o corpo dele (Model) [BOTS]
+export type NuvemThrowData = { origin: Vector3, velocity: Vector3, flight: number, gravity: number, caster: Instance? }
 
 export type TremorWaveData = {
 	origin: Vector3,
@@ -52,12 +53,12 @@ export type TremorWaveData = {
 	length: number,
 	width: number,
 	speed: number,
-	caster: Player?,
+	caster: Instance?,
 }
 
-export type ImpulsoLaunchData = { feet: Vector3, caster: Player? }
+export type ImpulsoLaunchData = { feet: Vector3, caster: Instance? }
 
-export type RenascerReturnData = { from: Vector3, to: Vector3, caster: Player? }
+export type RenascerReturnData = { from: Vector3, to: Vector3, caster: Instance? }
 
 -- Nomes no mundo (servidor cria, cliente lê)
 local Names = {

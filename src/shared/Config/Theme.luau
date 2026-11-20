@@ -618,6 +618,24 @@ local Theme = {
 		map_praca = hex("#FFFAF0"), -- praça ensolarada
 		map_torre = hex("#F5F6FF"), -- altura: ar limpo e frio
 	} :: { [string]: Color3 },
+
+	-- [BOTS] Corpo dos bots de preenchimento (docs/BOTS.md): blocos com pele, camiseta e calça
+	-- sorteadas, sem nada de catálogo. Sem vermelho (cor do inimigo) e sem neon.
+	Bots = {
+		Skin = { hex("#F6D7C3"), hex("#E8B892"), hex("#C99067"), hex("#9A6440"), hex("#6B4129") },
+		Shirt = {
+			hex("#3B82F6"),
+			hex("#22C55E"),
+			hex("#F59E0B"),
+			hex("#8B5CF6"),
+			hex("#14B8A6"),
+			hex("#F1F5F9"),
+			hex("#334155"),
+			hex("#0EA5E9"),
+			hex("#FACC15"),
+		},
+		Pants = { hex("#1E293B"), hex("#334155"), hex("#1D4ED8"), hex("#57534E"), hex("#0F172A"), hex("#78716C") },
+	},
 }
 
 return Theme

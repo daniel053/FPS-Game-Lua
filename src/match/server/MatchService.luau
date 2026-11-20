@@ -9,6 +9,10 @@
 -- Vindo da fila (F5), a composição chega pelo MatchHandoff (MemoryStore): quem vai jogar e as duplas
 -- fixas. Sem composição (Studio, teleporte de teste), entram os jogadores que estão no servidor (e,
 -- só em DEV_, os jogadores de teste do painel), como na F3.
+--
+-- [BOTS] Bots de preenchimento (docs/BOTS.md): com BotConfig.Enabled, a sala é completada com bots
+-- (membros `ai`) na hora em que a partida começa. O cérebro deles fica em ./Bots. Os pontos que mexem
+-- com bots estão marcados com [BOTS].
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -16,6 +20,8 @@ local RunService = game:GetService("RunService")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local Shared = ReplicatedStorage.Shared
+local BotConfig = require(Shared.Config.BotConfig)
+local BotRules = require(Shared.Bots.BotRules)
 local CardConfig = require(Shared.Config.CardConfig)
 local CardRules = require(Shared.Cards.CardRules)
 local CombatConfig = require(Shared.Config.CombatConfig)
@@ -46,6 +52,7 @@ local MatchRewards = require(script.Parent.MatchRewards)
 local MatchWorld = require(script.Parent.MatchWorld)
 local ShieldPoints = require(script.Parent.ShieldPoints)
 local TeamService = require(script.Parent.Parent.Combat.TeamService)
+local BotService = require(script.Parent.Bots) -- [BOTS]
 
 type Phase = MatchTypes.Phase
 
@@ -54,7 +61,9 @@ type Member = {
 	player: Player?,
 	name: string,
 	userId: number,
-	isBot: boolean,
+	isBot: boolean, -- jogador de teste (painel) ou bot de preenchimento
+	ai: boolean, -- [BOTS] bot de preenchimento: anda, atira e usa cartas (Bots/BotAgent)
+	rankTier: string?, -- [BOTS] elo mostrado no placar para o bot
 	connected: boolean,
 	teamId: string?,
 	-- Rodada atual
@@ -85,7 +94,7 @@ type ActiveDuel = {
 	winner: string?,
 	finishedAt: number?,
 	movedOut: boolean,
-	botsOnly: boolean,
+	botsOnly: boolean, -- só jogadores de teste parados (resultado sorteado); bots de preenchimento jogam de verdade
 }
 
 local MatchService = {}
@@ -106,6 +115,7 @@ local endsAt: number? = nil
 local combatStartedAt: number? = nil
 local firstJoinAt: number? = nil
 local botCounter = 0
+local aiCounter = 0 -- [BOTS]
 local forceStart = false
 local skipRequested = false
 local abortRequested = false -- painel de teste: recomeçar a partida
@@ -149,6 +159,19 @@ local function minPlayers(): number
 	return if Env.IsDev then MatchConfig.Start.DevMinPlayers else MatchConfig.Start.MinPlayers
 end
 
+-- [BOTS] A sala vai ser completada com bots? Vindo da fila, quem decide é o lobby (MatchHandoff);
+-- sem composição (Studio, teleporte de teste), BotConfig.Match.FillWithoutHandoff.
+local function botFillActive(): boolean
+	if not BotService.isEnabled() then
+		return false
+	end
+	local current = handoff
+	if current then
+		return current.fillBots == true
+	end
+	return BotConfig.Match.FillWithoutHandoff
+end
+
 local function partnerOf(member: Member): Member?
 	local team = member.teamId and teams[member.teamId]
 	if team == nil then
@@ -181,10 +204,15 @@ local function snapshot(): MatchTypes.Snapshot
 		end
 		local memberViews: { MatchTypes.MemberView } = {}
 		for _, m in team.members do
-			table.insert(
-				memberViews,
+			local view: MatchTypes.MemberView =
 				{ key = m.key, name = m.name, userId = m.userId, isBot = m.isBot, connected = m.connected }
-			)
+			if m.ai then
+				-- [BOTS] Para quem joga, o bot é um jogador: sem a marca "BOT", com elo e abates no placar
+				view.isBot = not BotConfig.Disguise
+				view.rankTier = m.rankTier
+				view.kills = BotService.killsOf(m.key)
+			end
+			table.insert(memberViews, view)
 		end
 		table.insert(teamViews, {
 			id = id,
@@ -289,6 +317,12 @@ local function toBase(member: Member, island: number, side: number, slot: number
 	member.alive = true
 	local spawn = WorldLayout.baseSpawn(island, side, slot)
 	local teamId = member.teamId :: string
+	if member.ai then
+		-- [BOTS] solto na base; arma e cartas no começo do combate (closePrepAndArm)
+		member.bot = BotService.spawn(member.key, member.name, teamId, island, side, spawn)
+		member.alive = member.bot ~= nil
+		return
+	end
 	if member.isBot then
 		member.bot = CharacterService.spawnBot(member.name, teamId, island, spawn)
 		member.alive = member.bot ~= nil
@@ -446,17 +480,24 @@ local function beginRewards()
 		return
 	end
 	local entries = {}
+	local withAi = false
 	for _, m in members do
+		if m.ai then
+			withAi = true
+		end
 		if m.player and m.teamId and not m.isBot and m.connected then
 			local partner = partnerOf(m)
 			table.insert(entries, {
 				player = m.player,
 				teamId = m.teamId,
-				partnerUserId = if partner then partner.userId else nil,
+				-- Bot de parceiro não conta como parceiro (nem bônus de mesmo parceiro) [BOTS]
+				partnerUserId = if partner and not partner.isBot then partner.userId else nil,
 			})
 		end
 	end
-	MatchRewards.begin(entries, #state.order, privateServer)
+	-- [BOTS] Partida com bot: moedas normais, elo parado (BotConfig.Match.AffectsRank)
+	local casual = withAi and not BotConfig.Match.AffectsRank
+	MatchRewards.begin(entries, #state.order, privateServer, casual)
 end
 
 -- Quem sai no meio conta como se a dupla caísse agora (RankConfig.LeaverCountsAsEliminatedNow).
@@ -647,8 +688,8 @@ local function tickCombat(dt: number)
 		if flat.Magnitude > radius then
 			Combatants.applyZoneDamage(combatant, zoneDamage)
 		end
-		-- Caiu da ilha: volta para a base e perde o escudo
-		if m.player and position.Y < fallY and combatant.alive then
+		-- Caiu da ilha: volta para a base e perde o escudo (bots de preenchimento também) [BOTS]
+		if (m.player or m.ai) and position.Y < fallY and combatant.alive then
 			combatant.model:PivotTo(WorldLayout.baseSpawn(m.island, m.side, m.slot))
 			root.AssemblyLinearVelocity = Vector3.zero
 			if MapConfig.General.FallOutLosesShield then
@@ -753,10 +794,33 @@ local function sendPartnerChoice(member: Member)
 	sendTo(partner, "PrepPartner", data)
 end
 
+-- [BOTS] O bot "decide" na preparação: armas sorteadas da rodada, carta básica na primeira, e confirma
+-- depois de alguns segundos (o parceiro de verdade vê a escolha chegando, como a de um jogador).
+local function botPrep(m: Member, options: LoadoutRules.Options, round: number)
+	local primary, secondary = BotService.chooseLoadout(options)
+	m.choice = { primary = primary, secondary = secondary }
+	if not m.cardStepDone then
+		m.card = BotService.chooseCard()
+		m.cardStepDone = true
+	end
+	m.confirmed = false
+	task.delay(BotService.confirmDelay(), function()
+		local current = plan
+		if phase == "Prep" and m.inDuel and current and current.round == round and not m.confirmed then
+			m.confirmed = true
+			sendPartnerChoice(m)
+		end
+	end)
+end
+
 local function openPrep(round: number, seconds: number)
 	local options = LoadoutRules.options(round)
 	for _, m in members do
 		if not m.inDuel then
+			continue
+		end
+		if m.ai then
+			botPrep(m, options, round)
 			continue
 		end
 		local primary, secondary = LoadoutRules.resolve(options, nil, m.previous, memoryOf(m))
@@ -805,6 +869,12 @@ local function closePrepAndArm(round: number)
 			-- Fim da etapa da carta: sem escolha = partida inteira sem carta básica (GDD 8.2)
 			m.cardStepDone = true
 			choseCardNow = m.card ~= nil
+		end
+		if m.ai then
+			if m.alive then
+				BotService.arm(m.key, primary, secondary, m.card, round, serverNow()) -- [BOTS]
+			end
+			continue
 		end
 		local player = m.player
 		if player == nil or not m.alive then
@@ -891,7 +961,8 @@ local function playRound()
 		local botsOnly = true
 		for _, id in { duel.a, duel.b } do
 			for _, m in teams[id].members do
-				if not m.isBot and m.connected then
+				-- Bots de preenchimento jogam o duelo de verdade (quem está no mirante assiste) [BOTS]
+				if (not m.isBot or m.ai) and m.connected then
 					botsOnly = false
 				end
 			end
@@ -1075,6 +1146,8 @@ local function makeMember(key: string, player: Player?, name: string, userId: nu
 		name = name,
 		userId = userId,
 		isBot = isBot,
+		ai = false,
+		rankTier = nil,
 		connected = true,
 		teamId = nil,
 		inDuel = false,
@@ -1104,9 +1177,44 @@ local function newBot(): Member
 	return makeMember(`bot{botCounter}`, nil, string.format(Strings.Dev.BotName, botCounter), 0, true)
 end
 
+-- [BOTS] Completa a sala com bots de preenchimento (cada vaga vazia vira um bot), na hora de formar
+-- as duplas. Quem não chegou da fila também vira bot.
+local function fillWithBots()
+	if not botFillActive() then
+		return
+	end
+	local present = 0
+	for _, m in members do
+		if m.connected and not m.leaving then
+			present += 1
+		end
+	end
+	local fillTo = math.min(BotConfig.Match.FillTo, MatchConfig.Start.MaxPlayers)
+	local added = BotRules.botsToFill(present, fillTo)
+	for _ = 1, added do
+		aiCounter += 1
+		local identity = BotService.newIdentity()
+		local m = makeMember(`ai{aiCounter}`, nil, identity.name, identity.userId, true)
+		m.ai = true
+		m.rankTier = identity.rankTier
+		members[m.key] = m
+	end
+	if added > 0 then
+		print(`[Partida] {present} jogador(es) + {added} bot(s) de preenchimento`)
+	end
+end
+
 local function resetMatch()
 	-- Mantém os jogadores e os jogadores de teste; zera duplas, vidas e rodadas.
+	-- Os bots de preenchimento saem: a próxima partida completa a sala de novo [BOTS].
 	for key, m in members do
+		if m.ai then
+			if m.bot then
+				m.bot.model:Destroy()
+			end
+			members[key] = nil
+			continue
+		end
 		if not m.connected then
 			members[key] = nil
 			continue
@@ -1147,6 +1255,7 @@ local function resetMatch()
 	abortRequested = false
 	table.clear(pendingLifeRemovals)
 	MatchRewards.cancel() -- partida anterior interrompida: quem não recebeu não recebe mais
+	BotService.reset() -- [BOTS]
 	firstJoinAt = if connectedHumanCount() > 0 then os.clock() else nil
 end
 
@@ -1232,7 +1341,9 @@ local function receivingFromQueue(): boolean
 						present += 1
 					end
 				end
-				if present >= MatchConfig.Start.MinArrived and connectedHumanCount() > 0 then
+				-- [BOTS] com bots, basta 1 pessoa: quem não chegou vira bot
+				local minArrived = if botFillActive() then 1 else MatchConfig.Start.MinArrived
+				if present >= minArrived and connectedHumanCount() > 0 then
 					return true
 				end
 				-- Chegou gente de menos: quem chegou volta para a fila, na frente (decisão da F5).
@@ -1262,7 +1373,9 @@ local function receiving()
 	end
 	while true do
 		local count = memberCount()
-		local enough = count >= minPlayers() and connectedHumanCount() > 0
+		-- [BOTS] com bots, 1 pessoa já basta (a sala é completada na hora de começar)
+		local needed = if botFillActive() then 1 else minPlayers()
+		local enough = count >= needed and connectedHumanCount() > 0
 		if enough and firstJoinAt then
 			local startAt = firstJoinAt + MatchConfig.ReceivingPlayersTimeout
 			local newEndsAt = serverNow() + math.max(0, startAt - os.clock())
@@ -1430,6 +1543,7 @@ local function runMatch()
 		resetMatch()
 		receiving()
 		setPhase("Forming", nil)
+		fillWithBots() -- [BOTS]
 		formTeams()
 		beginRewards()
 		-- A composição da fila vale só para a primeira partida deste servidor.
@@ -1632,7 +1746,8 @@ function MatchService.botCount(): number
 end
 
 function MatchService.devStartNow(): boolean
-	if phase ~= "Receiving" or memberCount() < 2 or connectedHumanCount() == 0 then
+	local needed = if botFillActive() then 1 else 2 -- [BOTS] com bots, começa com 1 pessoa
+	if phase ~= "Receiving" or memberCount() < needed or connectedHumanCount() == 0 then
 		return false
 	end
 	forceStart = true
@@ -1751,6 +1866,10 @@ function MatchService.Start()
 		if phase == "Combat" then
 			task.defer(checkDuels)
 		end
+	end)
+	-- [BOTS] Abates dos bots aparecem no placar (vão na foto da partida)
+	BotService.onKill(function()
+		task.defer(publish)
 	end)
 	Players.PlayerAdded:Connect(onPlayerAdded)
 	Players.PlayerRemoving:Connect(onPlayerRemoving)

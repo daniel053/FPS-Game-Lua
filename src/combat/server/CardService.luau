@@ -154,10 +154,19 @@ local function effectPart(name: string, shape: Enum.PartType): Part
 	return part
 end
 
-local function emit(player: Player, kind: CardEventKind, data: any)
+-- `player` nil = combatente sem jogador (bot): ninguém ouve (o tutorial só acompanha jogadores).
+local function emit(player: Player?, kind: CardEventKind, data: any)
+	if player == nil then
+		return
+	end
 	for _, listener in listeners do
 		task.spawn(listener, player, kind, data)
 	end
+end
+
+-- Quem usou a carta, para as legendas dos clientes: o jogador ou, num bot, o próprio corpo.
+local function casterOf(player: Player?, combatant: Combatants.Combatant): Instance
+	return player or combatant.model
 end
 
 -- Nuvem (C) ----------------------------------------------------------------------------------------
@@ -177,7 +186,7 @@ local function spawnSmoke(position: Vector3, def: CardDef)
 	end)
 end
 
-local function useNuvem(player: Player, combatant: Combatants.Combatant, direction: Vector3?, def: CardDef)
+local function useNuvem(player: Player?, combatant: Combatants.Combatant, direction: Vector3?, def: CardDef)
 	local head = combatant.model:FindFirstChild("Head")
 	local root = rootOf(combatant.model)
 	if not (head and head:IsA("BasePart")) or root == nil then
@@ -206,8 +215,13 @@ local function useNuvem(player: Player, combatant: Combatants.Combatant, directi
 			break
 		end
 	end
-	local fx: CardTypes.NuvemThrowData =
-		{ origin = origin, velocity = velocity, flight = flight, gravity = gravity, caster = player }
+	local fx: CardTypes.NuvemThrowData = {
+		origin = origin,
+		velocity = velocity,
+		flight = flight,
+		gravity = gravity,
+		caster = casterOf(player, combatant),
+	}
 	fxEvent:FireAllClients("NuvemThrow", fx)
 	local token = roundToken
 	task.delay(flight, function()
@@ -250,7 +264,7 @@ local function hitByTremor(target: Combatants.Combatant, def: CardDef)
 	end
 end
 
-local function useTremor(player: Player, combatant: Combatants.Combatant, direction: Vector3?, def: CardDef)
+local function useTremor(player: Player?, combatant: Combatants.Combatant, direction: Vector3?, def: CardDef)
 	local root = rootOf(combatant.model)
 	if root == nil then
 		return
@@ -271,8 +285,14 @@ local function useTremor(player: Player, combatant: Combatants.Combatant, direct
 		length = (wall.Position - root.Position).Magnitude
 	end
 
-	local fx: CardTypes.TremorWaveData =
-		{ origin = feet, direction = forward, length = length, width = p.Width, speed = p.WaveSpeed, caster = player }
+	local fx: CardTypes.TremorWaveData = {
+		origin = feet,
+		direction = forward,
+		length = length,
+		width = p.Width,
+		speed = p.WaveSpeed,
+		caster = casterOf(player, combatant),
+	}
 	fxEvent:FireAllClients("TremorWave", fx)
 
 	local token = roundToken
@@ -351,13 +371,12 @@ local function finishRenascer(player: Player, revived: boolean, def: CardDef)
 	sendRenascer(player, nil, revived)
 end
 
-local function useRenascer(player: Player, combatant: Combatants.Combatant, _direction: Vector3?, def: CardDef)
+-- Marca no chão, debaixo do combatente. Devolve a marca e onde ele estava (posição e para onde olhava).
+local function placeMark(combatant: Combatants.Combatant): (BasePart?, CFrame?)
 	local root = rootOf(combatant.model)
 	if root == nil then
-		return
+		return nil, nil
 	end
-	cancelRenascer(player)
-	local p = def.params
 	local feet = root.Position - Vector3.new(0, feetOffset(combatant.model) - 0.05, 0)
 	local mark = effectPart("RenascerMarca", Enum.PartType.Cylinder)
 	mark.Size = Vector3.new(0.15, 4, 4)
@@ -367,11 +386,75 @@ local function useRenascer(player: Player, combatant: Combatants.Combatant, _dir
 	mark.Transparency = Theme.CardFxTransparency
 	CollectionService:AddTag(mark, NAMES.MarkTag)
 	mark.Parent = worldFolder
+	return mark, root.CFrame
+end
+
+-- [BOTS] Renascer de um combatente sem jogador (bot de preenchimento): a mesma regra, sem tela.
+type NpcRenascer = { mark: CFrame, part: BasePart, token: {}, def: CardDef }
+local npcRenascers: { [Combatants.Combatant]: NpcRenascer } = {}
+
+local function finishNpcRenascer(combatant: Combatants.Combatant, revived: boolean)
+	local r = npcRenascers[combatant]
+	if r == nil then
+		return
+	end
+	npcRenascers[combatant] = nil
+	r.part:Destroy()
+	local model = combatant.model
+	if model.Parent == nil or not (revived or combatant.alive) then
+		return
+	end
+	if revived or CardConfig.RenascerReturnOnExpire then
+		local root = rootOf(model)
+		local from = if root then root.Position else r.mark.Position
+		model:PivotTo(r.mark)
+		if root then
+			root.AssemblyLinearVelocity = Vector3.zero
+		end
+		local fx: CardTypes.RenascerReturnData = { from = from, to = r.mark.Position, caster = model }
+		fxEvent:FireAllClients("RenascerReturn", fx)
+	end
+	if revived then
+		Combatants.revive(combatant, r.def.params.ReturnProtection)
+	end
+end
+
+local function useNpcRenascer(combatant: Combatants.Combatant, def: CardDef)
+	local old = npcRenascers[combatant]
+	if old then
+		npcRenascers[combatant] = nil
+		old.part:Destroy()
+	end
+	local mark, at = placeMark(combatant)
+	if mark == nil or at == nil then
+		return
+	end
+	local token = {}
+	npcRenascers[combatant] = { mark = at, part = mark, token = token, def = def }
+	task.delay(def.params.Window, function()
+		local r = npcRenascers[combatant]
+		if r and r.token == token then
+			finishNpcRenascer(combatant, false)
+		end
+	end)
+end
+
+local function useRenascer(player: Player?, combatant: Combatants.Combatant, _direction: Vector3?, def: CardDef)
+	if player == nil then
+		useNpcRenascer(combatant, def) -- [BOTS]
+		return
+	end
+	cancelRenascer(player)
+	local p = def.params
+	local mark, at = placeMark(combatant)
+	if mark == nil or at == nil then
+		return
+	end
 
 	local token = {}
 	local endsAt = serverNow() + p.Window
 	-- Guarda a posição e para onde o jogador olhava
-	renascers[player] = { mark = root.CFrame, endsAt = endsAt, part = mark, token = token }
+	renascers[player] = { mark = at, endsAt = endsAt, part = mark, token = token }
 	sendRenascer(player, endsAt, nil)
 	task.delay(p.Window, function()
 		local r = renascers[player]
@@ -382,19 +465,29 @@ local function useRenascer(player: Player, combatant: Combatants.Combatant, _dir
 end
 
 -- Impulso (Q): o salto é do cliente; o servidor só avisa todos, para o efeito aparecer para todos.
-local function useImpulso(player: Player, combatant: Combatants.Combatant, _direction: Vector3?, _def: CardDef)
+-- [BOTS] Num bot (sem jogador), o corpo é do servidor: o salto é aplicado aqui.
+local function useImpulso(player: Player?, combatant: Combatants.Combatant, _direction: Vector3?, def: CardDef)
 	local root = rootOf(combatant.model)
 	if root == nil then
 		return
 	end
 	local feet = root.Position - Vector3.new(0, feetOffset(combatant.model), 0)
-	local fx: CardTypes.ImpulsoLaunchData = { feet = feet, caster = player }
+	local fx: CardTypes.ImpulsoLaunchData = { feet = feet, caster = casterOf(player, combatant) }
 	fxEvent:FireAllClients("ImpulsoLaunch", fx)
+	if player == nil then
+		local humanoid = combatant.model:FindFirstChildOfClass("Humanoid")
+		if humanoid then
+			humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+		end
+		local speed = CardRules.launchSpeed(def.params.LaunchHeight, workspace.Gravity)
+		local v = root.AssemblyLinearVelocity
+		root.AssemblyLinearVelocity = Vector3.new(v.X, speed, v.Z)
+	end
 end
 
 -- Pedidos ------------------------------------------------------------------------------------------
 
-type Effect = (player: Player, combatant: Combatants.Combatant, direction: Vector3?, def: CardDef) -> ()
+type Effect = (player: Player?, combatant: Combatants.Combatant, direction: Vector3?, def: CardDef) -> ()
 
 local EFFECTS: { [string]: Effect } = {
 	card_nuvem = useNuvem,
@@ -514,6 +607,7 @@ end
 -- Fim da rodada: nuvens e marcas somem; efeitos atrasados (nuvem no ar, onda andando) não acontecem.
 function CardService.clearWorld()
 	roundToken += 1
+	table.clear(npcRenascers) -- [BOTS] as marcas estão na pasta e somem abaixo
 	for _, child in worldFolder:GetChildren() do
 		child:Destroy()
 	end
@@ -568,6 +662,24 @@ function CardService.isArmed(player: Player): boolean
 	return armed[player] ~= nil
 end
 
+-- [BOTS] Efeito de uma carta usada por um combatente sem jogador (bot de preenchimento, docs/BOTS.md).
+-- Quem chama cuida das cargas e da recarga (CardState); aqui só o efeito, igual ao de um jogador.
+function CardService.castForNpc(combatant: Combatants.Combatant, cardId: string, direction: Vector3?): boolean
+	local def = CardConfig.get(cardId)
+	if def == nil or combatant.player ~= nil or not combatant.alive then
+		return false
+	end
+	local effect = EFFECTS[def.id]
+	if effect == nil then
+		return false
+	end
+	local ok, err = pcall(effect :: any, nil, combatant, direction, def)
+	if not ok then
+		warn(`[Cartas] Erro no efeito de {def.id} (bot): {err}`)
+	end
+	return ok
+end
+
 -- Ciclo de vida ------------------------------------------------------------------------------------
 
 function CardService.Init()
@@ -590,6 +702,10 @@ function CardService.Start()
 	-- Renascer: caiu dentro da janela -> volta à marca com vida e escudo cheios.
 	Combatants.setKnockGuard(function(target: Combatants.Combatant): boolean
 		local player = target.player
+		if player == nil and npcRenascers[target] then
+			finishNpcRenascer(target, true) -- [BOTS]
+			return true
+		end
 		if player == nil or renascers[player] == nil then
 			return false
 		end
@@ -608,6 +724,8 @@ function CardService.Start()
 		local player = target.player
 		if player then
 			CardService.disarm(player)
+		elseif npcRenascers[target] then
+			finishNpcRenascer(target, false) -- [BOTS] caiu de vez (sem vida na marca): a marca some
 		end
 	end)
 

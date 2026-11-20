@@ -128,7 +128,7 @@ local function rewardsLines(data: MatchTypes.RewardsData): string
 	local coinHex = Theme.Color.Coin:ToHex()
 	local first = `<font color="#{coinHex}">{string.format(R.Coins, Strings.Ui.Coin, data.coins)}</font>`
 	if not data.ranked then
-		first ..= "   " .. R.Private
+		first ..= "   " .. (if data.casual then R.Casual else R.Private) -- [BOTS] casual = partida com bots
 	else
 		local delta = data.rankDelta
 		local deltaText = if delta > 0

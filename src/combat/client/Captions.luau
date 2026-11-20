@@ -69,7 +69,16 @@ end
 
 local function onCardFx(kind: string, data: any)
 	local caster = if typeof(data) == "table" then data.caster else nil
-	if typeof(caster) ~= "Instance" or not caster:IsA("Player") or caster == player then
+	if typeof(caster) ~= "Instance" or caster == player then
+		return
+	end
+	-- Jogador, ou o corpo de um bot de preenchimento [BOTS] (equipe e ilha nos atributos do corpo)
+	local casterCharacter: Instance? = nil
+	if caster:IsA("Player") then
+		casterCharacter = caster.Character
+	elseif caster:IsA("Model") then
+		casterCharacter = caster
+	else
 		return
 	end
 	local id = if kind == "NuvemThrow"
@@ -86,7 +95,6 @@ local function onCardFx(kind: string, data: any)
 		Captions.show(string.format(C.AllyCard, cardName(id)), Theme.Marker.AllyBar)
 		return
 	end
-	local casterCharacter = caster.Character
 	local island = myIsland()
 	if island ~= nil and casterCharacter and casterCharacter:GetAttribute(MatchTypes.Attr.Island) == island then
 		Captions.show(string.format(C.EnemyCard, cardName(id)), Theme.Color.Danger)

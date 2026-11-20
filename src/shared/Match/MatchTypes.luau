@@ -13,7 +13,16 @@ export type Phase =
 	| "Champion" -- CAMPEAO (cerimônia)
 	| "EndScreen" -- RECOMPENSAS E ELO (F9) + TELA_FINAL
 
-export type MemberView = { key: string, name: string, userId: number, isBot: boolean, connected: boolean }
+export type MemberView = {
+	key: string,
+	name: string,
+	userId: number,
+	isBot: boolean,
+	connected: boolean,
+	-- [BOTS] Bot de preenchimento (docs/BOTS.md): elo e abates para o placar (não há Player para ler)
+	rankTier: string?,
+	kills: number?,
+}
 
 export type TeamView = {
 	id: string, -- cor da equipe (TeamColors)
@@ -122,6 +131,7 @@ export type RewardsData = {
 		privateCut: number,
 	},
 	ranked: boolean,
+	casual: boolean?, -- [BOTS] sem elo porque a partida teve bots de preenchimento (não é privada)
 	rankDelta: number,
 	rankPoints: number,
 	rankTier: string, -- faixa depois (RankRules.DisplayTier)

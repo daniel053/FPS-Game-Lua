@@ -22,6 +22,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local TeleportService = game:GetService("TeleportService")
 
 local Shared = ReplicatedStorage.Shared
+local BotConfig = require(Shared.Config.BotConfig)
 local Env = require(Shared.Env)
 local QueueConfig = require(Shared.Config.QueueConfig)
 local QueueRules = require(Shared.Queue.QueueRules)
@@ -55,7 +56,7 @@ type Listener = (ticketId: string?, kind: EventKind, detail: any?) -> ()
 
 local QueueService = {}
 
-local params = QueueRules.params(Env.IsDev)
+local params = QueueRules.params(Env.IsDev, BotConfig.Enabled) -- [BOTS] docs/BOTS.md
 local jobId = if game.JobId ~= "" then game.JobId else "studio-" .. HttpService:GenerateGUID(false)
 local topic = MemoryMaps.fullName("MatchFound")
 
@@ -421,6 +422,7 @@ local function launch(plan: QueueRules.Plan)
 			pool = plan.pool,
 			createdAt = MemoryMaps.now(),
 			isPrivate = false, -- a fila só monta partidas normais; as privadas chegam na F11
+			fillBots = plan.fillBots, -- [BOTS]
 		}
 		if not Handoff.writeMatch(privateServerId, handoff) then
 			return
@@ -449,7 +451,8 @@ local function launch(plan: QueueRules.Plan)
 		table.insert(claimed, id)
 	end
 
-	print(`[Fila] Partida {matchId}: {#plan.userIds} jogador(es), faixa {plan.pool}`)
+	local botNote = if plan.fillBots then " + bots" else "" -- [BOTS]
+	print(`[Fila] Partida {matchId}: {#plan.userIds} jogador(es){botNote}, faixa {plan.pool}`)
 	pcall(function()
 		MessagingService:PublishAsync(topic, { m = matchId, c = code, t = plan.ticketIds })
 	end)

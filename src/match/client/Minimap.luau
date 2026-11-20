@@ -321,8 +321,7 @@ local function update()
 	end
 
 	-- Parceiro: seta verde na direção para onde ele olha (vivo e na mesma ilha)
-	local partner = MatchClient.partnerPlayer()
-	local partnerCharacter = partner and partner.Character
+	local partnerCharacter = MatchClient.partnerModel() -- jogador ou bot de preenchimento [BOTS]
 	local partnerRoot = partnerCharacter and partnerCharacter:FindFirstChild("HumanoidRootPart")
 	local partnerIsland = partnerCharacter and partnerCharacter:GetAttribute(MatchTypes.Attr.Island)
 	local partnerAlive = partnerCharacter ~= nil and partnerCharacter:GetAttribute(CombatNames.Attr.Alive) ~= false

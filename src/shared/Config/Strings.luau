@@ -444,6 +444,7 @@ local Strings = {
 		Protected = "sem perda (primeiras partidas)",
 		Doubled = "perda dobrada (Mestre ou acima)",
 		Private = "Partida privada: o elo não muda",
+		Casual = "Partida casual: o elo não muda", -- [BOTS] partida completada com bots (docs/BOTS.md)
 		TierUp = "Subiu para %s!",
 		TierDown = "Caiu para %s",
 		-- Detalhe das moedas (só o que for diferente de zero)
@@ -1004,6 +1005,53 @@ local Strings = {
 			NotLoaded = "O perfil ainda não carregou.",
 			Invalid = "Comando inválido.",
 		} :: { [string]: string },
+	},
+
+	-- [BOTS] Nomes dos bots de preenchimento (docs/BOTS.md): duas palavras e, às vezes, um número.
+	-- Cada modelo recebe, nesta ordem: primeira palavra, segunda palavra, número (1 a 99).
+	-- Nada de nome de outro jogo, marca ou pessoa.
+	Bots = {
+		First = {
+			"Lobo",
+			"Raio",
+			"Pixel",
+			"Tigre",
+			"Foguete",
+			"Falcao",
+			"Trovao",
+			"Cometa",
+			"Panda",
+			"Tubarao",
+			"Coruja",
+			"Leao",
+			"Vulcao",
+			"Bolacha",
+			"Pipoca",
+			"Ciclone",
+			"Jacare",
+			"Tatu",
+			"Capivara",
+			"Sabia",
+		},
+		Second = {
+			"Veloz",
+			"Feroz",
+			"Azul",
+			"Dourado",
+			"Bravo",
+			"Turbo",
+			"Gamer",
+			"Pro",
+			"Craque",
+			"Ninja",
+			"Zika",
+			"Brabo",
+			"Top",
+			"Rei",
+			"Sniper",
+			"Noturno",
+		},
+		Patterns = { "%s%s%d", "%s_%s", "%s%s", "%s_%s%d", "%s%s_%d" },
 	},
 }
 
