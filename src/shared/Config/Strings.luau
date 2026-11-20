@@ -121,19 +121,21 @@ local Strings = {
 		Spin = "🔄 GIRAR",
 		Soon = "Em breve",
 		CardSkins = "Skins de cartas / versos",
-		-- Linha de atributos de cada carta (números do CardConfig)
+		KeyTag = "TECLA %s",
+		LockedRibbon = "BLOQUEADA",
+		-- Atributos de cada carta em blocos (números do CardConfig): ícone, valor e nome
 		Stats = {
-			Duration = "⏱ Duração: %d s",
-			Charges = "◉ Cargas: %d",
-			Radius = "◎ Raio: %d",
-			Height = "▲ Altura: %d",
-			Cooldown = "🔄 Recarga: %d s",
-			Slow = "▼ Lentidão: %d%%",
-			Effect = "⏱ Efeito: %d s",
-			Window = "⏱ Janela: %d s",
-			UsesPerRound = "◉ %d por rodada",
-			Unlocks = "🔒 Libera na %dª rodada",
-		},
+			Duration = { icon = "⏱", value = "%d s", label = "Duração" },
+			Charges = { icon = "◉", value = "%d", label = "Cargas" },
+			Radius = { icon = "◎", value = "%d", label = "Raio" },
+			Height = { icon = "▲", value = "%d", label = "Altura" },
+			Cooldown = { icon = "🔄", value = "%d s", label = "Recarga" },
+			Slow = { icon = "▼", value = "%d%%", label = "Lentidão" },
+			Effect = { icon = "⏱", value = "%d s", label = "Efeito" },
+			Window = { icon = "⏱", value = "%d s", label = "Janela" },
+			UsesPerRound = { icon = "◉", value = "%d", label = "Por rodada" },
+			Unlocks = { icon = "🔒", value = "%dª", label = "Libera na rodada" },
+		} :: { [string]: { icon: string, value: string, label: string } },
 	},
 
 	-- Tela de mapas (T4): as ilhas da partida, com nome e descrição curta (GDD 15)

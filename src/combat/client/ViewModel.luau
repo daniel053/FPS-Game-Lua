@@ -96,7 +96,7 @@ local function build(kind: string, shape: Shape)
 	root.Parent = newModel
 	newModel.PrimaryPart = root
 
-	for _, spec in shape.parts do
+	for _, spec in WeaponShapes.smooth(shape.parts) do -- quinas redondas
 		WeaponShapes.makePart(spec).Parent = newModel
 	end
 	local touch = InputDevice.get() == "Touch"

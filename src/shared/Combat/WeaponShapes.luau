@@ -266,11 +266,83 @@ function WeaponShapes.makePart(spec: PartSpec): BasePart
 	return part
 end
 
--- Modelo solto com as peças da forma, para vitrines em ViewportFrame.
-function WeaponShapes.buildModel(shape: Shape): Model
+-- Cantos arredondados (pedido do dono do projeto: armas menos quadradas). Cada caixa grande vira uma
+-- "caixa de quinas redondas": duas caixas cruzadas, um pouco mais finas, e um cilindro em cada uma das
+-- 4 quinas ao longo do lado mais comprido. Detalhes pequenos (serrilhado, dentes do trilho, frisos)
+-- ficam retos: arredondar o que mal aparece só gastaria peças.
+local ROUND_MIN_CROSS = 0.08 -- espessura mínima (studs) para arredondar
+local ROUND_MIN_LENGTH = 0.16 -- comprimento mínimo
+local ROUND_RATIO = 0.32 -- raio = 32% da menor espessura
+local TURN_TO: { [string]: CFrame } = { -- o cilindro do Roblox fica deitado no eixo X
+	X = CFrame.identity,
+	Y = CFrame.Angles(0, 0, math.rad(90)),
+	Z = CFrame.Angles(0, math.rad(90), 0),
+}
+
+-- Monta um Vector3 a partir de (comprimento, espessura U, espessura V) no eixo `axis`.
+local function along(axis: string, l: number, u: number, v: number): Vector3
+	if axis == "X" then
+		return Vector3.new(l, u, v)
+	elseif axis == "Y" then
+		return Vector3.new(u, l, v)
+	end
+	return Vector3.new(u, v, l)
+end
+
+function WeaponShapes.smooth(parts: { PartSpec }): { PartSpec }
+	local out: { PartSpec } = {}
+	for _, spec in parts do
+		if spec.cylinder or spec.wedge then
+			table.insert(out, spec)
+			continue
+		end
+		local s = spec.size
+		local axis, length, a, b
+		if s.Z >= s.X and s.Z >= s.Y then
+			axis, length, a, b = "Z", s.Z, s.X, s.Y
+		elseif s.X >= s.Y then
+			axis, length, a, b = "X", s.X, s.Y, s.Z
+		else
+			axis, length, a, b = "Y", s.Y, s.X, s.Z
+		end
+		if math.min(a, b) < ROUND_MIN_CROSS or length < ROUND_MIN_LENGTH then
+			table.insert(out, spec)
+			continue
+		end
+		local r = math.min(a, b) * ROUND_RATIO
+		-- As caixas vêm primeiro e mantêm o giro da peça (o pente usa o giro da 1ª peça na recarga)
+		local function add(size: Vector3, offset: Vector3, turn: CFrame?, cylinder: boolean?)
+			table.insert(out, {
+				size = size,
+				cframe = spec.cframe * CFrame.new(offset) * (turn or CFrame.identity),
+				color = spec.color,
+				cylinder = cylinder,
+				mag = spec.mag,
+			})
+		end
+		add(along(axis, length, a, b - 2 * r), Vector3.zero)
+		add(along(axis, length, a - 2 * r, b), Vector3.zero)
+		for _, su in { -1, 1 } do
+			for _, sv in { -1, 1 } do
+				-- o cilindro tem o comprimento em X; TURN_TO o deita no eixo da peça
+				add(
+					Vector3.new(length, 2 * r, 2 * r),
+					along(axis, 0, su * (a / 2 - r), sv * (b / 2 - r)),
+					TURN_TO[axis],
+					true
+				)
+			end
+		end
+	end
+	return out
+end
+
+-- Modelo solto com as peças da forma, para vitrines em ViewportFrame. `smooth` = quinas redondas
+-- (vitrine grande; as miniaturas da grade ficam retas para economizar peças).
+function WeaponShapes.buildModel(shape: Shape, smooth: boolean?): Model
 	local model = Instance.new("Model")
 	model.Name = "WeaponPreview"
-	for _, spec in shape.parts do
+	for _, spec in if smooth then WeaponShapes.smooth(shape.parts) else shape.parts do
 		WeaponShapes.makePart(spec).Parent = model
 	end
 	-- Sem isto, a orientação da caixa envolvente (GetBoundingBox) vem da primeira peça, que pode estar

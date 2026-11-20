@@ -345,6 +345,36 @@ local Theme = {
 		TremorRock = hex("#9C8A73"), -- pedras do Tremor (foscas, cor de terra) (F10)
 		Locked = hex("#5A6280"), -- ult com cadeado, carta sem carga
 	} :: { [string]: Color3 },
+	-- Arte de fundo das cartas (CardBackdrop, pedido do dono do projeto depois da F10) [PROPOSTA].
+	-- Tudo em tons da própria carta; nada de neon (o neon é só da moldura, ESTILO 2.6).
+	CardBackdrop = {
+		ArtY = 0.42, -- altura (fração da carta) do centro do desenho, dos raios e do halo
+		LightMix = 0.55, -- tom claro = cor da carta misturada com branco
+		DeepMix = 0.72, -- tom fundo = cor da carta misturada com o painel
+		SkyTopMix = 0.4, -- topo do céu: a cor da carta puxada para o painel (o desenho, na cor pura, salta)
+		RayCount = 9, -- feixes (cada um atravessa o centro, então são 18 raios)
+		RayWidth = 0.07,
+		RayTransparency = 0.72,
+		HaloSizes = { 1.05, 0.78, 0.52 },
+		HaloTransparency = { 0.9, 0.84, 0.76 },
+		PatternTransparency = 0.68,
+		DustCount = 10,
+		ShadowTransparency = 0.25,
+		ShineTransparency = 0.55,
+		ShineSeconds = 0.7,
+		CelestialSpinSeconds = 24,
+		CornerRadius = 12,
+		StageGlowTransparency = { 0.95, 0.93, 0.9 }, -- luz atrás do carrossel, na cor da carta escolhida
+	},
+	-- Vitrine da arma no Arsenal (T5, pedido do dono depois da F10) [PROPOSTA]: palco na cor da skin.
+	Showcase = {
+		SkyTopMix = 0.55, -- topo: a cor da skin puxada para o painel
+		SkyMidMix = 0.8,
+		StripeTransparency = 0.95,
+		HaloSizes = { 1.15, 0.85, 0.55 },
+		HaloTransparency = { 0.93, 0.9, 0.86 },
+		FloorTransparency = 0.5,
+	},
 	SmokeTransparency = 0.03, -- quase opaca: bloqueia a visão de quem está na ilha
 	CardFxTransparency = 0.3, -- onda do Tremor, marca do Renascer, arco da Nuvem
 	-- Efeitos finais das cartas (F10): tamanhos e tempos [PROPOSTA]

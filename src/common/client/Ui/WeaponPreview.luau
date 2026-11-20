@@ -64,7 +64,7 @@ function WeaponPreview.new(parent: Instance, spin: boolean): Preview
 		if weaponId == nil or category == nil then
 			return
 		end
-		local m = WeaponShapes.buildModel(WeaponShapes.forId(weaponId, false, skinId))
+		local m = WeaponShapes.buildModel(WeaponShapes.forId(weaponId, false, skinId), spin) -- a grande tem quinas redondas
 		-- Centraliza o modelo na origem
 		local cf, size = m:GetBoundingBox()
 		for _, part in m:GetChildren() do

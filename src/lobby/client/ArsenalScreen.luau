@@ -47,7 +47,9 @@ local ROW_GAP = 8
 local TITLE_HEIGHT = 14
 local MIN_CARD_HEIGHT = Theme.Touch.MinTarget
 local SKIN_SLOTS = 1 + #ShopCatalog.Themes -- Padrão + um espaço por tema
-local STAT_ROW = 18
+local STAT_ROW = 20
+local SHOWCASE_HEIGHT = 170
+local SHOWCASE_STRIPES = 9
 local NOTICE_SECONDS = 4
 
 type Group = { frame: Frame, cards: Frame, count: number }
@@ -66,6 +68,11 @@ local detailName: TextLabel
 local detailCategory: TextLabel
 local detailDesc: TextLabel
 local statFills: { Frame } = {}
+local statValues: { TextLabel } = {}
+local showcaseSky: UIGradient
+local showcaseTinted: { Frame } = {}
+local showcaseTag: TextLabel
+local showcaseBorder: UIStroke
 local equipButton: Widgets.Button
 local skinRow: Frame
 local skinSlots: { SkinSlot } = {}
@@ -195,6 +202,124 @@ local function paintSwatch(swatch: Frame, weaponId: string, skin: ShopCatalog.Sk
 	end
 end
 
+-- Vitrine (pedido do dono depois da F10, inspirada na apresentação de armas dos FPS táticos, adaptada):
+-- a arma girando num "palco" com luz na cor da skin escolhida, listras diagonais, halo e chão. O
+-- CanvasGroup recorta as listras giradas e o canto arredondado.
+local function buildShowcase(parent: Instance): Frame
+	local box = Ui.frame("Showcase", parent)
+	box.Size = UDim2.new(1, -6, 0, SHOWCASE_HEIGHT)
+	box.LayoutOrder = 1
+	local stage = Instance.new("CanvasGroup")
+	stage.Name = "Stage"
+	stage.BackgroundTransparency = 1
+	stage.Size = UDim2.fromScale(1, 1)
+	stage.Parent = box
+	Ui.corner(stage, 8)
+	local sky = Ui.frame("Sky", stage)
+	sky.Size = UDim2.fromScale(1, 1)
+	sky.BackgroundTransparency = 0
+	sky.BackgroundColor3 = Color3.new(1, 1, 1)
+	local skyGradient = Instance.new("UIGradient")
+	skyGradient.Rotation = 90
+	skyGradient.Parent = sky
+	showcaseSky = skyGradient
+	-- Listras diagonais finas (claras, bem transparentes)
+	for i = 1, SHOWCASE_STRIPES do
+		local stripe = Ui.frame("Stripe", stage)
+		stripe.AnchorPoint = Vector2.new(0.5, 0.5)
+		stripe.Position = UDim2.fromScale((i - 0.5) / SHOWCASE_STRIPES * 1.4 - 0.2, 0.5)
+		stripe.Size = UDim2.new(0, if i % 3 == 0 then 10 else 3, 2, 0)
+		stripe.Rotation = 28
+		stripe.BackgroundTransparency = Theme.Showcase.StripeTransparency
+		stripe.BackgroundColor3 = Color3.new(1, 1, 1)
+	end
+	-- Halo atrás da arma e mancha de luz no chão, na cor da skin
+	for i, size in Theme.Showcase.HaloSizes do
+		local halo = Ui.frame("Halo", stage)
+		halo.AnchorPoint = Vector2.new(0.5, 0.5)
+		halo.Position = UDim2.fromScale(0.5, 0.46)
+		halo.Size = UDim2.fromScale(size, size)
+		halo.BackgroundTransparency = Theme.Showcase.HaloTransparency[i]
+		local ratio = Instance.new("UIAspectRatioConstraint")
+		ratio.DominantAxis = Enum.DominantAxis.Height
+		ratio.Parent = halo
+		Ui.corner(halo, 9999)
+		table.insert(showcaseTinted, halo)
+	end
+	local floor = Ui.frame("Floor", stage)
+	floor.AnchorPoint = Vector2.new(0.5, 0.5)
+	floor.Position = UDim2.fromScale(0.5, 0.88)
+	floor.Size = UDim2.fromScale(0.7, 0.08)
+	floor.BackgroundTransparency = 0
+	Ui.corner(floor, 9999)
+	local floorFade = Instance.new("UIGradient")
+	floorFade.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 1),
+		NumberSequenceKeypoint.new(0.5, Theme.Showcase.FloorTransparency),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	floorFade.Parent = floor
+	table.insert(showcaseTinted, floor)
+	-- Sombra embaixo e filete claro em cima
+	local shadow = Ui.frame("Shadow", stage)
+	shadow.AnchorPoint = Vector2.new(0, 1)
+	shadow.Position = UDim2.fromScale(0, 1)
+	shadow.Size = UDim2.fromScale(1, 0.35)
+	shadow.BackgroundTransparency = 0
+	shadow.BackgroundColor3 = Color3.new(0, 0, 0)
+	local shadowFade = Instance.new("UIGradient")
+	shadowFade.Rotation = 90
+	shadowFade.Transparency = NumberSequence.new(1, 0.45)
+	shadowFade.Parent = shadow
+	local border = Ui.stroke(box, Theme.Color.PanelBorder, 1)
+	border.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	Ui.corner(box, 8)
+	showcaseBorder = border
+	-- Selo da raridade da skin, no canto
+	showcaseTag = Ui.label("Rarity", Theme.Font.Title, Theme.TextSize.Label, Theme.Color.TextPrimary, box)
+	showcaseTag.AnchorPoint = Vector2.new(1, 0)
+	showcaseTag.Position = UDim2.new(1, -8, 0, 8)
+	showcaseTag.AutomaticSize = Enum.AutomaticSize.X
+	showcaseTag.Size = UDim2.fromOffset(0, 22)
+	showcaseTag.BackgroundTransparency = 0.2
+	showcaseTag.BackgroundColor3 = Theme.Color.Overlay
+	showcaseTag.ZIndex = 3
+	Ui.corner(showcaseTag)
+	local tagPad = Instance.new("UIPadding")
+	tagPad.PaddingLeft = UDim.new(0, 8)
+	tagPad.PaddingRight = UDim.new(0, 8)
+	tagPad.Parent = showcaseTag
+	local holder = Ui.frame("Weapon", box)
+	holder.Size = UDim2.fromScale(1, 1)
+	holder.ZIndex = 2
+	return holder
+end
+
+-- Cor do palco: o destaque da skin escolhida (ou o da arma, na Padrão) e a raridade no selo.
+local function paintShowcase(skin: ShopCatalog.SkinDef?)
+	local look = if skin and skin.theme then Theme.SkinLook[skin.theme] else nil
+	local base = Theme.WeaponLook[selected]
+	local color = if look then look.accent elseif base then base.accent else Theme.Color.Accent
+	showcaseSky.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, color:Lerp(Theme.Color.PanelBase, Theme.Showcase.SkyTopMix)),
+		ColorSequenceKeypoint.new(0.6, color:Lerp(Theme.Color.PanelBase, Theme.Showcase.SkyMidMix)),
+		ColorSequenceKeypoint.new(1, Theme.Color.PanelBase),
+	})
+	for _, f in showcaseTinted do
+		f.BackgroundColor3 = color
+	end
+	local rarity = if skin then skin.rarity else nil
+	if rarity and Theme.Rarity[rarity] then
+		showcaseTag.Visible = true
+		showcaseTag.Text = rarityText(rarity)
+		showcaseTag.TextColor3 = Theme.Rarity[rarity].color
+		showcaseBorder.Color = Theme.Rarity[rarity].color
+	else
+		showcaseTag.Visible = false
+		showcaseBorder.Color = Theme.Color.PanelBorder
+	end
+end
+
 -- Fila de skins da arma escolhida.
 local function refreshSkins()
 	local skins = ShopCatalog.skinsFor(selected)
@@ -220,6 +345,7 @@ local function refreshSkins()
 		paintSwatch(slot.swatch, selected, skin)
 	end
 	detailPreview.set(selected, if selectedSkin ~= DEFAULT then selectedSkin else nil)
+	paintShowcase(if selectedSkin ~= DEFAULT then ShopCatalog.getSkin(selectedSkin) else nil)
 	refreshAction()
 end
 
@@ -247,6 +373,7 @@ local function showDetail(id: string)
 	if stats then
 		for i, value in { stats.damage, stats.fireRate, stats.range, stats.mobility } do
 			statFills[i].Size = UDim2.fromScale(value, 1)
+			statValues[i].Text = tostring(math.floor(value * 100 + 0.5))
 		end
 	end
 	refreshSkins()
@@ -341,27 +468,36 @@ local function buildGrid(parent: Frame)
 	grid:GetPropertyChangedSignal("AbsoluteSize"):Connect(layoutGrid)
 end
 
-local function statRow(parent: Instance, order: number, name: string): Frame
+local function statRow(parent: Instance, order: number, name: string): (Frame, TextLabel)
 	local row = Ui.frame("Stat", parent)
 	row.LayoutOrder = order
 	row.Size = UDim2.new(1, 0, 0, STAT_ROW)
 	local label = Ui.label("Name", Theme.Font.Title, Theme.TextSize.Label, Theme.Color.TextSecondary, row)
-	label.Size = UDim2.fromScale(0.34, 1)
+	label.Size = UDim2.fromScale(0.3, 1)
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.Text = TextUtil.upper(name)
 	local track = Ui.frame("Track", row)
 	track.AnchorPoint = Vector2.new(1, 0.5)
-	track.Position = UDim2.fromScale(1, 0.5)
-	track.Size = UDim2.new(0.66, 0, 0, 8)
+	track.Position = UDim2.new(1, -34, 0.5, 0)
+	track.Size = UDim2.new(0.7, -34, 0, 8)
 	track.BackgroundTransparency = 0
 	track.BackgroundColor3 = Theme.Color.PanelRaised
 	Ui.corner(track, 4)
 	local fill = Ui.frame("Fill", track)
 	fill.BackgroundTransparency = 0
-	fill.BackgroundColor3 = Theme.Color.Accent
+	fill.BackgroundColor3 = Color3.new(1, 1, 1)
 	fill.Size = UDim2.fromScale(0.5, 1)
 	Ui.corner(fill, 4)
-	return fill
+	-- Acento escurecendo para o brilho do acento (uma cor só, ESTILO 2.5)
+	local shade = Instance.new("UIGradient")
+	shade.Color = ColorSequence.new(Theme.Color.AccentPressed, Theme.Color.AccentGlow)
+	shade.Parent = fill
+	local value = Ui.label("Value", Theme.Font.Number, Theme.TextSize.Body, Theme.Color.TextPrimary, row)
+	value.AnchorPoint = Vector2.new(1, 0)
+	value.Position = UDim2.fromScale(1, 0)
+	value.Size = UDim2.new(0, 28, 1, 0)
+	value.TextXAlignment = Enum.TextXAlignment.Right
+	return fill, value
 end
 
 -- Amostra de cores da skin (3 faixas: corpo, partes escuras, destaque), no lugar de mais um modelo 3D.
@@ -393,13 +529,10 @@ local function buildDetail(parent: Frame)
 	scroll.ScrollBarThickness = 3
 	Ui.list(scroll, Enum.FillDirection.Vertical, 6)
 
-	local previewBox = Ui.frame("Preview", scroll)
-	previewBox.Size = UDim2.new(1, -6, 0, 150)
-	previewBox.LayoutOrder = 1
-	detailPreview = WeaponPreview.new(previewBox, true)
+	detailPreview = WeaponPreview.new(buildShowcase(scroll), true)
 
-	detailName = Ui.label("WeaponName", Theme.Font.Title, Theme.TextSize.Title, Theme.Color.TextPrimary, scroll)
-	detailName.Size = UDim2.new(1, -6, 0, 26)
+	detailName = Ui.label("WeaponName", Theme.Font.Title, Theme.TextSize.Title + 10, Theme.Color.TextPrimary, scroll)
+	detailName.Size = UDim2.new(1, -6, 0, 34)
 	detailName.TextXAlignment = Enum.TextXAlignment.Left
 	detailName.LayoutOrder = 2
 	detailCategory =
@@ -413,7 +546,7 @@ local function buildDetail(parent: Frame)
 
 	local S = A.Stats
 	for i, name in { S.Damage, S.FireRate, S.Range, S.Mobility } do
-		statFills[i] = statRow(scroll, 4 + i, name)
+		statFills[i], statValues[i] = statRow(scroll, 4 + i, name)
 	end
 
 	equipButton = Widgets.button(scroll, A.Equip, "primary", {
