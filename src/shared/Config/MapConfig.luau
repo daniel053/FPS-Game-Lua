@@ -99,6 +99,16 @@ local MapConfig = {
 		MaxVisiblePartsLight = 1500, -- por ilha, na versão leve (conferido em teste)
 	},
 
+	-- Porto (GDD 15.6, KIT-MODULAR 2) [PROPOSTA]: luzes da passada de detalhe. A exceção de luz real
+	-- (só no Porto, branco-quente, sem sombra, apagam na versão leve) é [DECIDIDO]; os números não.
+	Porto = {
+		Lights = {
+			Max = 8, -- na ilha inteira (4 por metade)
+			Range = 12,
+			Brightness = 1,
+		},
+	},
+
 	-- Fábrica (GDD 15.5) [PROPOSTA]: esteiras carregam quem pisa e as caixas de papelão.
 	Fabrica = {
 		ConveyorSpeed = 8, -- studs/s (metade da corrida do personagem)

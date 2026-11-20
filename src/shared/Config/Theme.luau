@@ -202,6 +202,19 @@ local Theme = {
 			ConteinerPetroleoEscuro = hex("#306475"),
 			ConteinerMusgoEscuro = hex("#5A7740"),
 			ConteinerMostardaEscuro = hex("#B88E2E"),
+			-- Passada de detalhe do Porto (depois da F10): chão, ambiente e luz
+			ConcretoPlaca = hex("#ACA598"), -- placas alternadas do piso (um tom abaixo do concreto)
+			Sombra = hex("#A8A195"), -- sombra pintada na base das peças (falso contato)
+			Oleo = hex("#8C867C"), -- manchas de óleo
+			Pintura = hex("#E4E0D6"), -- linhas brancas gastas no chão
+			Folhas = hex("#4F9A62"), -- mato e hera (mesmo tom da Praça)
+			FolhasEscuras = hex("#3F7F50"),
+			Extintor = hex("#C9622F"), -- laranja queimado: nunca vermelho (cor do inimigo)
+			Boia = hex("#E07B39"),
+			Corda = hex("#C9B48A"),
+			LuzCreme = hex("#FFF1CF"), -- lente das luminárias (sem neon)
+			LuzNoChao = hex("#CCC3B0"), -- mancha de luz pintada no concreto, embaixo das luminárias
+			LuzQuente = hex("#FFD9A0"), -- cor das poucas luzes reais (branco-quente)
 		},
 		Fabrica = {
 			Painel = hex("#8FA3B8"),

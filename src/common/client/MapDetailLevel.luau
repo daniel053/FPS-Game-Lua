@@ -11,6 +11,7 @@ local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
+local Build = require(Shared.Maps.Build)
 local MapConfig = require(Shared.Config.MapConfig)
 local MapDetail = require(Shared.Maps.MapDetail)
 
@@ -41,7 +42,10 @@ local function savedQuality(): number?
 end
 
 local function apply(part: Instance)
-	if part:IsA("BasePart") and MapDetail.isOptional(part) then
+	if part:IsA("Light") and part:GetAttribute(Build.LightAttribute) == true then
+		-- Luzes de cenário (Porto) apagam na versão leve, só nesta tela
+		part.Enabled = not light
+	elseif part:IsA("BasePart") and MapDetail.isOptional(part) then
 		if light then
 			part.LocalTransparencyModifier = 1
 			hidden[part] = true

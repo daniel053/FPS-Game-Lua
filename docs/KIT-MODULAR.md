@@ -17,6 +17,7 @@
 - Material liso (SmoothPlastic), **sem textura** (confirmado pelo dono do projeto na F10). Detalhes (tijolos, ferrugem, musgo, sujeira, ondulação) = peças finas ou manchas de **cor chapada**. O bloco cinza das plantas é só a etapa de aprovação: o mapa final leva todo o detalhe do kit.
 - Cenário **menos saturado** que os personagens.
 - **Proibido:** Neon, PointLight/SurfaceLight coloridos, partículas decorativas, vermelho puro (cor do inimigo), sangue, logotipos e texto escrito em objetos.
+- **Exceção de luz no Porto** `[DECIDIDO]` (dono do projeto, passada de detalhe depois da F10): até **8 PointLights branco-quentes**, fracas, curtas e **sem sombra**, dentro das lentes das luminárias, que **apagam na versão leve** dos mapas. Números em `MapConfig.Porto.Lights` `[PROPOSTA]`. Nenhuma outra ilha tem luz real; o resto do "efeito de luz" é pintado (lente creme clara, mancha clara no chão).
 - Personagem = 5 studs. **Cobertura cheia ≥ 6 studs**; **meia altura = 3 studs**; cobertura a cada ~10 studs nas rotas.
 - Corredores com no mínimo 8 studs de largura; portas e passagens com no mínimo 4 (ideal 6).
 - Telhados e coberturas de áreas fechadas ficam transparentes **só para quem está no mirante** (GDD 6.5).
@@ -112,6 +113,16 @@ Prancha: `docs/referencias/visuais/kit-porto.png`
 - **Juntas do piso:** linhas de concreto mais escuro a cada 14 studs.
 - A **Caixa de Madeira** é a mesma da Praça (um código só).
 - Na **Torre do Guindaste** só o miolo (2 × 2) e a plataforma colidem; a treliça, a lança, a cabine e o gancho são acabamento.
+
+**Passada de detalhe do Porto** `[DECIDIDO]` (dono do projeto, depois da F10, a partir de uma imagem de referência): só visual. Planta, colisão, rotas, coberturas, zonas e pontos de escudo continuam iguais; **toda peça abaixo é acabamento** (não colide, não bloqueia tiro). Continua **sem textura** (cor chapada). Cores novas em `Theme.Maps.Porto`.
+- **Chão:** placas em outro tom entre as juntas, rachaduras finas (sem formar letra), manchas de óleo e **sombra pintada** na base de contêineres, caixas, paredes e mureta.
+- **Pintura:** linha branca a 3 studs da mureta, faixa de pedestre na porta da base, seta e linha tracejada até o portão do pátio; **áreas hachuradas** amarelas no portão do pátio, no pé da escada e no vão da pilha.
+- **Base:** anel branco em volta de onde se nasce e hachura branca no fundo (no lugar de letra, proibida); floreiras, luminárias, extintor, quadro elétrico e hera na parede da frente.
+- **Ambiente:** mato (tufos de 3 folhas em cunha) nas frestas e cantos, hera (ramos com folhas em losango), boias na mureta, cones no pé da escada, pallets, rolo de corda no píer.
+- **Itens:** extintor **laranja queimado** (nunca vermelho), quadro elétrico, contêineres com as 8 peças de canto e uma placa clara **sem texto** em cada lado comprido.
+- **Luz:** luminária de parede, de teto (vão da pilha) e poste do cais, sempre com uma mancha de luz pintada no chão. Luz real (exceção da seção 1) nas luminárias das bases (2 por base), no vão da pilha (2) e nos postes dos píeres (2); os postes dos cantos do cais são só pintados.
+- **Ficou de fora** da imagem de referência: letras no chão, contêiner e extintor vermelhos, navio e guindastes ao fundo (as ilhas flutuam sobre nuvens), coberturas e rampas novas (mudariam a planta).
+- Peças: o Porto foi de ~1.540 para ~2.420 (versão leve ~890), dentro do orçamento.
 
 ## 3. Fábrica
 

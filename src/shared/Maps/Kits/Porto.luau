@@ -10,10 +10,12 @@
 -- sem luz e sem texto.
 
 local Build = require(script.Parent.Parent.Build)
+local MapConfig = require(script.Parent.Parent.Parent.Config.MapConfig)
 local PracaKit = require(script.Parent.Praca)
 local Theme = require(script.Parent.Parent.Parent.Config.Theme)
 
 local PALETTE = Theme.Maps.Porto
+local LIGHTS = MapConfig.Porto.Lights
 local DETAIL = Build.Detail
 local SIGNS = { -1, 1 }
 
@@ -139,6 +141,32 @@ local function conteiner(name: string, origin: CFrame, cor: CorDeConteiner, mode
 			v3(0.16, C_H - 2 * bar - 0.4, 0.16),
 			origin * CFrame.new(doorX + 0.08, C_H / 2, z),
 			PALETTE.Metal,
+			model,
+			DETAIL
+		)
+	end
+
+	-- Peças de canto (as 8 alças de içamento) e a placa de identificação sem texto, perto do topo de
+	-- cada lado comprido (passada de detalhe)
+	local cornerX, cornerZ = C_LEN / 2 + out - 0.25, C_WID / 2 + out - 0.25
+	for _, sx in SIGNS do
+		for _, sz in SIGNS do
+			for _, y in { 0.35, C_H - 0.35 } do
+				Build.block(
+					"Canto",
+					v3(0.75, 0.7, 0.75),
+					origin * CFrame.new(sx * cornerX, y, sz * cornerZ),
+					PALETTE.Metal,
+					model,
+					DETAIL
+				)
+			end
+		end
+		Build.block(
+			"Placa",
+			v3(2.2, 1.2, 0.06),
+			origin * CFrame.new(-(C_LEN / 2 - 2.6), C_H - 1.9, sx * (C_WID / 2 + 0.1)),
+			PALETTE.Pintura,
 			model,
 			DETAIL
 		)
@@ -600,6 +628,471 @@ function Kit.Vaga(parent: Instance, origin: CFrame): Model
 			Build.Signal
 		)
 	end
+	return model
+end
+
+-- Passada de detalhe (depois da F10) ===============================================================
+-- Tudo daqui para baixo é acabamento: não colide e não bloqueia tiro. A pintura no chão fica rente,
+-- em camadas (o topo de cada uma mais alto que a de baixo) e sempre por baixo das juntas (0,03), das
+-- vagas (0,04) e das faixas de aviso (0,1). Peças de parede: `origin` no pé da parede, com o +Z
+-- local saindo da parede e o X local ao longo dela.
+
+local LAYER = {
+	Placa = 0.01, -- placas do piso
+	Sombra = 0.014, -- sombra pintada
+	Luz = 0.018, -- mancha de luz
+	Mancha = 0.021, -- óleo e rachaduras
+	Pintura = 0.025, -- linhas, setas, hachuras
+}
+
+local LINE = 0.4 -- largura das linhas pintadas
+local HATCH_STEP = 2.4 -- distância (no comprimento) entre as diagonais da hachura
+
+-- Retângulo pintado no chão, com o topo na `altura`: comprimento no X local, largura no Z local.
+local function paint(
+	name: string,
+	size: Vector2,
+	at: CFrame,
+	altura: number,
+	color: Color3,
+	model: Model,
+	options: Build.PartOptions?
+): Part
+	return Build.block(
+		name,
+		v3(size.X, altura, size.Y),
+		at * CFrame.new(0, altura / 2, 0),
+		color,
+		model,
+		options or DETAIL
+	)
+end
+
+-- Placa de concreto em outro tom (o chão de verdade é um bloco só por baixo).
+function Kit.PlacaDoPiso(parent: Instance, origin: CFrame, tamanho: Vector2): Model
+	local model = Build.model("PlacaDoPiso", parent)
+	model.PrimaryPart = paint("Placa", tamanho, origin, LAYER.Placa, PALETTE.ConcretoPlaca, model)
+	return model
+end
+
+-- Sombra pintada (falso contato) embaixo de uma peça: retângulo um pouco maior que ela.
+function Kit.SombraPintada(parent: Instance, origin: CFrame, tamanho: Vector2): Model
+	local model = Build.model("SombraPintada", parent)
+	model.PrimaryPart = paint("Sombra", tamanho, origin, LAYER.Sombra, PALETTE.Sombra, model)
+	return model
+end
+
+-- Mancha de óleo: octógono com um respingo menor ao lado.
+function Kit.ManchaDeOleo(parent: Instance, origin: CFrame, diametro: number): Model
+	local model = Build.model("ManchaDeOleo", parent)
+	local h = LAYER.Mancha
+	model.PrimaryPart =
+		Build.prism("Oleo", 8, diametro, h, origin * CFrame.new(0, h / 2, 0), PALETTE.Oleo, model, DETAIL)[1]
+	Build.prism(
+		"Oleo",
+		6,
+		diametro * 0.35,
+		h,
+		origin * CFrame.new(diametro * 0.62, h / 2, diametro * 0.3),
+		PALETTE.Oleo,
+		model,
+		DETAIL
+	)
+	return model
+end
+
+-- Rachadura no concreto: três trechos finos em zigue-zague, ao longo do X local.
+local CRACK_TURNS = { 0.18, -0.22, 0.12 } -- desvios pequenos: nunca formar uma letra
+
+function Kit.Rachadura(parent: Instance, origin: CFrame, comprimento: number): Model
+	local model = Build.model("Rachadura", parent)
+	local step = comprimento / #CRACK_TURNS
+	local at = origin * CFrame.new(-comprimento / 2, 0, 0)
+	for _, turn in CRACK_TURNS do
+		local heading = CFrame.Angles(0, turn, 0)
+		local part = paint(
+			"Rachadura",
+			Vector2.new(step + 0.12, 0.14),
+			at * heading * CFrame.new(step / 2, 0, 0),
+			LAYER.Mancha,
+			PALETTE.ConcretoEscuro,
+			model
+		)
+		model.PrimaryPart = model.PrimaryPart or part
+		at = at * heading * CFrame.new(step, 0, 0) * heading:Inverse()
+	end
+	return model
+end
+
+-- Linha branca no chão, ao longo do X local; `tracejada` = traços de 2 com vão de 1,5.
+function Kit.LinhaPintada(parent: Instance, origin: CFrame, comprimento: number, tracejada: boolean?): Model
+	local model = Build.model("LinhaPintada", parent)
+	if not tracejada then
+		model.PrimaryPart =
+			paint("Linha", Vector2.new(comprimento, LINE), origin, LAYER.Pintura, PALETTE.Pintura, model)
+		return model
+	end
+	local dash, gap = 2, 1.5
+	local x = -comprimento / 2
+	while x + dash <= comprimento / 2 + 1e-3 do
+		local part = paint(
+			"Traco",
+			Vector2.new(dash, LINE),
+			origin * CFrame.new(x + dash / 2, 0, 0),
+			LAYER.Pintura,
+			PALETTE.Pintura,
+			model
+		)
+		model.PrimaryPart = model.PrimaryPart or part
+		x += dash + gap
+	end
+	return model
+end
+
+-- Faixa de pedestre: barras brancas de 1 de largura, no sentido do X local (`comprimento`), a cada
+-- 2 studs ao longo do Z local (`largura`).
+function Kit.FaixaDePedestre(parent: Instance, origin: CFrame, comprimento: number, largura: number): Model
+	local model = Build.model("FaixaDePedestre", parent)
+	local bars = math.floor(largura / 2)
+	for i = 1, bars do
+		local z = (i - (bars + 1) / 2) * 2
+		local part = paint(
+			"Barra",
+			Vector2.new(comprimento, 1),
+			origin * CFrame.new(0, 0, z),
+			LAYER.Pintura,
+			PALETTE.Pintura,
+			model
+		)
+		model.PrimaryPart = model.PrimaryPart or part
+	end
+	return model
+end
+
+-- Seta branca no chão apontando para o +X local (sem texto).
+function Kit.Seta(parent: Instance, origin: CFrame, comprimento: number): Model
+	local model = Build.model("Seta", parent)
+	local head = 1.6
+	model.PrimaryPart = paint(
+		"Haste",
+		Vector2.new(comprimento - head * 0.5, 0.6),
+		origin * CFrame.new(-head * 0.25, 0, 0),
+		LAYER.Pintura,
+		PALETTE.Pintura,
+		model
+	)
+	for _, sign in SIGNS do
+		local angle = sign * math.rad(40)
+		paint(
+			"Ponta",
+			Vector2.new(head * 1.3, 0.6),
+			origin * CFrame.new(comprimento / 2, 0, 0) * CFrame.Angles(0, angle, 0) * CFrame.new(-head * 0.6, 0, 0),
+			LAYER.Pintura,
+			PALETTE.Pintura,
+			model
+		)
+	end
+	return model
+end
+
+-- Área hachurada (manter livre / perigo): contorno e diagonais a 45°, na cor pedida. Comprimento no
+-- X local, largura no Z local.
+function Kit.AreaHachurada(parent: Instance, origin: CFrame, comprimento: number, largura: number, cor: Color3): Model
+	local model = Build.model("AreaHachurada", parent)
+	local h = LAYER.Pintura
+	for _, sign in SIGNS do
+		local long = paint(
+			"Contorno",
+			Vector2.new(comprimento, LINE),
+			origin * CFrame.new(0, 0, sign * (largura / 2 - LINE / 2)),
+			h,
+			cor,
+			model
+		)
+		model.PrimaryPart = model.PrimaryPart or long
+		paint(
+			"Contorno",
+			Vector2.new(LINE, largura - 2 * LINE),
+			origin * CFrame.new(sign * (comprimento / 2 - LINE / 2), 0, 0),
+			h,
+			cor,
+			model
+		)
+	end
+	-- Diagonais x - z = c, cortadas no miolo do contorno
+	local hx, hz = comprimento / 2 - LINE, largura / 2 - LINE
+	local c = -(hx + hz) + HATCH_STEP / 2
+	while c < hx + hz do
+		local x1, x2 = math.max(-hx, -hz + c), math.min(hx, hz + c)
+		if x2 - x1 > 0.3 then
+			local mx = (x1 + x2) / 2
+			paint(
+				"Hachura",
+				Vector2.new((x2 - x1) * math.sqrt(2), LINE),
+				origin * CFrame.new(mx, 0, mx - c) * CFrame.Angles(0, -math.pi / 4, 0),
+				h,
+				cor,
+				model
+			)
+		end
+		c += HATCH_STEP
+	end
+	return model
+end
+
+-- Anel pintado no chão (octógono de linhas), com o `diametro` de face a face.
+function Kit.AnelPintado(parent: Instance, origin: CFrame, diametro: number, cor: Color3): Model
+	local model = Build.model("AnelPintado", parent)
+	local r = diametro / 2
+	local side = 2 * r * math.tan(math.pi / 8) + LINE
+	for k = 0, 7 do
+		local a = k * math.pi / 4
+		local part = paint(
+			"Anel",
+			Vector2.new(side, LINE),
+			origin * CFrame.new(r * math.cos(a), 0, r * math.sin(a)) * CFrame.Angles(0, -(a + math.pi / 2), 0),
+			LAYER.Pintura,
+			cor,
+			model
+		)
+		model.PrimaryPart = model.PrimaryPart or part
+	end
+	return model
+end
+
+-- Marca da base (no lugar de letra, que é proibida): anel em volta de onde se nasce (centro da base)
+-- e área hachurada branca no fundo. `origin` no centro do piso da base, com o +X local apontando
+-- para o fundo.
+function Kit.MarcaDeBase(parent: Instance, origin: CFrame, fundo: number, largura: number): Model
+	local model = Build.model("MarcaDeBase", parent)
+	model.PrimaryPart = Kit.AnelPintado(model, origin, 10, PALETTE.Pintura).PrimaryPart
+	Kit.AreaHachurada(model, origin * CFrame.new(fundo / 2 - 6, 0, 0), 8, largura - 20, PALETTE.Pintura)
+	return model
+end
+
+-- Mato: tufo de 3 folhas em cunha (nas frestas do concreto, cantos e pé de parede).
+local BLADES = {
+	{ yaw = 0, height = 1.1 },
+	{ yaw = 2.1, height = 0.8 },
+	{ yaw = 4.2, height = 0.95 },
+}
+
+function Kit.Mato(parent: Instance, origin: CFrame, escala: number?): Model
+	local model = Build.model("Mato", parent)
+	local s = escala or 1
+	local depth = 0.7 * s
+	for i, blade in BLADES do
+		local h = blade.height * s
+		local part = Build.wedge(
+			"Folha",
+			v3(0.22 * s, h, depth),
+			origin * CFrame.Angles(0, blade.yaw, 0) * CFrame.new(0, h / 2, -depth / 2),
+			if i % 2 == 0 then PALETTE.FolhasEscuras else PALETTE.Folhas,
+			model,
+			DETAIL
+		)
+		model.PrimaryPart = model.PrimaryPart or part
+	end
+	return model
+end
+
+-- Hera subindo a parede: três ramos finos e escuros, cada um com folhas em losango (quadrados
+-- girados 45°) dos dois lados, alternando os tons, até a `altura`.
+local IVY_STEMS = {
+	-- { x, fração da altura }
+	{ -0.7, 1 },
+	{ 0.2, 0.7 },
+	{ 0.95, 0.45 },
+}
+local IVY_LEAF = { Size = 0.55, Step = 0.55, Side = 0.22 }
+
+function Kit.Hera(parent: Instance, origin: CFrame, altura: number): Model
+	local model = Build.model("Hera", parent)
+	for s, stem in IVY_STEMS do
+		local h = altura * stem[2]
+		local part = Build.block(
+			"Ramo",
+			v3(0.12, h, 0.06),
+			origin * CFrame.new(stem[1], h / 2, 0.03),
+			PALETTE.FolhasEscuras,
+			model,
+			DETAIL
+		)
+		model.PrimaryPart = model.PrimaryPart or part
+		local leaves = math.max(1, math.floor(h / IVY_LEAF.Step))
+		for i = 1, leaves do
+			local side = if (i + s) % 2 == 0 then 1 else -1
+			Build.block(
+				"Folha",
+				v3(IVY_LEAF.Size, IVY_LEAF.Size, 0.06),
+				origin
+					* CFrame.new(stem[1] + side * IVY_LEAF.Side, (i - 0.4) * IVY_LEAF.Step, 0.08 + (i % 2) * 0.03)
+					* CFrame.Angles(0, 0, math.pi / 4),
+				if (i + s) % 3 == 0 then PALETTE.FolhasEscuras else PALETTE.Folhas,
+				model,
+				DETAIL
+			)
+		end
+	end
+	return model
+end
+
+-- Floreira de concreto (2,4 × 1 × 1,2) com dois tufos de mato. Comprimento no X local.
+function Kit.Floreira(parent: Instance, origin: CFrame): Model
+	local model = Build.model("Floreira", parent)
+	model.PrimaryPart =
+		Build.block("Vaso", v3(2.4, 1, 1.2), origin * CFrame.new(0, 0.5, 0), PALETTE.ConcretoEscuro, model, DETAIL)
+	Build.block("Terra", v3(2.1, 0.06, 0.9), origin * CFrame.new(0, 1.02, 0), PALETTE.MadeiraEscura, model, DETAIL)
+	Kit.Mato(model, origin * CFrame.new(-0.6, 1, 0), 0.9)
+	Kit.Mato(model, origin * CFrame.new(0.6, 1, 0) * CFrame.Angles(0, 1, 0), 1.1)
+	return model
+end
+
+-- Extintor de parede (laranja queimado, nunca vermelho), com placa clara atrás, suporte e mangueira.
+function Kit.Extintor(parent: Instance, origin: CFrame): Model
+	local model = Build.model("Extintor", parent)
+	model.PrimaryPart =
+		Build.block("Placa", v3(1.1, 2.2, 0.06), origin * CFrame.new(0, 2.3, 0.03), PALETTE.Pintura, model, DETAIL)
+	Build.block("Suporte", v3(0.7, 0.25, 0.3), origin * CFrame.new(0, 1.55, 0.2), PALETTE.Metal, model, DETAIL)
+	Build.prism("Corpo", 6, 0.7, 1.5, origin * CFrame.new(0, 2.3, 0.45), PALETTE.Extintor, model, DETAIL)
+	Build.block("Valvula", v3(0.3, 0.3, 0.3), origin * CFrame.new(0, 3.2, 0.45), PALETTE.Metal, model, DETAIL)
+	Build.block("Mangueira", v3(0.12, 0.9, 0.12), origin * CFrame.new(0.42, 2.5, 0.45), PALETTE.Metal, model, DETAIL)
+	return model
+end
+
+-- Quadro elétrico de parede: caixa de chapa com emenda da porta, faixa de aviso e conduíte até o chão.
+function Kit.QuadroEletrico(parent: Instance, origin: CFrame): Model
+	local model = Build.model("QuadroEletrico", parent)
+	model.PrimaryPart =
+		Build.block("Caixa", v3(2, 2.6, 0.6), origin * CFrame.new(0, 3.3, 0.3), PALETTE.Chapa, model, DETAIL)
+	Build.block("Porta", v3(0.06, 2.3, 0.04), origin * CFrame.new(0, 3.25, 0.62), PALETTE.ChapaEscura, model, DETAIL)
+	Build.block("Faixa", v3(2, 0.2, 0.06), origin * CFrame.new(0, 4.45, 0.63), PALETTE.Aviso, model, DETAIL)
+	Build.block("Conduite", v3(0.25, 2, 0.25), origin * CFrame.new(0.6, 1, 0.2), PALETTE.Metal, model, DETAIL)
+	return model
+end
+
+-- Boia salva-vidas pendurada num gancho (anel de 8 lados, laranja e creme alternados).
+function Kit.Boia(parent: Instance, origin: CFrame): Model
+	local model = Build.model("Boia", parent)
+	model.PrimaryPart =
+		Build.block("Gancho", v3(0.25, 0.5, 0.35), origin * CFrame.new(0, 2.75, 0.17), PALETTE.Metal, model, DETAIL)
+	local r = 0.7
+	local side = 2 * r * math.tan(math.pi / 8) + 0.05
+	for k = 0, 7 do
+		local a = k * math.pi / 4 + math.pi / 8
+		Build.block(
+			"Anel",
+			v3(side, 0.3, 0.28),
+			origin * CFrame.new(r * math.cos(a), 1.75 + r * math.sin(a), 0.3) * CFrame.Angles(0, 0, a + math.pi / 2),
+			if k % 2 == 0 then PALETTE.Boia else PALETTE.Pintura,
+			model,
+			DETAIL
+		)
+	end
+	return model
+end
+
+-- Cone de sinalização (1,3 de altura): base quadrada escura, corpo laranja com faixa clara.
+function Kit.Cone(parent: Instance, origin: CFrame): Model
+	local model = Build.model("Cone", parent)
+	model.PrimaryPart =
+		Build.block("Base", v3(1.1, 0.15, 1.1), origin * CFrame.new(0, 0.075, 0), PALETTE.Metal, model, DETAIL)
+	Build.prism("Corpo", 6, 0.8, 0.5, origin * CFrame.new(0, 0.4, 0), PALETTE.Boia, model, DETAIL)
+	Build.prism("Faixa", 6, 0.6, 0.25, origin * CFrame.new(0, 0.775, 0), PALETTE.Pintura, model, DETAIL)
+	Build.prism("Ponta", 6, 0.4, 0.4, origin * CFrame.new(0, 1.1, 0), PALETTE.Boia, model, DETAIL)
+	return model
+end
+
+-- Pilha de pallets de madeira (3 × 3, 0,42 de altura cada).
+function Kit.Pallets(parent: Instance, origin: CFrame, quantidade: number): Model
+	local model = Build.model("Pallets", parent)
+	for i = 0, quantidade - 1 do
+		local base = origin * CFrame.new(0, i * 0.42, 0) * CFrame.Angles(0, (i % 2) * 0.12, 0)
+		for _, z in { -1.2, 0, 1.2 } do
+			local runner = Build.block(
+				"Travessa",
+				v3(3, 0.3, 0.4),
+				base * CFrame.new(0, 0.15, z),
+				PALETTE.MadeiraEscura,
+				model,
+				DETAIL
+			)
+			model.PrimaryPart = model.PrimaryPart or runner
+		end
+		for k = -2, 2 do
+			Build.block(
+				"Tabua",
+				v3(0.5, 0.12, 3),
+				base * CFrame.new(k * 0.625, 0.36, 0),
+				if k % 2 == 0 then PALETTE.Madeira else PALETTE.MadeiraClara,
+				model,
+				DETAIL
+			)
+		end
+	end
+	return model
+end
+
+-- Rolo de corda (duas voltas de 8 lados, a de cima menor, com o miolo escuro).
+function Kit.RoloDeCorda(parent: Instance, origin: CFrame): Model
+	local model = Build.model("RoloDeCorda", parent)
+	model.PrimaryPart =
+		Build.prism("Corda", 8, 1.6, 0.3, origin * CFrame.new(0, 0.15, 0), PALETTE.Corda, model, DETAIL)[1]
+	Build.prism("Corda", 8, 1.3, 0.25, origin * CFrame.new(0, 0.42, 0), PALETTE.Corda, model, DETAIL)
+	Build.prism("Miolo", 8, 0.6, 0.58, origin * CFrame.new(0, 0.29, 0), PALETTE.MadeiraEscura, model, DETAIL)
+	return model
+end
+
+-- Luminária: cúpula de metal e lente creme clara (sem neon). Com `luzReal`, a lente leva uma luz
+-- branco-quente fraca e sem sombra, que apaga na versão leve (exceção do Porto, KIT-MODULAR 1).
+local function lamp(model: Model, at: CFrame, luzReal: boolean?)
+	Build.block("Cupula", v3(1.3, 0.45, 1.1), at, PALETTE.Metal, model, DETAIL)
+	local lens = Build.block("Lente", v3(1.1, 0.08, 0.9), at * CFrame.new(0, -0.26, 0), PALETTE.LuzCreme, model, DETAIL)
+	if luzReal then
+		Build.light(lens, PALETTE.LuzQuente, LIGHTS.Brightness, LIGHTS.Range)
+	end
+end
+
+-- Luminária de parede: `origin` no ponto da parede onde ela é presa (+Z local saindo da parede).
+function Kit.Luminaria(parent: Instance, origin: CFrame, luzReal: boolean?): Model
+	local model = Build.model("Luminaria", parent)
+	model.PrimaryPart =
+		Build.block("Braco", v3(0.25, 0.25, 1), origin * CFrame.new(0, 0, 0.5), PALETTE.Metal, model, DETAIL)
+	lamp(model, origin * CFrame.new(0, 0, 1.3), luzReal)
+	return model
+end
+
+-- Luminária de teto: `origin` no teto; a luminária pende 1,1 para baixo.
+function Kit.LuminariaDeTeto(parent: Instance, origin: CFrame, luzReal: boolean?): Model
+	local model = Build.model("LuminariaDeTeto", parent)
+	model.PrimaryPart =
+		Build.block("Haste", v3(0.15, 0.6, 0.15), origin * CFrame.new(0, -0.3, 0), PALETTE.Metal, model, DETAIL)
+	lamp(model, origin * CFrame.new(0, -0.82, 0), luzReal)
+	return model
+end
+
+-- Poste do cais (9 de altura): base de concreto, poste de 6 lados com faixa amarela e braço com a
+-- luminária apontando para o +X local. A luminária fica 1,8 à frente do pé.
+Kit.Poste_Alcance = 1.8
+
+function Kit.PosteDoCais(parent: Instance, origin: CFrame, luzReal: boolean?): Model
+	local model = Build.model("PosteDoCais", parent)
+	model.PrimaryPart =
+		Build.block("Base", v3(1.2, 0.5, 1.2), origin * CFrame.new(0, 0.25, 0), PALETTE.Concreto, model, DETAIL)
+	Build.prism("Poste", 6, 0.5, 8.5, origin * CFrame.new(0, 4.75, 0), PALETTE.Metal, model, DETAIL)
+	Build.prism("Faixa", 6, 0.56, 1, origin * CFrame.new(0, 1.3, 0), PALETTE.Aviso, model, DETAIL)
+	local reach = Kit.Poste_Alcance
+	Build.block("Braco", v3(reach, 0.25, 0.25), origin * CFrame.new(reach / 2, 8.9, 0), PALETTE.Metal, model, DETAIL)
+	lamp(model, origin * CFrame.new(reach, 8.9, 0), luzReal)
+	return model
+end
+
+-- Mancha de luz pintada no chão, embaixo de uma luminária (octógono num tom mais claro e quente).
+function Kit.ManchaDeLuz(parent: Instance, origin: CFrame, diametro: number): Model
+	local model = Build.model("ManchaDeLuz", parent)
+	local h = LAYER.Luz
+	model.PrimaryPart =
+		Build.prism("Luz", 8, diametro, h, origin * CFrame.new(0, h / 2, 0), PALETTE.LuzNoChao, model, DETAIL)[1]
 	return model
 end
 

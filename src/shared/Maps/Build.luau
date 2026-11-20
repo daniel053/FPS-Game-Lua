@@ -19,6 +19,8 @@ export type PartOptions = {
 
 Build.DetailAttribute = "MapDetail"
 Build.SignalAttribute = "MapSignal"
+-- Luz real de cenário (exceção do Porto, KIT-MODULAR 1): apaga na versão leve dos mapas.
+Build.LightAttribute = "MapLight"
 -- Atalho para as peças de acabamento.
 Build.Detail = { detail = true } :: PartOptions
 -- Atalho para as peças de acabamento que sinalizam algo (nunca somem).
@@ -274,6 +276,20 @@ function Build.wedge(
 	wedge.CFrame = cframe
 	apply(wedge, name, color, parent, options)
 	return wedge
+end
+
+-- Luz pontual de cenário dentro de `part` (a lente de uma luminária): sem sombra e marcada com
+-- `MapLight`, para a versão leve dos mapas apagar.
+function Build.light(part: BasePart, color: Color3, brightness: number, range: number): PointLight
+	local light = Instance.new("PointLight")
+	light.Name = "Luz"
+	light.Color = color
+	light.Brightness = brightness
+	light.Range = range
+	light.Shadows = false
+	light:SetAttribute(Build.LightAttribute, true)
+	light.Parent = part
+	return light
 end
 
 -- Prisma low poly de 6 ou 8 lados (KIT-MODULAR 1: cilindro = prisma), em pé no eixo Y de `cframe`

@@ -5,10 +5,12 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
+local Build = require(Shared.Maps.Build)
 local CharacterConfig = require(Shared.Config.CharacterConfig)
 local IslandCommon = require(Shared.Maps.IslandCommon)
 local MapConfig = require(Shared.Config.MapConfig)
 local Strings = require(Shared.Config.Strings)
+local Theme = require(Shared.Config.Theme)
 local LobbyBuilder = require(Shared.Maps.LobbyBuilder)
 local MapDetail = require(Shared.Maps.MapDetail)
 local ShieldPointRules = require(Shared.Match.ShieldPointRules)
@@ -17,6 +19,33 @@ local Zones = require(Shared.Maps.Zones)
 local WorldLayout = require(Shared.Match.WorldLayout)
 
 local WORLD = MapConfig.World
+
+-- Peças da passada de detalhe do Porto (KIT-MODULAR 2): nenhuma colide nem bloqueia tiro.
+local PORTO_DETAIL = {
+	PlacaDoPiso = true,
+	SombraPintada = true,
+	ManchaDeOleo = true,
+	Rachadura = true,
+	LinhaPintada = true,
+	FaixaDePedestre = true,
+	Seta = true,
+	AreaHachurada = true,
+	AnelPintado = true,
+	MarcaDeBase = true,
+	Mato = true,
+	Hera = true,
+	Floreira = true,
+	Extintor = true,
+	QuadroEletrico = true,
+	Boia = true,
+	Cone = true,
+	Pallets = true,
+	RoloDeCorda = true,
+	Luminaria = true,
+	LuminariaDeTeto = true,
+	PosteDoCais = true,
+	ManchaDeLuz = true,
+}
 
 local function near(a: number, b: number, tolerance: number?): boolean
 	return math.abs(a - b) <= (tolerance or 1e-3)
@@ -168,6 +197,60 @@ return function(t: any)
 				t.ok(count <= MapConfig.Kit.MaxPartsPerIsland, `{folder.Name}: {count} peças`)
 			end
 		end
+		world:Destroy()
+	end)
+
+	t.test("luzes reais só no Porto: branco-quentes, sem sombra, marcadas e no limite", function()
+		local world = WorldBuilder.build()
+		local porto = 0
+		for _, item in world:GetDescendants() do
+			if item:IsA("Light") then
+				local island: number? = nil
+				local ancestor = item.Parent
+				while ancestor and ancestor ~= world do
+					island = island or tonumber(ancestor.Name:match("^Island(%d+)$"))
+					ancestor = ancestor.Parent
+				end
+				local isPorto = island ~= nil and WorldLayout.mapId(island) == "map_porto"
+				t.ok(isPorto, `{item:GetFullName()}: luz fora do Porto`)
+				t.ok(item:IsA("PointLight"), `{item:GetFullName()}: só PointLight`)
+				t.ok(
+					item:GetAttribute(Build.LightAttribute) == true,
+					`{item:GetFullName()}: marcada (apaga na versão leve)`
+				)
+				t.ok((item :: PointLight).Shadows == false, `{item:GetFullName()}: sem sombra`)
+				t.ok(item.Color == Theme.Maps.Porto.LuzQuente, `{item:GetFullName()}: branco-quente`)
+				if isPorto then
+					porto += 1
+				end
+			end
+		end
+		t.ok(porto > 0 and porto <= MapConfig.Porto.Lights.Max, `Porto: {porto} luzes`)
+		world:Destroy()
+	end)
+
+	t.test("detalhe do Porto: as peças da passada de detalhe são só acabamento", function()
+		local world = WorldBuilder.build()
+		local found = 0
+		for i = 1, WorldLayout.islandCount() do
+			if WorldLayout.mapId(i) == "map_porto" then
+				local folder = world:FindFirstChild(`Island{i}`) :: Instance
+				for _, model in folder:GetDescendants() do
+					if model:IsA("Model") and PORTO_DETAIL[model.Name] then
+						found += 1
+						for _, part in model:GetDescendants() do
+							if part:IsA("BasePart") then
+								t.ok(
+									part:GetAttribute(Build.DetailAttribute) == true,
+									`{part:GetFullName()} é acabamento`
+								)
+							end
+						end
+					end
+				end
+			end
+		end
+		t.ok(found > 0, "Porto com as peças de detalhe")
 		world:Destroy()
 	end)
 

@@ -87,6 +87,171 @@ local SHIELD = v2(0, -46.5)
 -- aponta para o pátio, acima de tudo.
 local CRANE = { At = v2(18, -48), Modules = 6, Jib = 30 }
 
+-- Passada de detalhe (depois da F10): só acabamento, nada colide nem muda a planta. Posições na
+-- metade do leste; a outra é a mesma girada 180°. ---------------------------------------------------
+
+-- Placas de concreto em outro tom { x0, z0, x1, z1 }: células entre as juntas do piso
+local LIGHT_SLABS = {
+	{ 14, -44, 28, -22 },
+	{ 42, -22, 56, 22 },
+	{ 28, 22, 42, 44 },
+	{ 56, -44, 70, -22 },
+	{ 0, 22, 14, 44 },
+}
+-- Rachaduras { x, z, comprimento, giro em graus }
+local CRACKS = {
+	{ 24, -30, 4, 20 },
+	{ 48, 12, 3.5, -30 },
+	{ 60, -8, 3, 20 },
+	{ 10, 34, 4, 10 },
+	{ 52, 40, 3, -60 },
+	{ 32, -40, 3.5, 40 },
+}
+-- Manchas de óleo { x, z, diâmetro }
+local OIL = {
+	{ 46, -4, 2.6 },
+	{ 20, -29, 2.2 },
+	{ 58, 20, 3 },
+	{ 9, 14, 2 },
+}
+local BORDER_LINE = 3 -- linha branca a 3 studs da mureta
+local GATE_Z = -11 -- meio do portão do pátio
+-- Tufos de mato { x, z, escala }: frestas, cantos de mureta e pé das paredes
+local PLANTS = {
+	{ 66.5, -51.3, 1 },
+	{ 66.5, 51.3, 0.9 },
+	{ 23.6, -51.2, 0.8 },
+	{ 23.6, 51.2, 1.1 },
+	{ 29, 24.8, 1 },
+	{ 31.2, 39.3, 0.9 },
+	{ 68.4, 20.4, 1.1 },
+	{ 28.1, -22.2, 0.7 },
+	{ 42.1, 22.2, 0.8 },
+	{ 56.1, -40, 0.7 },
+	{ 42.7, 12.8, 0.9 },
+	{ 60.6, -47.6, 1 },
+	{ 50.6, 32.6, 0.9 },
+}
+-- Parede da frente da base (face que dá para a área de duelo) e altura das luminárias nela
+local BASE_WALL_FACE = HALF_X - 0.75
+local WALL_LAMP_Y = 5.6
+local WALL_LAMP_Z = 10 -- uma de cada lado da passagem, em cima de uma floreira
+
+local function dress(frame: CFrame, folder: Instance)
+	local function at(x: number, z: number, yaw: number?, y: number?): CFrame
+		return Build.pivot(frame, v2(x, z), yaw, y)
+	end
+	local level1 = Kit.Conteiner_Altura
+
+	-- Chão: placas claras, rachaduras e manchas de óleo
+	for _, slab in LIGHT_SLABS do
+		local size = v2(slab[3] - slab[1], slab[4] - slab[2])
+		Kit.PlacaDoPiso(folder, at((slab[1] + slab[3]) / 2, (slab[2] + slab[4]) / 2), size)
+	end
+	for _, crack in CRACKS do
+		Kit.Rachadura(folder, at(crack[1], crack[2], crack[4]), crack[3])
+	end
+	for _, oil in OIL do
+		Kit.ManchaDeOleo(folder, at(oil[1], oil[2]), oil[3])
+	end
+
+	-- Sombra pintada na base do que fica em pé (dá peso às peças)
+	local margin = 1.2
+	for _, spot in { YARD_CONTAINERS.Front, YARD_CONTAINERS.North } do
+		Kit.SombraPintada(
+			folder,
+			at(spot.X, spot.Y, 90),
+			v2(Kit.Conteiner_Comprimento, Kit.Conteiner_Largura) + v2(margin, margin)
+		)
+	end
+	local stackOffset = (Kit.Pilha_Vao + Kit.Conteiner_Comprimento) / 2
+	Kit.SombraPintada(
+		folder,
+		at(0, -stackOffset, 90),
+		v2(Kit.Conteiner_Comprimento, Kit.Conteiner_Largura) + v2(margin, margin)
+	)
+	Kit.SombraPintada(folder, at(SHEET_WALL.X, SHEET_WALL.Y, 90), v2(Kit.Parede_Comprimento + margin, 2.6))
+	for _, crate in CRATES do
+		Kit.SombraPintada(folder, at(crate[1], crate[2]), v2(crate[3] + 0.8, crate[3] + 0.8))
+	end
+	local baseHalf = WORLD.BaseSize.Y / 2
+	local door = WORLD.BaseDoorWidth / 2
+	for _, sign in { -1, 1 } do
+		local mid = sign * (door + baseHalf) / 2
+		Kit.SombraPintada(folder, at(BASE_WALL_FACE - 0.4, mid, 90), v2(baseHalf - door, 0.8))
+		-- pé da mureta norte/sul e leste
+		local edgeZ = sign * (HALF_Z - 0.5 - 0.4)
+		local railStart = NOTCH.HalfWidth + 1.5
+		Kit.SombraPintada(folder, at((railStart + HALF_X) / 2, edgeZ), v2(HALF_X - railStart, 0.8))
+		local eastMid = sign * (HALF_Z + baseHalf) / 2
+		Kit.SombraPintada(folder, at(HALF_X - 0.9, eastMid, 90), v2(HALF_Z - baseHalf, 0.8))
+	end
+
+	-- Pintura: linha da borda, faixa de pedestre na porta da base, seta e linha tracejada até o
+	-- portão do pátio, áreas hachuradas no portão e no pé da escada
+	local lineStart = NOTCH.HalfWidth + 1.5 + 2.5
+	local lineEnd = HALF_X - BORDER_LINE
+	for _, sign in { -1, 1 } do
+		Kit.LinhaPintada(folder, at((lineStart + lineEnd) / 2, sign * (HALF_Z - BORDER_LINE)), lineEnd - lineStart)
+		local z0, z1 = baseHalf + 3, HALF_Z - BORDER_LINE
+		Kit.LinhaPintada(folder, at(lineEnd, sign * (z0 + z1) / 2, 90), z1 - z0)
+	end
+	Kit.FaixaDePedestre(folder, at(62.5, 0), 5, 12)
+	Kit.Seta(folder, at(50, GATE_Z, 180), 5)
+	Kit.LinhaPintada(folder, at(60.5, GATE_Z), 11, true)
+	Kit.AreaHachurada(folder, at(YARD_CONTAINERS.Front.X, GATE_Z), Kit.Conteiner_Largura, 5, PALETTE.Aviso)
+	Kit.AreaHachurada(folder, at(STAIR_LOW.FootX + 2, STAIR_LOW.Z), 4, STAIR_LOW.Width, PALETTE.Aviso)
+
+	-- Base: anel em volta de onde se nasce e hachura no fundo
+	local baseCenter = HALF_X + WORLD.BaseSize.X / 2
+	Kit.MarcaDeBase(folder, at(baseCenter, 0), WORLD.BaseSize.X, WORLD.BaseSize.Y)
+
+	-- Parede da frente da base: floreiras e luminárias (luz real) dos dois lados da passagem,
+	-- extintor, quadro elétrico e hera
+	for _, sign in { -1, 1 } do
+		local z = sign * WALL_LAMP_Z
+		Kit.Floreira(folder, at(BASE_WALL_FACE - 0.65, z, 90))
+		Kit.Luminaria(folder, at(BASE_WALL_FACE, z, -90, WALL_LAMP_Y), true)
+		Kit.ManchaDeLuz(folder, at(BASE_WALL_FACE - 3, z), 6)
+	end
+	Kit.QuadroEletrico(folder, at(BASE_WALL_FACE, -17, -90))
+	Kit.Extintor(folder, at(BASE_WALL_FACE, 15, -90))
+	Kit.Hera(folder, at(BASE_WALL_FACE, 19, -90), 5)
+	Kit.Hera(folder, at(BASE_WALL_FACE, -13.5, -90), 3.5)
+
+	-- Parede de chapa: hera do lado de fora, extintor do lado do meio
+	local sheetHalf = 0.63 -- meia espessura com a ondulação e a ferrugem
+	Kit.Hera(folder, at(SHEET_WALL.X + sheetHalf, SHEET_WALL.Y + 4, 90), 6)
+	Kit.Extintor(folder, at(SHEET_WALL.X - sheetHalf, SHEET_WALL.Y - 1, -90))
+
+	-- Ambiente: mato, boias na mureta, cones no pé da escada, pallets e corda no píer
+	for _, plant in PLANTS do
+		Kit.Mato(folder, at(plant[1], plant[2], plant[1] * 37 % 360), plant[3])
+	end
+	local railFace = HALF_Z - 0.5
+	Kit.Boia(folder, at(25, -railFace, 0))
+	Kit.Boia(folder, at(40, railFace, 180))
+	for _, sign in { -1, 1 } do
+		Kit.Cone(folder, at(STAIR_LOW.FootX + 4.8, STAIR_LOW.Z + sign * (STAIR_LOW.Width / 2 + 0.8)))
+	end
+	Kit.Pallets(folder, at(HALF_X - 2.3, -40, 10), 3)
+	Kit.RoloDeCorda(folder, at(7.5, PIER_Z - 1.2))
+
+	-- Luzes: embaixo da pilha (teto do vão), poste no canto do píer (luz real) e postes nos cantos
+	-- do cais (só pintados)
+	Kit.LuminariaDeTeto(folder, at(0, -2, 0, level1), true)
+	Kit.ManchaDeLuz(folder, at(0, -2), 5)
+	local pierPole = v2(17, -42.4)
+	Kit.PosteDoCais(folder, at(pierPole.X, pierPole.Y, 180), true)
+	Kit.ManchaDeLuz(folder, at(pierPole.X - Kit.Poste_Alcance, -42), 4)
+	for _, sign in { -1, 1 } do
+		local corner = v2(HALF_X - 1.8, sign * (HALF_Z - 1.9))
+		Kit.PosteDoCais(folder, at(corner.X, corner.Y, sign * 135), false)
+		local reach = Kit.Poste_Alcance / math.sqrt(2)
+		Kit.ManchaDeLuz(folder, at(corner.X - reach, corner.Y - sign * reach), 5)
+	end
+end
+
 local function half(frame: CFrame, folder: Instance, front: Kit.CorDeConteiner, north: Kit.CorDeConteiner)
 	local function at(x: number, z: number, yaw: number?, y: number?): CFrame
 		return Build.pivot(frame, v2(x, z), yaw, y)
@@ -229,6 +394,10 @@ local Porto: IslandCommon.Island = {
 		Kit.PilhaDeConteineres(folder, Build.pivot(frame, v2(0, 0), 90), "Musgo", "Petroleo", "Laranja")
 		half(frame, folder, "Laranja", "Petroleo")
 		half(IslandCommon.rotated(frame), folder, "Mostarda", "Musgo")
+		-- Detalhe: o vão por baixo da pilha (uma peça só, já simétrica) e cada metade
+		Kit.AreaHachurada(folder, Build.pivot(frame, v2(0, 0)), Kit.Pilha_Vao, Kit.Pilha_Vao, PALETTE.Aviso)
+		dress(frame, folder)
+		dress(IslandCommon.rotated(frame), folder)
 		zones(frame, folder)
 	end,
 }
