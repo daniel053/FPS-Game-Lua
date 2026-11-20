@@ -656,6 +656,7 @@ local Strings = {
 			Ranking = "Ranking",
 			Shop = "Loja",
 		},
+		NavIcons = { Play = "▶", Arsenal = "🎯", Cards = "🃏", Maps = "🗺", Ranking = "🏆", Shop = "🛒" },
 		ReadyCount = "✓ %d/%d prontos",
 		Play = "JOGAR",
 		WaitingPartner = "ESPERANDO O PARCEIRO…",

@@ -47,8 +47,9 @@ local MEMBER_HEIGHT = 52
 local COMPACT_MEMBER_HEIGHT = 44
 local COMPACT_BELOW_HEIGHT = 440 -- telas mais baixas (celular deitado): modo compacto
 local PANEL_TOP = 64 -- abaixo da logo e das moedas
+local BANNER_HEIGHT = 96
 
-type MemberRow = { root: Frame, avatar: Avatars.Avatar, name: TextLabel, state: TextLabel }
+type MemberRow = { root: Frame, avatar: Avatars.Avatar, empty: Frame, name: TextLabel, state: TextLabel }
 
 local LobbyScreen = {}
 
@@ -153,8 +154,10 @@ local function render()
 			row.state.Text = if member.ready then S.Ready else S.NotReady
 			row.state.TextColor3 = if member.ready then Theme.Color.Success else Theme.Color.TextSecondary
 			row.avatar.root.Visible = true
+			row.empty.Visible = false
 		else
 			row.avatar.root.Visible = false
+			row.empty.Visible = true
 			row.name.Text = S.EmptySlot
 			row.name.TextColor3 = Theme.Color.TextSecondary
 			row.state.Text = ""
@@ -300,6 +303,16 @@ local function buildParty()
 		row.LayoutOrder = i
 		local avatar = Avatars.new(row, MEMBER_HEIGHT - 8)
 		avatar.root.Position = UDim2.fromOffset(0, 4)
+		-- Vaga livre: círculo vazado com "+" no lugar do rosto
+		local empty = Ui.label("Empty", Theme.Font.Title, Theme.TextSize.Title, Theme.Color.TextSecondary, row)
+		empty.Position = UDim2.fromOffset(0, 4)
+		empty.Size = UDim2.fromOffset(MEMBER_HEIGHT - 8, MEMBER_HEIGHT - 8)
+		empty.BackgroundTransparency = 0.5
+		empty.BackgroundColor3 = Theme.Color.PanelRaised
+		empty.Text = "+"
+		empty.Visible = false
+		Ui.corner(empty, 999)
+		Ui.stroke(empty, Theme.Color.PanelBorder, 2)
 		local name = Ui.label("Name", Theme.Font.BodyStrong, Theme.TextSize.Body, Theme.Color.TextPrimary, row)
 		name.Position = UDim2.fromOffset(MEMBER_HEIGHT + 2, 6)
 		name.Size = UDim2.new(1, -(MEMBER_HEIGHT + 2), 0, 20)
@@ -310,7 +323,7 @@ local function buildParty()
 		state.Position = UDim2.fromOffset(MEMBER_HEIGHT + 2, 28)
 		state.Size = UDim2.new(1, -(MEMBER_HEIGHT + 2), 0, 16)
 		state.TextXAlignment = Enum.TextXAlignment.Left
-		memberRows[i] = { root = row, avatar = avatar, name = name, state = state }
+		memberRows[i] = { root = row, avatar = avatar, empty = empty, name = name, state = state }
 	end
 	inviteButton = Widgets.button(content, S.Invite, "secondary", {
 		size = UDim2.new(1, 0, 0, Theme.Touch.MinTarget),
@@ -348,36 +361,104 @@ local function buildMode()
 	title.Text = S.ModeTitle
 	title.LayoutOrder = 1
 
-	-- "Imagem" do modo: faixa com o mirante e as 4 ilhas desenhados em blocos (arte final na F10)
-	local banner = Ui.raised("Banner", content)
-	modeBanner = banner
-	banner.BackgroundColor3 = Theme.Lobby.ModeBanner
-	banner.Size = UDim2.new(1, 0, 0, 74)
-	banner.LayoutOrder = 2
-	for i, offset in
-		{ Vector2.new(-0.28, 0.3), Vector2.new(0.28, 0.3), Vector2.new(-0.28, 0.72), Vector2.new(0.28, 0.72) }
-	do
-		local island = Ui.frame(`Island{i}`, banner)
-		island.AnchorPoint = Vector2.new(0.5, 0.5)
-		island.Position = UDim2.fromScale(0.5 + offset.X, offset.Y)
-		island.Size = UDim2.fromOffset(34, 14)
-		island.BackgroundTransparency = 0
-		island.BackgroundColor3 = Theme.Match.IslandFloor
-		Ui.corner(island, 4)
+	-- "Imagem" do modo (revista depois da F10): céu roxo, raios, o mirante octogonal no meio, as 4
+	-- ilhas em volta (cada uma no tom do seu mapa), nuvens embaixo e o selo 2 CONTRA 2 com as duas
+	-- duplas. Num CanvasGroup, que recorta as peças giradas e o canto arredondado.
+	local L = Theme.Lobby
+	local holder = Ui.frame("Banner", content)
+	modeBanner = holder
+	holder.Size = UDim2.new(1, 0, 0, BANNER_HEIGHT)
+	holder.LayoutOrder = 2
+	local banner = Instance.new("CanvasGroup")
+	banner.Name = "Art"
+	banner.BackgroundTransparency = 1
+	banner.Size = UDim2.fromScale(1, 1)
+	banner.Parent = holder
+	Ui.corner(banner, 8)
+	Ui.corner(holder, 8)
+	Ui.stroke(holder, Theme.Color.PanelBorder, 1)
+	local function piece(name: string, color: Color3, transparency: number, x: number, y: number, w: number, h: number)
+		local f = Ui.frame(name, banner)
+		f.AnchorPoint = Vector2.new(0.5, 0.5)
+		f.Position = UDim2.fromScale(x, y)
+		f.Size = UDim2.fromScale(w, h)
+		f.BackgroundTransparency = transparency
+		f.BackgroundColor3 = color
+		return f
 	end
-	local center = Ui.frame("Mirante", banner)
-	center.AnchorPoint = Vector2.new(0.5, 0.5)
-	center.Position = UDim2.fromScale(0.5, 0.4)
-	center.Size = UDim2.fromOffset(40, 40)
-	center.Rotation = 45
-	center.BackgroundTransparency = 0
-	center.BackgroundColor3 = Theme.Match.MiranteFloor
-	local vs = Ui.label("Vs", Theme.Font.Title, Theme.TextSize.Label, Theme.Color.TextPrimary, banner)
-	vs.AnchorPoint = Vector2.new(0.5, 1)
-	vs.Position = UDim2.new(0.5, 0, 1, -4)
-	vs.Size = UDim2.new(1, 0, 0, 16)
-	vs.Text = S.ModeBanner
-	Ui.outlineText(vs)
+	local sky = piece("Sky", Color3.new(1, 1, 1), 0, 0.5, 0.5, 1, 1)
+	local skyGradient = Instance.new("UIGradient")
+	skyGradient.Rotation = 90
+	skyGradient.Color = ColorSequence.new(L.BannerSkyTop, L.ModeBanner)
+	skyGradient.Parent = sky
+	-- Raios saindo do mirante
+	for i = 1, 8 do
+		local ray = piece("Ray", Color3.new(1, 1, 1), 0, 0.5, 0.48, 0.05, 3)
+		ray.Rotation = (i - 1) * 22.5
+		local fade = Instance.new("UIGradient")
+		fade.Rotation = 90
+		fade.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 1),
+			NumberSequenceKeypoint.new(0.5, L.BannerRayTransparency),
+			NumberSequenceKeypoint.new(1, 1),
+		})
+		fade.Parent = ray
+	end
+	-- Nuvens embaixo
+	for i, spot in { { 0.08, 0.98, 0.3 }, { 0.3, 1.02, 0.34 }, { 0.62, 1.0, 0.36 }, { 0.92, 0.97, 0.3 } } do
+		local cloud = piece(`Cloud{i}`, Color3.new(1, 1, 1), L.BannerCloudTransparency, spot[1], spot[2], spot[3], 0.36)
+		Ui.corner(cloud, 9999)
+	end
+	-- Ilhas em volta (com o "chão" mais escuro embaixo) e o mirante octogonal no meio
+	for i, spot in { { 0.2, 0.3 }, { 0.8, 0.3 }, { 0.2, 0.68 }, { 0.8, 0.68 } } do
+		local color = L.BannerIslands[i]
+		local rock = piece(`Rock{i}`, color:Lerp(Theme.Color.PanelBase, 0.55), 0, spot[1], spot[2] + 0.07, 0.16, 0.14)
+		Ui.corner(rock, 6)
+		local top = piece(`Island{i}`, color, 0, spot[1], spot[2], 0.18, 0.13)
+		Ui.corner(top, 5)
+	end
+	-- Mirante: plataforma clara de cantos bem arredondados, com o chão de vidro (anel) e a sombra
+	local shadow = piece("MiranteBase", L.BannerMirante:Lerp(Theme.Color.PanelBase, 0.6), 0, 0.5, 0.52, 0.17, 0.42)
+	Ui.corner(shadow, 12)
+	local octo = piece("Mirante", L.BannerMirante, 0, 0.5, 0.44, 0.19, 0.42)
+	Ui.corner(octo, 12)
+	local glass = piece("Vidro", Theme.Color.AccentGlow, 0.55, 0.5, 0.44, 0.09, 0.2)
+	Ui.corner(glass, 6)
+	-- Selo: duas bolinhas de cada equipe e "2 CONTRA 2"
+	local chip = Ui.frame("Versus", holder)
+	chip.AnchorPoint = Vector2.new(0.5, 1)
+	chip.Position = UDim2.new(0.5, 0, 1, -6)
+	chip.Size = UDim2.fromOffset(0, 22)
+	chip.AutomaticSize = Enum.AutomaticSize.X
+	chip.BackgroundTransparency = 0.15
+	chip.BackgroundColor3 = Theme.Color.Overlay
+	chip.ZIndex = 3
+	Ui.corner(chip, 11)
+	local chipPad = Instance.new("UIPadding")
+	chipPad.PaddingLeft = UDim.new(0, 8)
+	chipPad.PaddingRight = UDim.new(0, 8)
+	chipPad.Parent = chip
+	local chipLayout = Ui.list(chip, Enum.FillDirection.Horizontal, 4)
+	chipLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	local function dot(color: Color3, order: number)
+		local d = Ui.frame("Dot", chip)
+		d.Size = UDim2.fromOffset(9, 9)
+		d.BackgroundTransparency = 0
+		d.BackgroundColor3 = color
+		d.LayoutOrder = order
+		d.ZIndex = 3
+		Ui.corner(d, 5)
+	end
+	dot(Theme.Team.Azul, 1)
+	dot(Theme.Team.Azul, 2)
+	local vs = Ui.label("Vs", Theme.Font.Title, Theme.TextSize.Label, Theme.Color.TextPrimary, chip)
+	vs.AutomaticSize = Enum.AutomaticSize.X
+	vs.Size = UDim2.fromOffset(0, 22)
+	vs.Text = " " .. S.ModeBanner .. " "
+	vs.LayoutOrder = 3
+	vs.ZIndex = 3
+	dot(Theme.Team.Laranja, 4)
+	dot(Theme.Team.Laranja, 5)
 
 	local subtitle = Ui.paragraph("Subtitle", Theme.Font.Body, Theme.TextSize.Body, Theme.Color.TextSecondary, content)
 	subtitle.Text = S.ModeSubtitle
@@ -419,23 +500,25 @@ local function buildNav()
 	local layout = Ui.list(nav, Enum.FillDirection.Horizontal, Theme.Space.Small)
 	layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	local N = S.Nav
-	local entries: { { label: string, action: (() -> ())? } } = {
-		{ label = N.Play, action = nil },
-		{ label = N.Arsenal, action = ArsenalScreen.open },
-		{ label = N.Cards, action = CardsScreen.open },
-		{ label = N.Maps, action = MapsScreen.open },
-		{ label = N.Ranking, action = RankingScreen.open },
-		{ label = N.Shop, action = nil },
+	local I = S.NavIcons
+	local entries: { { label: string, icon: string, action: (() -> ())? } } = {
+		{ label = N.Play, icon = I.Play, action = nil },
+		{ label = N.Arsenal, icon = I.Arsenal, action = ArsenalScreen.open },
+		{ label = N.Cards, icon = I.Cards, action = CardsScreen.open },
+		{ label = N.Maps, icon = I.Maps, action = MapsScreen.open },
+		{ label = N.Ranking, icon = I.Ranking, action = RankingScreen.open },
+		{ label = N.Shop, icon = I.Shop, action = nil },
 	}
 	for i, entry in entries do
 		local isPlay = i == 1
-		local button = Widgets.button(nav, entry.label, if isPlay then "primary" else "secondary", {
-			size = UDim2.new(1 / #entries, -Theme.Space.Small, 1, 0),
-			textSize = Theme.TextSize.Body,
-			arrow = false,
-			order = i,
-			modal = true,
-		})
+		local button =
+			Widgets.button(nav, entry.icon .. "  " .. entry.label, if isPlay then "primary" else "secondary", {
+				size = UDim2.new(1 / #entries, -Theme.Space.Small, 1, 0),
+				textSize = Theme.TextSize.Body,
+				arrow = false,
+				order = i,
+				modal = true,
+			})
 		local action = entry.action
 		if isPlay then
 			-- Já está no lobby: leva a seleção para o JOGAR
@@ -449,7 +532,7 @@ local function buildNav()
 		else
 			-- A Loja (Robux) chega na F11
 			button.setEnabled(false)
-			button.setText(entry.label .. " · " .. U.Soon)
+			button.setText(entry.icon .. "  " .. entry.label .. " · " .. U.Soon)
 		end
 	end
 end
@@ -534,6 +617,7 @@ local function applyCompact()
 	for _, row in memberRows do
 		row.root.Size = UDim2.new(1, 0, 0, memberHeight)
 		row.avatar.root.Size = UDim2.fromOffset(memberHeight - 8, memberHeight - 8)
+		row.empty.Size = UDim2.fromOffset(memberHeight - 8, memberHeight - 8)
 		row.name.Position = UDim2.fromOffset(memberHeight + 2, if compact then 2 else 6)
 		row.state.Position = UDim2.fromOffset(memberHeight + 2, if compact then 22 else 28)
 	end

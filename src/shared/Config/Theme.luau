@@ -480,6 +480,7 @@ local Theme = {
 		SelectedTop = hex("#7C4DEB"), -- cartão selecionado: roxo do acento sombreado
 		Spot = hex("#3A4775"), -- "luz" atrás da arma/carta dentro do cartão
 		SpotTransparency = 0.78,
+		TintSpotTransparency = 0.8, -- luz atrás da arma na cor de identidade dela (Arsenal)
 		Highlight = hex("#FFFFFF"), -- filete claro no topo dos painéis
 		HighlightTransparency = 0.9,
 	},
@@ -554,6 +555,12 @@ local Theme = {
 	-- Lobby (T3): o fundo é o mundo cinza do lobby; o cartão do modo tem uma faixa de cor no topo
 	Lobby = {
 		ModeBanner = hex("#2B3460"),
+		-- Arte do cartão do modo (revista depois da F10) [PROPOSTA]
+		BannerSkyTop = hex("#6D4BC9"),
+		BannerMirante = hex("#E6E9F5"),
+		BannerIslands = { hex("#5E8CC8"), hex("#C98A5A"), hex("#7FBF7A"), hex("#A9A3B8") }, -- Porto, Fábrica, Praça, Torre
+		BannerRayTransparency = 0.88,
+		BannerCloudTransparency = 0.5,
 	},
 
 	-- Elo (GDD 9, F9): uma cor por faixa, sempre junto do ícone e do nome (Strings.RankIcons e

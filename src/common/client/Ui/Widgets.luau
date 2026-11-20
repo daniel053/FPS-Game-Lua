@@ -402,6 +402,7 @@ export type ItemCard = {
 	setLocked: (locked: boolean, note: string?) -> (),
 	setBorder: (color: Color3, thickness: number) -> (),
 	setMarker: (color: Color3?) -> (),
+	setTint: (color: Color3?) -> (), -- luz atrás da imagem na cor do item (nil = a neutra)
 }
 
 -- Cartão de item (arma, skin, carta), no visual da referência dos menus (F7):
@@ -490,20 +491,25 @@ function Widgets.itemCard(parent: Instance, title: string, size: UDim2, order: n
 	cover.Visible = false
 	Ui.corner(cover)
 	local coverText = Ui.label("Text", Theme.Font.BodyStrong, Theme.TextSize.Label, Theme.Color.TextPrimary, cover)
-	coverText.Size = UDim2.fromScale(1, 1)
+	-- O texto do cadeado fica na área da imagem: o nome embaixo continua legível
+	coverText.Size = UDim2.new(1, 0, 1, -24)
 	coverText.TextWrapped = true
 	coverText.ZIndex = 5
 
 	local baseColor = Theme.Color.PanelBorder
 	local baseThickness = 1
 	local selected = false
+	local tint: Color3? = nil
 
 	local function paint()
 		stroke.Color = if selected then Theme.Color.AccentGlow else baseColor
 		stroke.Thickness = if selected then Theme.Selected.BorderThickness else baseThickness
 		card.BackgroundColor3 = if selected then Theme.Shade.SelectedTop else Theme.Shade.RaisedTop
-		spot.BackgroundColor3 = if selected then Theme.Color.AccentGlow else Theme.Shade.Spot
-		spot.BackgroundTransparency = if selected then 0.82 else Theme.Shade.SpotTransparency
+		spot.BackgroundColor3 = if selected then Theme.Color.AccentGlow else (tint or Theme.Shade.Spot)
+		spot.BackgroundTransparency = if selected
+			then 0.82
+			elseif tint then Theme.Shade.TintSpotTransparency
+			else Theme.Shade.SpotTransparency
 		glow.Visible = selected
 		check.Visible = selected
 	end
@@ -532,6 +538,10 @@ function Widgets.itemCard(parent: Instance, title: string, size: UDim2, order: n
 			if color then
 				marker.BackgroundColor3 = color
 			end
+		end,
+		setTint = function(color: Color3?)
+			tint = color
+			paint()
 		end,
 	}
 end

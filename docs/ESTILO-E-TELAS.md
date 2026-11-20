@@ -253,6 +253,8 @@ Proibido em todo o resto: fundos, textos, ícones, barras, botões comuns, HUD.
 - **Navegação:** Jogar, Arsenal (T5), Cartas (T1), Ranking, Loja.
 - Seguir a organização do mockup, **sem** o símbolo em V e sem vermelho como cor principal.
 
+- **Revisão visual depois da F10** `[DECIDIDO]` (dono do projeto): o cartão do modo ganhou arte (céu roxo, raios, o mirante no meio, as 4 ilhas nos tons dos mapas, nuvens e o selo 2 CONTRA 2 com duas bolinhas de cada equipe); a vaga livre da dupla mostra um círculo vazado com "+"; os botões da barra de baixo têm ícone antes do nome (`Strings.Lobby.NavIcons`). Cores em `Theme.Lobby` `[PROPOSTA]`.
+
 ### T4 · Mapas de duelo (mundo do servidor de partida)
 
 **Função:** descrever como o mundo da partida é montado. Regras: GDD seções 6.5 e 15.
@@ -299,7 +301,7 @@ Proibido em todo o resto: fundos, textos, ícones, barras, botões comuns, HUD.
 - **Painel de detalhe** à direita `[DECIDIDO]`: arma em 3D girando devagar, nome, categoria, descrição de uma frase, **barras de atributo** (dano, cadência, alcance, mobilidade), botão **Equipar** e, **logo abaixo, a fila de skins** (miniaturas com moldura de raridade; as que o jogador não tem ficam com cadeado e preço). O espaço das skins já existe desde a F7; o catálogo e a compra são da F9.
 - **Skins (F9):** a fila mostra Padrão + os temas do catálogo, com moldura de raridade, amostra de cores e cadeado com preço. O botão principal age sobre a skin escolhida: **COMPRAR (preço)** se não tem (apagado sem saldo), **EQUIPAR** se tem, **EQUIPADA** se está em uso. Os cartões da grade mostram a arma com a skin equipada.
 - Barras de atributo no acento roxo (sem vermelho: é cor de inimigo e perigo).
-- **Vitrine** `[DECIDIDO]` (dono do projeto, depois da F10; inspiração na apresentação de armas dos FPS táticos, adaptada): a arma em 3D gira num palco com luz na cor da skin escolhida (céu escurecendo para o painel, listras diagonais finas, halo e mancha de luz no chão), borda e selo na cor da raridade da skin. A arma da vitrine e a de primeira pessoa têm **quinas redondas** (as caixas grandes do modelo viram caixas arredondadas); as miniaturas da grade ficam retas. Cada barra de atributo mostra o número (0–100). Números em `Theme.Showcase` `[PROPOSTA]`.
+- **Vitrine** `[DECIDIDO]` (dono do projeto, depois da F10; inspiração na apresentação de armas dos FPS táticos, adaptada): a arma em 3D gira num palco com luz na cor da skin escolhida (céu escurecendo para o painel, listras diagonais finas, halo e mancha de luz no chão), borda e selo na cor da raridade da skin. A arma da vitrine e a de primeira pessoa têm **quinas redondas** (as caixas grandes do modelo viram caixas arredondadas); as miniaturas da grade ficam retas. Cada barra de atributo mostra o número (0–100). Números em `Theme.Showcase` `[PROPOSTA]`. Na grade, a luz atrás de cada arma fica na cor de identidade dela (`ItemCard.setTint`), e o cadeado com preço fica só na área da imagem, sem cobrir o nome.
 - As cartas e as skins de efeito ficam na tela de Cartas (T1).
 - Celular: mesmo layout; o painel de detalhe rola sozinho se a tela for baixa, a grade nunca.
 

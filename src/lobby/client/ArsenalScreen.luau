@@ -412,7 +412,7 @@ local function layoutGrid()
 	end
 	local width = math.floor((size.X - (COLUMNS - 1) * CARD_GAP - 2 * GROUP_GAP) / COLUMNS)
 	local height = math.floor((size.Y - #ROWS * (TITLE_HEIGHT + 4) - (#ROWS - 1) * ROW_GAP) / #ROWS)
-	height = math.clamp(height, MIN_CARD_HEIGHT, math.floor(width * 0.95))
+	height = math.clamp(height, MIN_CARD_HEIGHT, math.floor(width * 1.05))
 	for _, card in cardSizes do
 		card.Size = UDim2.fromOffset(width, height)
 	end
@@ -452,6 +452,7 @@ local function buildGrid(parent: Frame)
 				card.title.TextSize = Theme.TextSize.Label
 				local look = Theme.WeaponLook[id]
 				card.setMarker(if look then look.accent else nil)
+				card.setTint(if look then look.accent else nil)
 				local preview = WeaponPreview.new(card.content, false)
 				local skin = equippedFor(id)
 				preview.set(id, skin)
