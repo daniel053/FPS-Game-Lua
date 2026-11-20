@@ -207,6 +207,23 @@ local CombatConfig = {
 		DefaultPrimary = "weapon_rajada",
 		DefaultSecondary = "weapon_bolinha",
 	},
+
+	-- Arma na mão dos outros (jogadores e bots), vista de fora [PROPOSTA] (pedido do dono do projeto
+	-- depois da F10): o mesmo modelo da primeira pessoa preso na mão direita e os braços na pose de
+	-- mira, seguindo para onde a pessoa olha. O tiro dos outros sai da boca do cano. Ângulos em graus.
+	HeldWeapon = {
+		Scale = 1.15, -- tamanho em relação ao modelo da primeira pessoa
+		GripOffset = Vector3.new(0, -0.12, 0), -- da mão direita até a empunhadura (no quadro da mão)
+		PitchLimit = 60, -- os braços sobem e descem com o olhar até este ângulo
+		-- Pose dos braços: giro para dentro de cada ombro e dobra do cotovelo esquerdo
+		Poses = {
+			TwoHanded = { RightInward = 10, LeftInward = 40, LeftElbow = 12 }, -- fuzis, escopetas...
+			Pistol = { RightInward = 8, LeftInward = 48, LeftElbow = 18 }, -- pistola com as duas mãos
+		} :: { [string]: { RightInward: number, LeftInward: number, LeftElbow: number } },
+		-- Bastão: braço direito um pouco abaixo da linha do olhar e o taco inclinado para cima
+		MeleeArmDown = 30,
+		MeleeTilt = 65,
+	},
 }
 
 return CombatConfig

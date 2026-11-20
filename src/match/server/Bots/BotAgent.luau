@@ -155,6 +155,18 @@ local function updateSpeed(agent: Agent, now: number)
 	end
 end
 
+-- Arma na mão para os clientes (o mesmo atributo dos jogadores; combat/client/HeldWeapons desenha).
+local function publishHeld(agent: Agent)
+	local id: string? = nil
+	if agent.armed then
+		local def = currentDef(agent)
+		id = if agent.equipped == "melee" then WeaponConfig.Melee.id elseif def then def.id else nil
+	end
+	if agent.model:GetAttribute(CombatNames.Attr.Held) ~= id then
+		agent.model:SetAttribute(CombatNames.Attr.Held, id)
+	end
+end
+
 -- Visão --------------------------------------------------------------------------------------------
 
 local function smokeBetween(from: Vector3, to: Vector3): boolean
@@ -581,6 +593,7 @@ local function equip(agent: Agent, slot: string, now: number)
 	end
 	agent.equipped = slot
 	updateSpeed(agent, now)
+	publishHeld(agent)
 end
 
 local function bestGun(agent: Agent): string
@@ -793,6 +806,7 @@ function BotAgent.arm(
 	agent.goal = nil
 	agent.waypoints = nil
 	updateSpeed(agent, combatStart)
+	publishHeld(agent)
 end
 
 -- Decide (algumas vezes por segundo): o que vê, para onde anda, se usa carta.

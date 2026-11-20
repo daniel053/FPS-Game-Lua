@@ -206,10 +206,19 @@ local function onShotFx(shooter: unknown, weaponId: unknown, origin: unknown, en
 		return
 	end
 	local from = origin :: Vector3
-	-- O rastro sai um pouco à frente e à direita da cabeça (perto da arma).
+	-- O rastro sai da boca do cano da arma na mão (HeldWeapons), com o clarão; sem a arma desenhada,
+	-- um pouco à frente e à direita da cabeça.
 	if typeof(shooter) == "Instance" and (shooter :: Instance):IsA("Model") then
-		local head = (shooter :: Model):FindFirstChild("Head")
-		if head and head:IsA("BasePart") then
+		local model = shooter :: Model
+		local held = model:FindFirstChild(CombatNames.HeldModelName)
+		local muzzle = held and held:FindFirstChild(CombatNames.MuzzleName, true)
+		local head = model:FindFirstChild("Head")
+		if muzzle and muzzle:IsA("Attachment") then
+			from = muzzle.WorldPosition
+			if not reduced() then
+				CombatEffects.muzzleFlash(from)
+			end
+		elseif head and head:IsA("BasePart") then
 			from = (head.CFrame * CFrame.new(0.6, -0.5, -1)).Position
 		end
 	end

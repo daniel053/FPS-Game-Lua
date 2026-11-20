@@ -12,7 +12,7 @@ Decidido pelo dono do projeto depois da F10 (antes do beta fechado). Regras de j
 
 - **Na fila:** ninguém espera mais de **35 s**. Aos 10 s de espera "entra" o primeiro bot na contagem ("Procurando partida… 2/7"), e a contagem sobe aos poucos até a sala cheia, quando a partida sai.
 - **Cada bot é uma vaga vazia.** Na fila ele só existe como número na tela. Se um jogador de verdade chegar, ele fica com a vaga; o servidor da partida só cria os bots que faltam na hora de começar (quem não chegou da fila também vira bot).
-- **Na partida:** a sala é completada até **16** (8 duplas, duelo nas 4 ilhas). Os bots parecem jogadores: nome de jogador, elo no placar, abates, corpo com cores sorteadas, sem a marca "BOT".
+- **Na partida:** a sala é completada até **16** (8 duplas, duelo nas 4 ilhas). Os bots parecem jogadores: nome de jogador, elo no placar, abates, corpo com cores sorteadas, sem a marca "BOT", arma da vez na mão e braços na pose de mira (o mesmo sistema dos jogadores, GDD 3.2).
 - **Os bots jogam como um jogador ruim** (pensando em quem joga no celular):
   - andam pelo mapa procurando o inimigo (depois de 12 s sem achar ninguém, vão atrás dele, como quem ouve os tiros), voltam para dentro da zona, pulam quando travam;
   - veem com campo de visão (parede e Nuvem escondem); percebem quem atira neles;
@@ -94,6 +94,7 @@ Faça depois de desligar e ver que o jogo vai bem sem eles. Ordem:
 | `src/shared/Config/Strings.luau` | `Strings.Bots` e `Rewards.Casual` |
 | `src/shared/Config/Theme.luau` | `Theme.Bots` |
 
+   - **Não remover** a arma na mão (`combat/client/HeldWeapons`, atributo `HeldWeapon`, `CombatConfig.HeldWeapon`): ela é dos jogadores também. Só o `publishHeld` do `BotAgent` sai junto com a pasta dos bots.
 4. **Documentos:** apagar este arquivo (`docs/BOTS.md`), a linha dele no `CLAUDE.md` ("Leia antes de qualquer tarefa") e no `docs/FASES.md` (seção "Bots de preenchimento" e a linha da tabela de pendências); no `GDD.md`, voltar as seções 4.2, 6.2 e 9.2 para "sem bot" e marcar a decisão técnica "Bots de preenchimento" como removida.
 5. **Conferir:** `powershell -ExecutionPolicy Bypass -File scripts/check.ps1` sem erro novo, `grep -rn "\[BOTS\]\|BotConfig\|BotService\|BotRules" src` vazio, testes automáticos passando (`require(game.ServerStorage.Tests.Runner).run()`), e uma partida de teste com 4 contas.
 

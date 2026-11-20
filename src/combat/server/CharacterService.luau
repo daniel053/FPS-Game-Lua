@@ -347,6 +347,8 @@ function CharacterService.spawnBot(
 	humanoid.BreakJointsOnDeath = false
 	if free then
 		setupHumanoid(humanoid) -- mesma velocidade e pulo de um jogador
+		-- Chega inteiro aos clientes (com StreamingEnabled), como o personagem de um jogador
+		model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
 	end
 	root.Anchored = not free
 	local feetToRoot = humanoid.HipHeight + root.Size.Y / 2

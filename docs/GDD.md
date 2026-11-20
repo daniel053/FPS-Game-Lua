@@ -144,6 +144,7 @@ Este documento é a fonte da verdade do jogo. Ele é escrito para ser lido por q
 - Jogadores de teste e avatares que não carregam usam o corpo base de blocos.
 - Risco aceito: roupas vermelhas do avatar não podem ser controladas pelo jogo; o contorno e a barra do inimigo (seção 7.6) continuam sendo a identificação principal.
 - Hitbox: cápsula única, igual para todos. Não existe região de cabeça com dano extra. `[DECIDIDO]`
+- **Arma na mão, vista pelos outros** `[DECIDIDO]` (dono do projeto, depois da F10; ângulos e tamanho `[PROPOSTA]` em `CombatConfig.HeldWeapon`): todo combatente (jogador ou bot) aparece com a arma que está segurando na mão direita — o mesmo modelo da primeira pessoa —, braços na pose de mira (duas mãos nas armas de fogo, uma no Bastão) acompanhando para onde ele olha. Trocar de arma (primária, pistola, Bastão) troca o modelo. O tiro dos outros sai da boca do cano, com o clarão. Sem arma (preparação, mirante), braços normais.
 
 ### 3.3 Cor da equipe `[DECIDIDO]`
 
@@ -1428,3 +1429,13 @@ Detalhes de implementação decididos durante o desenvolvimento (não são regra
 | **Placar e telas:** `MemberView` do bot vai com `isBot = not Disguise`, `rankTier` (sorteado de `DisplayTiers`) e `kills` (contados pelo `BotService`); UserId de mentira negativo (`-1001`…), que mostra a inicial no lugar da foto. Parceiro bot não é "parceiro" para o bônus de mesmo parceiro nem para "seguir juntos". | Para quem joga, o bot parece um jogador (pedido do dono), sem usar foto ou conta de ninguém. |
 | **Elo parado com bot:** `MatchRewards.begin(..., casual)` não chama `RankService.applyMatch` (nem conta partida ranqueada); `RewardsData.casual` faz a tela final mostrar `Strings.Rewards.Casual`. | Decisão do dono do projeto: moedas normais, elo parado (evita elo inflado por vitórias fáceis). |
 | **Duelo só de bots é jogado de verdade** (o sorteio de resultado dos jogadores de teste vale só para eles), com `VsBotErrorMultiplier` e `VsBotDamageMultiplier` para acabar mais rápido. | Quem está no mirante assiste a duelos de verdade nas 4 ilhas. |
+
+### Pós-F10 · Arma na mão dos outros
+
+| Decisão | Por quê |
+|---|---|
+| **O servidor só diz qual arma cada um segura** (atributo `HeldWeapon` no corpo, `CombatNames.Attr.Held`): `CombatService` grava ao armar, ao trocar de arma e ao desarmar (nil); o bot grava o mesmo atributo (`BotAgent`). Cada cliente desenha (`combat/client/HeldWeapons`). | Só visual: nada de peça nova no servidor nem na rede além de uma string por troca de arma. Vale para jogadores e bots (o bot continua parecendo um jogador) e fica no jogo quando os bots saírem. |
+| **Modelo:** o mesmo da primeira pessoa (`WeaponShapes.forId`, sem as mãos), `CombatConfig.HeldWeapon.Scale` maior, peças soldadas à mão direita, sem física, sem colisão e fora dos raios (`CanQuery = false`, grupo do corpo). `WeaponShapes.Shape` ganhou `grip` (empunhadura). Skin: cores padrão por enquanto (o servidor não conhece a skin equipada). | Um modelo só por arma; tiros, visão e contornos continuam iguais. |
+| **Pose:** a cada quadro, depois das animações (`RunService.PreSimulation`), o cliente escreve o `Transform` dos ombros, cotovelos e pulsos: braço para a frente (+90° em X) mais o ângulo do olhar (`LookDir`, até `PitchLimit`), braços puxados para dentro (`Poses`); pernas continuam com a animação de andar. Aceita juntas `Motor6D` e `AnimationConstraint` (os corpos novos do Roblox, inclusive os dos bots, usam a segunda). | Mira legível de longe, sem animação enviada ao Roblox. |
+| **StreamingEnabled:** o cliente procura as juntas de novo quando o braço chega e refaz a arma se a mão sair de perto; o corpo do bot é `ModelStreamingMode.Atomic`. | Sem isso, corpos que chegavam aos pedaços ficavam com a arma mas sem a pose. |
+| **Tiro dos outros:** o rastro e o som saem do ponto `Muzzle` da arma desenhada, com o clarão (`CombatEffects.muzzleFlash`, menos com "reduzir efeitos"); sem arma desenhada, do lado da cabeça como antes. O raio que decide o acerto continua saindo da cabeça. | O tiro parecia sair do peito. |

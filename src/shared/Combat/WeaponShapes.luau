@@ -27,6 +27,7 @@ export type Shape = {
 	parts: { PartSpec },
 	muzzle: Vector3,
 	leftHand: Vector3?, -- nil = uma mão só
+	grip: Vector3, -- empunhadura (mão direita), para a arma na mão dos outros (HeldWeapons)
 }
 
 local WeaponShapes = {}
@@ -196,7 +197,7 @@ local function withHands(built: WeaponModels.Built, withArms: boolean, gripFrame
 			forearm(parts, leftHand(parts, left), LEFT_ELBOW)
 		end
 	end
-	return { parts = parts, muzzle = built.muzzle, leftHand = built.leftHand }
+	return { parts = parts, muzzle = built.muzzle, leftHand = built.leftHand, grip = built.grip }
 end
 
 -- Arma de fogo. `id` escolhe o modelo e as cores; sem id (ou sem modelo), a forma da categoria.

@@ -13,7 +13,14 @@ return {
 		Alive = "Alive",
 		DisplayName = "CombatName",
 		Kills = "Kills", -- no Player: abates na partida (aviso "N KILL")
+		-- ID da arma na mão agora (WeaponConfig, ou o Bastão); nil = sem arma. Os outros clientes
+		-- desenham a arma na mão e a pose de mira (combat/client/HeldWeapons).
+		Held = "HeldWeapon",
 	},
+
+	-- Nome do modelo da arma na mão, dentro do personagem (só no cliente) e do ponto da boca do cano
+	HeldModelName = "HeldWeapon",
+	MuzzleName = "Muzzle",
 
 	-- Dupla dos alvos da arena de teste: inimigos de todos.
 	DummyTeam = "Alvo",

@@ -144,6 +144,24 @@ local function updateWalkSpeed(player: Player, pc: PlayerCombat)
 	humanoid.WalkSpeed = WeaponMath.walkSpeed(if state then state.def else nil, scoped, false) * multiplier
 end
 
+-- Arma na mão para os outros clientes (atributo no personagem; combat/client/HeldWeapons desenha).
+local function publishHeld(player: Player, pc: PlayerCombat?)
+	local character = player.Character
+	if character == nil then
+		return
+	end
+	local id: string? = nil
+	if pc then
+		id = if pc.equipped == "primary"
+			then pc.loadout.primary
+			elseif pc.equipped == "secondary" then pc.loadout.secondary
+			else pc.loadout.melee
+	end
+	if character:GetAttribute(CombatNames.Attr.Held) ~= id then
+		character:SetAttribute(CombatNames.Attr.Held, id)
+	end
+end
+
 -- Deixa o jogador mais lento por `seconds` (ex.: Tremor: 50% = percent 0.5). Só no combate.
 function CombatService.applySlow(player: Player, percent: number, seconds: number)
 	local pc = players[player]
@@ -171,6 +189,7 @@ function CombatService.setLoadout(player: Player, primary: string?, secondary: s
 	players[player] = pc
 	sendLoadout(player, pc)
 	updateWalkSpeed(player, pc)
+	publishHeld(player, pc)
 end
 
 -- Sem armas (mirante, preparação): o servidor recusa qualquer ação e o cliente esconde a arma.
@@ -178,6 +197,7 @@ function CombatService.disarm(player: Player)
 	players[player] = nil
 	slows[player] = nil
 	combatEvent:FireClient(player, "Disarm", nil)
+	publishHeld(player, nil)
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	if humanoid then
@@ -218,6 +238,7 @@ function CombatService.devSetWeapon(player: Player, weaponId: string): boolean
 	players[player] = newPc
 	sendLoadout(player, newPc)
 	updateWalkSpeed(player, newPc)
+	publishHeld(player, newPc)
 	return true
 end
 
@@ -522,6 +543,7 @@ local function onAction(player: Player, action: unknown, t: unknown, arg: unknow
 			WeaponState.equip(state, at)
 		end
 		updateWalkSpeed(player, pc)
+		publishHeld(player, pc)
 		emitWeapon(player, "Equip", slot)
 	elseif action == "Reload" then
 		local state = pc.guns[pc.equipped]
@@ -564,6 +586,7 @@ function CombatService.Start()
 		players[player] = pc
 		sendLoadout(player, pc)
 		updateWalkSpeed(player, pc)
+		publishHeld(player, pc)
 	end)
 
 	-- Abates: aviso "N KILL" para quem derrubou e poeira para todos.
