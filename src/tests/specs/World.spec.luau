@@ -116,6 +116,37 @@ return function(t: any)
 		end
 	end)
 
+	t.test("parede invisível da base: fecha a passagem e as muretas, e quem nasce fica dentro", function()
+		local barrier = MapConfig.BaseBarrier
+		t.ok(barrier.Height > CharacterConfig.Movement.JumpHeight * 2, "não dá para pular por cima")
+		t.ok(barrier.FullDistance < barrier.ShowDistance, "o vidro aparece antes de encostar")
+		for i = 1, 4 do
+			for side = 1, 2 do
+				local base = WorldLayout.baseFrame(i, side)
+				local panels = WorldLayout.basePanels(i, side)
+				t.eq(#panels, 6, `ilha {i} lado {side}: passagem, fundo, 2 lados e 2 em cima das paredes`)
+				-- A passagem (no meio da frente, virada para a área de duelo) tem vidro e cobre a porta toda
+				local door = panels[1]
+				local local0 = base:PointToObjectSpace(door.cframe.Position)
+				t.ok(local0.X < 0 and math.abs(local0.Z) < 0.01, "painel da passagem na frente, no meio")
+				t.ok(door.glass and door.size.X >= WORLD.BaseDoorWidth, "vidro na passagem inteira")
+				-- Os painéis ficam dentro da base e não atravessam a área de duelo
+				for _, panel in panels do
+					t.ok(WorldLayout.insideBase(i, side, panel.cframe.Position, 0), "painel dentro da base")
+					t.ok(panel.size.Z <= 1, "painel fino")
+				end
+				for slot = 1, 2 do
+					local spawn = WorldLayout.baseSpawn(i, side, slot).Position
+					t.ok(WorldLayout.insideBase(i, side, spawn, 0), "nasce dentro da parede")
+					t.ok(not WorldLayout.insideBase(i, 3 - side, spawn, 3), "fora da base do outro time")
+				end
+				-- Um passo para dentro da área de duelo já é fora da base
+				local outside = base * Vector3.new(-WORLD.BaseSize.X / 2 - 4, 3, 0)
+				t.ok(not WorldLayout.insideBase(i, side, outside, 3), "a área de duelo fica fora")
+			end
+		end
+	end)
+
 	t.test("ilhas não se encostam nem ficam embaixo do mirante", function()
 		local apothem = WorldLayout.miranteApothem()
 		for i = 1, 4 do

@@ -198,7 +198,7 @@ Proibido em todo o resto: fundos, textos, ícones, barras, botões comuns, HUD.
 **Função:** no começo de cada rodada, escolher carta (só na 1ª rodada) e armas. Regras: GDD seção 4.10.
 
 **Decisões visuais** `[DECIDIDO]`:
-- É um **modal sobre o jogo**. O jogador já está no mapa, na base, congelado. O mapa aparece atrás, escurecido (`bg.overlay`), **nunca** um fundo preto de tela separada.
+- É um **modal sobre o jogo**. O jogador já está no mapa, na base, livre para andar dentro dela (parede invisível na passagem; ver GDD 4.10). O mapa aparece atrás, escurecido (`bg.overlay`), **nunca** um fundo preto de tela separada.
 - **Uma janela só** para carta e arma.
 - Cada arma aparece **uma vez**. Sem imagem grande repetida da arma selecionada.
 

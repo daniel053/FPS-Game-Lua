@@ -41,6 +41,7 @@ local CharacterService = require(script.Parent.Parent.Combat.CharacterService)
 local CombatService = require(script.Parent.Parent.Combat.CombatService)
 local Combatants = require(script.Parent.Parent.Combat.Combatants)
 local LobbyReturn = require(script.Parent.LobbyReturn)
+local BaseBarriers = require(script.Parent.BaseBarriers)
 local MatchRewards = require(script.Parent.MatchRewards)
 local MatchWorld = require(script.Parent.MatchWorld)
 local ShieldPoints = require(script.Parent.ShieldPoints)
@@ -237,6 +238,8 @@ end
 
 local function setPhase(newPhase: Phase, seconds: number?)
 	phase = newPhase
+	-- Parede invisível das bases: de pé do sorteio (quando todos vão para a base) até o combate
+	BaseBarriers.setActive(newPhase == "Draw" or newPhase == "Prep")
 	endsAt = if seconds then serverNow() + seconds else nil
 	publish()
 end
@@ -301,9 +304,30 @@ local function toBase(member: Member, island: number, side: number, slot: number
 	local character = CharacterService.place(player, spawn, { teamId = teamId, island = island, protectSeconds = 0 })
 	if character == nil then
 		member.alive = false
-	elseif phase == "Draw" or phase == "Prep" then
-		CharacterService.setFrozen(character, true) -- solta no começo do combate
 	end
+	-- Na preparação anda livre: a parede invisível da base (BaseBarriers) segura até o combate
+end
+
+-- Preparação: quem passou da parede da base (trapaça, ou empurrado para fora) volta para o ponto de
+-- nascer. A parede é a regra para quem joga normal; isto é só a conferência do servidor.
+local function keepInBases(): boolean
+	local margin = MapConfig.BaseBarrier.GuardMargin
+	for _, m in members do
+		local player, island = m.player, m.island
+		if not (m.inDuel and m.alive and island and player and not m.isBot) then
+			continue
+		end
+		local character = player.Character
+		local root = if character then character:FindFirstChild("HumanoidRootPart") else nil
+		if not (character and root and root:IsA("BasePart")) then
+			continue
+		end
+		if not WorldLayout.insideBase(island, m.side, root.Position, margin) then
+			character:PivotTo(WorldLayout.baseSpawn(island, m.side, m.slot))
+			root.AssemblyLinearVelocity = Vector3.zero
+		end
+	end
+	return false
 end
 
 -- Duplas -----------------------------------------------------------------------------------------
@@ -789,9 +813,6 @@ local function closePrepAndArm(round: number)
 		sendTo(m, "PrepClose", nil)
 		CombatService.setLoadout(player, primary, secondary)
 		CardService.arm(player, m.card, CardRules.ultOf(ownedCards(m)), round)
-		if player.Character then
-			CharacterService.setFrozen(player.Character, false)
-		end
 		ActivityService.reset(player)
 		m.afkWarned = false
 		-- Memória do perfil para "Repetir última" e para a próxima partida (DADOS 3.1)
@@ -922,7 +943,7 @@ local function playRound()
 	end
 	task.wait(0.5) -- personagens novos sendo criados
 
-	-- PREPARACAO: congelado na base, modal de armas (e da carta, na 1ª preparação de cada um)
+	-- PREPARACAO: livre dentro da base (parede invisível), modal de armas (e da carta, na 1ª preparação de cada um)
 	local anyCardStep = false
 	for _, m in members do
 		if m.inDuel and hasCardStep(m, roundPlan.round) then
@@ -934,7 +955,7 @@ local function playRound()
 		else MatchConfig.PrepTimeOtherRounds
 	setPhase("Prep", prepSeconds)
 	openPrep(roundPlan.round, prepSeconds)
-	waitPhase()
+	waitPhase(keepInBases)
 	if abortRequested then
 		abortRound()
 		return
@@ -1709,6 +1730,7 @@ function MatchService.Init()
 	matchEvent = Remotes.event("MatchEvent")
 	requestEvent = Remotes.event("MatchRequest")
 	MatchWorld.build()
+	BaseBarriers.build()
 end
 
 function MatchService.Start()

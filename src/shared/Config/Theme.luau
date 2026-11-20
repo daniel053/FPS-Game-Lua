@@ -141,6 +141,10 @@ local Theme = {
 		ShieldPadRim = hex("#4A5368"),
 		IslandLabel = hex("#4A5068"),
 		Zone = hex("#8B5CF6"), -- parede da zona: roxo do acento, bem transparente
+		-- Parede invisível da base na preparação: vidro azul-escuro e linhas de neon azul, leves
+		-- (pedido do dono do projeto; azul, nunca vermelho, que é a cor do inimigo)
+		BaseBarrierGlass = hex("#1E3A8A"),
+		BaseBarrierLine = hex("#5B8CFF"),
 		Virada = hex("#F5B700"), -- selo e avisos da Rodada da Virada
 		Final = hex("#A970FF"),
 		LifeLost = hex("#5A6280"),

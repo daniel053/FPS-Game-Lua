@@ -81,6 +81,58 @@ function WorldLayout.baseSpawn(island: number, side: number, slot: number): CFra
 	return CFrame.lookAt(position, target)
 end
 
+-- Quadro da base: no centro do chão da base, com o eixo X local apontando para fora da ilha (a frente,
+-- com a passagem, fica em x = -BaseSize.X / 2; o fundo em +BaseSize.X / 2).
+function WorldLayout.baseFrame(island: number, side: number): CFrame
+	local frame = WorldLayout.islandFrame(island)
+	if side == 1 then
+		frame = frame * CFrame.Angles(0, math.pi, 0)
+	end
+	return frame * CFrame.new(WORLD.BodySize.X / 2 + WORLD.BaseSize.X / 2, 0, 0)
+end
+
+-- Um painel da parede invisível da base: fino no eixo Z local; `glass` = mostra o vidro ao chegar perto.
+export type BarrierPanel = { cframe: CFrame, size: Vector3, glass: boolean }
+
+-- Painéis da parede invisível em volta da base (MapConfig.BaseBarrier): na passagem (com vidro), em
+-- cima das duas paredes da frente (só colisão, a parede de verdade já mostra o limite) e por dentro
+-- das muretas dos lados e do fundo (com vidro).
+function WorldLayout.basePanels(island: number, side: number): { BarrierPanel }
+	local base = WorldLayout.baseFrame(island, side)
+	local height = MapConfig.BaseBarrier.Height
+	local half = WORLD.BaseSize.X / 2
+	local hz = WORLD.BaseSize.Y / 2
+	local door = WORLD.BaseDoorWidth / 2
+	local frontX = -half + 1.25 -- logo depois da face de dentro da parede da frente (1,5 de espessura)
+	local backX = half - 1 -- logo antes da mureta do fundo (1 de espessura)
+	local sideZ = hz - 1
+	local y = height / 2
+	local across = CFrame.Angles(0, math.pi / 2, 0) -- painel de frente para o eixo X
+	local panels: { BarrierPanel } = {
+		{ cframe = base * CFrame.new(frontX, y, 0) * across, size = Vector3.new(door * 2, height, 1), glass = true },
+		{ cframe = base * CFrame.new(backX, y, 0) * across, size = Vector3.new(hz * 2, height, 1), glass = true },
+	}
+	for _, sign in { -1, 1 } do
+		table.insert(panels, {
+			cframe = base * CFrame.new(frontX, y, sign * (door + hz) / 2) * across,
+			size = Vector3.new(hz - door, height, 1),
+			glass = false,
+		})
+		table.insert(panels, {
+			cframe = base * CFrame.new((frontX + backX) / 2, y, sign * sideZ),
+			size = Vector3.new(backX - frontX, height, 1),
+			glass = true,
+		})
+	end
+	return panels
+end
+
+-- Está dentro da base (no chão, por X e Z), com `margin` studs de folga para fora?
+function WorldLayout.insideBase(island: number, side: number, position: Vector3, margin: number): boolean
+	local p = WorldLayout.baseFrame(island, side):PointToObjectSpace(position)
+	return math.abs(p.X) <= WORLD.BaseSize.X / 2 + margin and math.abs(p.Z) <= WORLD.BaseSize.Y / 2 + margin
+end
+
 -- Raio da zona no começo: cobre a ilha inteira (com as bases) com folga.
 function WorldLayout.zoneStartRadius(): number
 	local half = Vector2.new(WorldLayout.islandHalfLength(), WORLD.BodySize.Y / 2)

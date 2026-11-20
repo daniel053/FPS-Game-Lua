@@ -86,6 +86,24 @@ local MapConfig = {
 		MiranteBarrierHeight = 14, -- barreira invisível nas bordas
 	},
 
+	-- Parede invisível da base na preparação [DECIDIDO] pelo dono do projeto: em vez de ficar travado,
+	-- o jogador anda livre dentro da base e não sai até o combate começar. Chegando perto, aparece um
+	-- vidro azul-escuro com linhas de neon leves passando. Números [PROPOSTA].
+	BaseBarrier = {
+		Height = 16, -- do chão da base para cima (o pulo padrão sobe 7,2)
+		ShowDistance = 7, -- o vidro começa a aparecer a esta distância (studs)
+		FullDistance = 1.5, -- e fica no máximo daqui para dentro
+		GlassOpacity = 0.16, -- fundo do vidro no máximo (0 = invisível, 1 = opaco)
+		LineOpacity = 0.45, -- linhas finas no máximo
+		SweepOpacity = 0.7, -- faixa clara que sobe de tempos em tempos
+		EdgeOpacity = 0.55, -- contorno do painel
+		LineSpacing = 1.25, -- studs entre as linhas
+		LineSpeed = 0.5, -- studs por segundo, subindo
+		SweepEvery = 3, -- segundos entre uma faixa clara e a próxima
+		PixelsPerStud = 16,
+		GuardMargin = 3, -- servidor: quem passar disso para fora da base (trapaça) volta para o ponto de nascer
+	},
+
 	-- Desempenho (GDD 13.2) [PROPOSTA] (F10): versão leve dos mapas. As peças de acabamento pequenas
 	-- (maior face menor que DetailMinFace studs²) somem na tela de quem está no gráfico baixo do Roblox
 	-- (nível 1 a LightQualityMax) ou, no gráfico automático, quando a média fica abaixo de LowFps por
