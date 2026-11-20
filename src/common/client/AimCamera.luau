@@ -19,7 +19,7 @@ local PlayerDataClient = require(script.Parent.PlayerDataClient)
 
 local MAX_PITCH = math.rad(CharacterConfig.Camera.MaxPitchDegrees)
 local JUMP_RESET = math.rad(100) -- giro maior que isto num quadro = teleporte/troca de câmera, não do jogador
-local ZOOM_SECONDS = 0.12
+local ZOOM_TWEEN = TweenInfo.new(CharacterConfig.Camera.ZoomSeconds, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
 local AimCamera = {}
 
@@ -28,6 +28,7 @@ local lastYaw, lastPitch = 0, 0
 local pendingYaw, pendingPitch = 0, 0
 local lastInputRotation = 0 -- radianos girados pelo jogador no último quadro
 local scoped = false
+local ads = false -- mira (ADS) das armas sem luneta: multiplicador próprio da config
 local frictionProvider: (() -> number)? = nil
 local zoomFov: number? = nil
 local fovTween: Tween? = nil
@@ -50,6 +51,8 @@ function AimCamera.getSensitivity(): number
 	local value = if device == "Touch" then s.touch elseif device == "Gamepad" then s.gamepad else s.mouse
 	if scoped then
 		value *= s.scopedMultiplier
+	elseif ads then
+		value *= CharacterConfig.Camera.AdsSensitivityMultiplier
 	end
 	return value
 end
@@ -70,6 +73,11 @@ function AimCamera.setScoped(on: boolean)
 	scoped = on
 end
 
+-- Mira (ADS) das armas sem luneta: sensibilidade reduzida (o campo de visão vem por setZoom).
+function AimCamera.setAds(on: boolean)
+	ads = on
+end
+
 -- Campo de visão da mira (nil = padrão).
 function AimCamera.setZoom(fov: number?)
 	if zoomFov == fov then
@@ -84,7 +92,7 @@ function AimCamera.setZoom(fov: number?)
 		fovTween:Cancel()
 	end
 	local target = fov or CharacterConfig.Camera.FieldOfView
-	local tween = TweenService:Create(camera, TweenInfo.new(ZOOM_SECONDS), { FieldOfView = target })
+	local tween = TweenService:Create(camera, ZOOM_TWEEN, { FieldOfView = target })
 	fovTween = tween
 	tween:Play()
 end

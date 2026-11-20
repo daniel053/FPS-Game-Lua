@@ -64,6 +64,7 @@ export type KillData = {
 	shots: number, -- tiros que acertaram nesse tempo
 }
 
-export type KnockedData = { position: Vector3 }
+-- `teamId` e `island` (minimapa: "X" na cor de aliado ou de inimigo, só na ilha onde aconteceu).
+export type KnockedData = { position: Vector3, teamId: string, island: number? }
 
 return {}

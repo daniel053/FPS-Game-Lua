@@ -52,6 +52,7 @@ return function(t: any)
 				crosshair = { color = "vermelho", size = 50, gap = 2.6 },
 				uiScale = 2,
 				enemyOutlineColor = "blue",
+				minimapSize = 3,
 				audio = { master = 3 },
 			},
 		}
@@ -63,6 +64,7 @@ return function(t: any)
 		t.eq(p.settings.crosshair.gap, 3)
 		t.eq(p.settings.uiScale, 1.0)
 		t.eq(p.settings.enemyOutlineColor, "red")
+		t.eq(p.settings.minimapSize, "medium")
 		t.eq(p.settings.audio.master, 1)
 	end)
 

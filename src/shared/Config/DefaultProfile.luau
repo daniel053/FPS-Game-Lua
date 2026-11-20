@@ -74,6 +74,7 @@ function DefaultProfile.settings(): PlayerData.Settings
 		aimAssist = true,
 		enemyOutlineColor = "red",
 		uiScale = 1.0,
+		minimapSize = "medium",
 		reduceEffects = false,
 		audio = { master = 1, sfx = 1, music = 0.6, voice = 1 },
 		mobileLayout = nil,

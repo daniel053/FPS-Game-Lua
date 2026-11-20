@@ -568,7 +568,8 @@ function CombatService.Start()
 
 	-- Abates: aviso "N KILL" para quem derrubou e poeira para todos.
 	Combatants.onKnocked(function(target: Combatants.Combatant, source: Combatants.DamageSource?, report)
-		local knocked: CombatTypes.KnockedData = { position = target.hitbox.Position }
+		local knocked: CombatTypes.KnockedData =
+			{ position = target.hitbox.Position, teamId = target.teamId, island = target.island }
 		combatEvent:FireAllClients("Knocked", knocked)
 
 		local killer = source and source.player

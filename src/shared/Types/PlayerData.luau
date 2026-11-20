@@ -51,6 +51,8 @@ export type MobileButtonLayout = {
 
 export type EnemyOutlineColor = "red" | "yellow" | "magenta"
 
+export type MinimapSize = "small" | "medium" | "large"
+
 export type AudioSettings = { master: number, sfx: number, music: number, voice: number } -- 0 a 1
 
 export type Settings = {
@@ -60,6 +62,7 @@ export type Settings = {
 	aimAssist: boolean, -- toque e controle
 	enemyOutlineColor: EnemyOutlineColor,
 	uiScale: number, -- 1.0, 1.15 ou 1.3
+	minimapSize: MinimapSize, -- tamanho do minimapa da partida
 	reduceEffects: boolean,
 	audio: AudioSettings,
 	mobileLayout: MobileButtonLayout?, -- nil = layout padrão

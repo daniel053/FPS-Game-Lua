@@ -17,7 +17,7 @@
 - Material liso (SmoothPlastic), **sem textura** (confirmado pelo dono do projeto na F10). Detalhes (tijolos, ferrugem, musgo, sujeira, ondulação) = peças finas ou manchas de **cor chapada**. O bloco cinza das plantas é só a etapa de aprovação: o mapa final leva todo o detalhe do kit.
 - Cenário **menos saturado** que os personagens.
 - **Proibido:** Neon, PointLight/SurfaceLight coloridos, partículas decorativas, vermelho puro (cor do inimigo), sangue, logotipos e texto escrito em objetos.
-- **Exceção de luz no Porto** `[DECIDIDO]` (dono do projeto, passada de detalhe depois da F10): até **8 PointLights branco-quentes**, fracas, curtas e **sem sombra**, dentro das lentes das luminárias, que **apagam na versão leve** dos mapas. Números em `MapConfig.Porto.Lights` `[PROPOSTA]`. Nenhuma outra ilha tem luz real; o resto do "efeito de luz" é pintado (lente creme clara, mancha clara no chão).
+- **Exceção de luz nas 4 ilhas** `[DECIDIDO]` (dono do projeto, passada de detalhe depois da F10; primeiro no Porto, depois estendida à Fábrica, à Praça e à Torre): até **8 PointLights por ilha**, branco-quentes (na Torre, o tom quente de chama), fracas, curtas e **sem sombra**, dentro das lentes das luminárias (ou da chama das tochas), que **apagam na versão leve** dos mapas. Números em `MapConfig.SceneLights` (um bloco só para as 4 ilhas) `[PROPOSTA]`. O resto do "efeito de luz" é pintado (lente creme clara, mancha clara no chão). Lobby e mirante continuam sem luz real.
 - Personagem = 5 studs. **Cobertura cheia ≥ 6 studs**; **meia altura = 3 studs**; cobertura a cada ~10 studs nas rotas.
 - Corredores com no mínimo 8 studs de largura; portas e passagens com no mínimo 4 (ideal 6).
 - Telhados e coberturas de áreas fechadas ficam transparentes **só para quem está no mirante** (GDD 6.5).
@@ -210,6 +210,13 @@ Prancha: `docs/referencias/visuais/kit-fabrica.png`
 
 **Regra específica:** setas e faixas zebradas indicam movimento e perigo; nunca texto escrito.
 
+**Passada de detalhe da Fábrica** `[DECIDIDO]` (dono do projeto, depois da F10, mesma estratégia do Porto, seção 2): só visual, **toda peça é acabamento**; peças genéricas em `Kits/Detalhe`, cores em `Theme.Maps.Fabrica.Detalhe`.
+- **Chão:** placas do piso em outro tom, rachaduras, manchas de óleo e sombra pintada no pé da plataforma, prateleiras, máquinas, tubulações, pallets e paredes.
+- **Pintura:** faixa de pedestre **amarela** na porta da base, seta e linha tracejada brancas até a rampa, áreas hachuradas amarelas no pé da rampa (com 2 cones), ao lado da tubulação, na frente da máquina do Depósito e embaixo da passarela; anel e hachura brancos na base.
+- **Ambiente:** mato nos cantos, hera na parede de galpão e na da base, extintores e quadros elétricos nas paredes de galpão e na plataforma, pallets de madeira soltos.
+- **Luz real (4 por metade):** 2 luminárias na parede da base, 1 de teto embaixo da passarela, 1 na parede de galpão da Esteira. Só pintadas: no fundo do Depósito e na face da plataforma.
+- Peças: ~1.920 → ~2.540 (versão leve ~1.150).
+
 ## 4. Praça
 
 Prancha: `docs/referencias/visuais/kit-praca.png`
@@ -283,13 +290,20 @@ Prancha: `docs/referencias/visuais/kit-praca.png`
 ### Poste De Luz
 - **Medidas:** 0,7 × 9,8 studs
 - **Função:** Detalhe
-- Haste fina escura, luminária creme apagada.
-- Sem PointLight e sem brilho (o mapa é de dia).
+- Haste fina escura, luminária creme (sem neon).
+- Sem PointLight, a não ser os postes escolhidos para as luzes reais da passada de detalhe (seção 1).
 - A cada 12 studs nas calçadas.
 
 **Regra específica:** mapa de estreia: formas mais simples e leitura mais fácil.
 
 **Na planta aprovada (F10, GDD 15.4):** Coreto e Chafariz **não entram** (decisão do dono). Entram a **Caixa de Madeira** do kit do Porto (6 × 6 × 6, mesma madeira `#B98A5A`), o **Muro de Tijolo** em versão comprida (20 × 2 × 4) e a **passarela elevada** (nível 1, 5 studs, com rampas), que virou um componente próprio do kit (`Kits.Praca.Passarela`: piso de pedra, guarda-corpo e rampa nas duas pontas).
+
+**Passada de detalhe da Praça** `[DECIDIDO]` (dono do projeto, depois da F10, mesma estratégia do Porto): só visual, **toda peça é acabamento**; peças em `Kits/Detalhe`, cores em `Theme.Maps.Praca.Detalhe`. Na praça não há tinta de fábrica: as marcas são **pedra mais escura** embutida (sem hachura).
+- **Chão:** lajotas soltas em outro tom, rachaduras, manchas de sujeira e sombra pintada no pé do muro, das caixas, dos bancos e da parede da base.
+- **Marcas:** faixa de pedestre de pedra na porta da base e anel em volta de onde se nasce.
+- **Ambiente:** mato nos cruzamentos das juntas e no pé do muro, hera no muro e na parede da base, floreiras de terracota na porta da base, lixeiras verde-petróleo ao lado dos bancos.
+- **Luz real (4 por metade):** 2 luminárias na parede da base e 2 postes de luz da praça (o do canto da borda de baixo e o da borda do meio), cada um com a mancha de luz no chão.
+- Peças: ~1.270 → ~1.730 (versão leve ~790).
 
 ## 5. Torre
 
@@ -353,11 +367,11 @@ Prancha: `docs/referencias/visuais/kit-torre.png`
 - Nunca na cor de uma equipe, para não confundir.
 - Marca as bases e o Topo da Torre.
 
-### Tocha (Sem Brilho)
+### Tocha
 - **Medidas:** suporte 0,6 · chama 1,1 studs
 - **Função:** Detalhe
 - Chama = duas pirâmides chapadas laranja e amarela.
-- Sem luz, sem partícula, sem neon.
+- Sem partícula e sem neon. Luz só nas tochas acesas da passada de detalhe (seção 1).
 - Em pares nas portas e na escadaria.
 
 ### Escombros
@@ -374,6 +388,13 @@ Prancha: `docs/referencias/visuais/kit-torre.png`
 - **Porta em Arco na planta:** passagem aberta, com as duas folhas de tábuas abertas e encostadas na parede (do lado oposto às tochas) e os cantos do arco em cunha. A colisão continua um vão reto de 4 × 6,5.
 - **Ponte:** uma só, de 47 × 5, atravessando o vão; frestas entre as tábuas e uma corrente de cada poste até a beira.
 - **Chão:** lajes na cabeça da Ponte e manchas de musgo rentes ao chão (só pintura).
+
+**Passada de detalhe da Torre** `[DECIDIDO]` (dono do projeto, depois da F10, mesma estratégia do Porto): só visual, **toda peça é acabamento**; peças em `Kits/Detalhe`, cores em `Theme.Maps.Torre.Detalhe`. Castelo: **sem tinta, sem hachura e sem itens modernos** (extintor, cone, quadro).
+- **Chão:** lajes soltas fazendo caminho da porta da base até o portão e até o Pátio, mais musgo, pedrinhas soltas e sombra pintada no pé dos muros, tocos, portas e escombros.
+- **Base:** anel de pedra clara em volta de onde se nasce.
+- **Ambiente:** muito mato (pé dos muros, cantos, frestas) e hera no muro do portão, no toco do Pátio e na parede da base.
+- **Luz real (4 por metade):** as 2 tochas do portão (agora acesas) e 2 tochas novas na parede da base, em tom de chama (`LuzQuente` da Torre), com clarão pintado no chão. As tochas da sacada continuam só pintadas.
+- Peças: ~1.150 → ~1.680 (versão leve ~920).
 
 **Regra específica:** toda altura nova precisa de uma subida sem carta (escada ou rampa).
 

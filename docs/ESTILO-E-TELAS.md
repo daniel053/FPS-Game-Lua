@@ -327,7 +327,7 @@ posicionado no canto inferior esquerdo, logo acima das barras de escudo e vida, 
 
 Elementos:
 - **Topo centro:** as duas duplas (2 avatares de cada lado, com a cor da equipe), vidas de cada dupla em corações, tempo da rodada no meio. Na Rodada da Virada, o tempo ganha um selo "VIRADA".
-- **Topo direito:** minimapa redondo com o mapa da ilha atual, a posição do jogador e do parceiro (inimigos só aparecem quando vistos ou marcados por ping).
+- **Topo direito:** minimapa redondo com o mapa da ilha atual, a posição do jogador (seta branca) e do parceiro (seta verde na direção dele); inimigos só aparecem quando vistos ou marcados por ping. Onde alguém foi derrubado aparece um **X** (verde = aliado, cor de contorno do inimigo = inimigo) que some em 8 s, no máximo 6 de cada vez, limpo a cada rodada. Tamanho Pequeno / Médio / Grande nas configurações (Acessibilidade), salvo no perfil. `[DECIDIDO]` (pedido do dono depois da F10; números `[PROPOSTA]` em `UiConfig.Minimap`)
 - **Topo esquerdo (celular):** engrenagem de configurações, botão PLACAR e, embaixo, a linha **PING · FRASES · EMOTES** (F8; PING só na ilha, EMOTES só no mirante e no fim da rodada; posição editável). `[DECIDIDO]`
 - **PC (F8):** uma segunda linha de dicas acima de [B] [P] [Tab]: **[Z] Ping · [V] Frases · [G] Emotes**. `[DECIDIDO]`
 - **Pings no mundo (F8):** ícone + nome curto + distância, sempre por cima, na cor do ping ("Inimigo aqui" na cor de contorno do inimigo escolhida pelo jogador). Rodas de ping, frases e emotes: opções em volta do centro, sem fundo opaco. `[DECIDIDO]`

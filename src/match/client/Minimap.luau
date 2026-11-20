@@ -3,8 +3,11 @@
 --   * a ilha vista de cima, norte para cima (não gira), com as construções desenhadas a partir das
 --     peças do mapa (serve para as ilhas cinza e para os mapas finais da F10);
 --   * a zona (círculo roxo) quando começa a fechar;
---   * você (seta na direção da câmera), o parceiro (ponto verde) e os inimigos só quando vistos
---     (contorno ligado), que continuam por um instante depois de sumir.
+--   * você (seta branca na direção da câmera), o parceiro (seta verde na direção dele) e os inimigos só
+--     quando vistos (contorno ligado), que continuam por um instante depois de sumir;
+--   * "X" onde alguém foi derrubado nesta ilha: verde = aliado, cor de inimigo = inimigo; some aos poucos,
+--     no máximo alguns de cada vez, e limpa a cada rodada;
+--   * tamanho escolhido nas configurações (settings.minimapSize), aplicado na hora;
 --   * os pings da dupla (F8): ícone na cor do ping, até expirar (Minimap.addPing).
 -- Sem neon.
 
@@ -14,8 +17,10 @@ local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage.Shared
 local CombatNames = require(Shared.Combat.CombatNames)
+local CombatTypes = require(Shared.Combat.CombatTypes)
 local CombatConfig = require(Shared.Config.CombatConfig)
 local MatchTypes = require(Shared.Match.MatchTypes)
+local Remotes = require(Shared.Remotes)
 local MatchConfig = require(Shared.Config.MatchConfig)
 local Theme = require(Shared.Config.Theme)
 local Ui = require(Shared.Ui.Ui)
@@ -43,7 +48,11 @@ local canvas: CanvasGroup
 local map: Frame -- área da ilha (escala de studs para pixels)
 local zoneRing: Frame
 local me: TextLabel
-local ally: Frame
+local ally: TextLabel
+local baseSize = 0 -- tamanho do minimapa no tamanho "médio" (px), conforme a tela
+local sizeChangedCallbacks: { (number) -> () } = {}
+type DeathMark = { label: TextLabel, island: number, position: Vector3, at: number }
+local deathMarks: { DeathMark } = {}
 local enemyDots: { [Model]: Frame } = {}
 local enemySeenAt: { [Model]: number } = {}
 local drawnIsland: number? = nil
@@ -185,6 +194,91 @@ function Minimap.removePing(key: string)
 	end
 end
 
+-- Marcadores de morte ---------------------------------------------------------------------------
+
+local function removeDeathMark(index: number)
+	deathMarks[index].label:Destroy()
+	table.remove(deathMarks, index)
+end
+
+local function clearDeathMarks()
+	for i = #deathMarks, 1, -1 do
+		removeDeathMark(i)
+	end
+end
+
+-- "X" no lugar onde alguém foi derrubado (nunca só a cor: a forma é o X, ESTILO 5).
+local function addDeathMark(data: CombatTypes.KnockedData)
+	if not map or data.island == nil then
+		return
+	end
+	local myTeam = MatchClient.myTeamId()
+	local isAlly = myTeam ~= nil and data.teamId == myTeam
+	while #deathMarks >= CFG.DeathMarkMax do
+		removeDeathMark(1) -- o mais antigo sai
+	end
+	local size = CFG.DeathMarkSize
+	local label = Ui.label("Death", Theme.Font.Title, size, if isAlly then COLORS.Ally else enemyColor(), map)
+	label.AnchorPoint = Vector2.new(0.5, 0.5)
+	label.Size = UDim2.fromOffset(size, size)
+	label.Text = "✕"
+	label.ZIndex = 4 -- embaixo de você, do parceiro e dos inimigos vivos
+	Ui.outlineText(label)
+	table.insert(deathMarks, { label = label, island = data.island, position = data.position, at = os.clock() })
+end
+
+local function updateDeathMarks(island: number)
+	local now = os.clock()
+	for i = #deathMarks, 1, -1 do
+		local mark = deathMarks[i]
+		local age = now - mark.at
+		if age >= CFG.DeathMarkSeconds then
+			removeDeathMark(i)
+			continue
+		end
+		mark.label.Visible = mark.island == island
+		if mark.island == island then
+			place(mark.label, island, mark.position)
+			local fadeFrom = CFG.DeathMarkSeconds - CFG.DeathMarkFadeSeconds
+			local fade = math.clamp((age - fadeFrom) / CFG.DeathMarkFadeSeconds, 0, 1)
+			mark.label.TextTransparency = fade
+			local stroke = mark.label:FindFirstChildOfClass("UIStroke")
+			if stroke then
+				stroke.Transparency = math.max(stroke.Transparency, fade)
+			end
+		end
+	end
+end
+
+-- Tamanho ----------------------------------------------------------------------------------------
+
+local function sizeScale(): number
+	local profile = PlayerDataClient.get()
+	local id = if profile then profile.settings.minimapSize else "medium"
+	return CFG.SizeScale[id] or 1
+end
+
+-- Tamanho atual do minimapa em pixels (o topo da partida encolhe para não encostar nele).
+function Minimap.pixelSize(): number
+	local base = if baseSize > 0 then baseSize else Theme.Hud.MinimapSize -- antes de montar
+	return math.floor(base * sizeScale() + 0.5)
+end
+
+function Minimap.onSizeChanged(callback: (number) -> ())
+	table.insert(sizeChangedCallbacks, callback)
+end
+
+local function applySize()
+	local size = Minimap.pixelSize()
+	if holder.Size.X.Offset == size then
+		return
+	end
+	holder.Size = UDim2.fromOffset(size, size)
+	for _, callback in sizeChangedCallbacks do
+		task.spawn(callback, size)
+	end
+end
+
 local function updatePings(island: number)
 	local now = workspace:GetServerTimeNow()
 	for key, ping in pingDots do
@@ -208,6 +302,7 @@ local function update()
 		return
 	end
 	updatePings(island)
+	updateDeathMarks(island)
 	if drawnIsland ~= island then
 		drawIsland(island)
 	end
@@ -225,13 +320,17 @@ local function update()
 		end
 	end
 
-	-- Parceiro
+	-- Parceiro: seta verde na direção para onde ele olha (vivo e na mesma ilha)
 	local partner = MatchClient.partnerPlayer()
-	local partnerRoot = partner and partner.Character and partner.Character:FindFirstChild("HumanoidRootPart")
-	local partnerIsland = partner and partner.Character and partner.Character:GetAttribute(MatchTypes.Attr.Island)
-	ally.Visible = partnerRoot ~= nil and partnerRoot:IsA("BasePart") and partnerIsland == island
+	local partnerCharacter = partner and partner.Character
+	local partnerRoot = partnerCharacter and partnerCharacter:FindFirstChild("HumanoidRootPart")
+	local partnerIsland = partnerCharacter and partnerCharacter:GetAttribute(MatchTypes.Attr.Island)
+	local partnerAlive = partnerCharacter ~= nil and partnerCharacter:GetAttribute(CombatNames.Attr.Alive) ~= false
+	ally.Visible = partnerRoot ~= nil and partnerRoot:IsA("BasePart") and partnerIsland == island and partnerAlive
 	if partnerRoot and partnerRoot:IsA("BasePart") then
 		place(ally, island, partnerRoot.Position)
+		local look = partnerRoot.CFrame.LookVector
+		ally.Rotation = math.deg(math.atan2(look.X, -look.Z))
 	end
 
 	-- Zona
@@ -278,7 +377,8 @@ local function build()
 	gui = Ui.screen("Minimap", 3, Enum.ScreenInsets.CoreUISafeInsets)
 	local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(800, 400)
 	local small = math.min(viewport.X, viewport.Y) < CombatConfig.TouchLayout.LargeScreenMinSide
-	local size = if small then Theme.Hud.MinimapSizeSmall else Theme.Hud.MinimapSize
+	baseSize = if small then Theme.Hud.MinimapSizeSmall else Theme.Hud.MinimapSize
+	local size = Minimap.pixelSize()
 
 	holder = Ui.frame("Holder", gui)
 	holder.AnchorPoint = Vector2.new(1, 0)
@@ -286,17 +386,18 @@ local function build()
 	holder.Size = UDim2.fromOffset(size, size)
 	holder.Visible = false
 
+	-- Cantos de 999 px: o círculo continua círculo em qualquer tamanho escolhido.
 	canvas = Instance.new("CanvasGroup")
 	canvas.Name = "Circle"
 	canvas.Size = UDim2.fromScale(1, 1)
 	canvas.BackgroundColor3 = COLORS.Background
 	canvas.BackgroundTransparency = Theme.MinimapBackgroundTransparency
 	canvas.BorderSizePixel = 0
-	Ui.corner(canvas, size)
+	Ui.corner(canvas, 999)
 	canvas.Parent = holder
 	local ring = Ui.frame("Ring", holder)
 	ring.Size = UDim2.fromScale(1, 1)
-	Ui.corner(ring, size)
+	Ui.corner(ring, 999)
 	Ui.stroke(ring, Theme.Color.PanelBorder, 2)
 
 	map = Ui.frame("Map", canvas)
@@ -310,7 +411,13 @@ local function build()
 	Ui.corner(zoneRing, 999)
 	Ui.stroke(zoneRing, COLORS.Zone, 2)
 
-	ally = dot("Ally", COLORS.Ally, 9)
+	local allySize = CFG.AllyArrowSize
+	ally = Ui.label("Ally", Theme.Font.Title, allySize, COLORS.Ally, map)
+	ally.AnchorPoint = Vector2.new(0.5, 0.5)
+	ally.Size = UDim2.fromOffset(allySize, allySize)
+	ally.Text = "▲"
+	ally.ZIndex = 5
+	Ui.outlineText(ally)
 	me = Ui.label("Me", Theme.Font.Title, 14, COLORS.Me, map)
 	me.AnchorPoint = Vector2.new(0.5, 0.5)
 	me.Size = UDim2.fromOffset(14, 14)
@@ -326,10 +433,24 @@ function Minimap.Start()
 		return
 	end
 	build()
+	local lastPhase: MatchTypes.Phase? = nil
 	MatchClient.onChanged(function(snapshot: MatchTypes.Snapshot)
 		if snapshot.phase == "Draw" then
 			drawnIsland = nil -- ilha nova a cada sorteio (e o mapa pode ter sido montado de novo)
 		end
+		-- Rodada nova (preparação) ou partida acabando: os X da rodada anterior saem.
+		if snapshot.phase ~= lastPhase and snapshot.phase ~= "Combat" and snapshot.phase ~= "RoundEnd" then
+			clearDeathMarks()
+		end
+		lastPhase = snapshot.phase
+	end)
+	Remotes.event("CombatEvent").OnClientEvent:Connect(function(kind: string, data: any)
+		if kind == "Knocked" then
+			addDeathMark(data :: CombatTypes.KnockedData)
+		end
+	end)
+	PlayerDataClient.onChanged(function()
+		applySize()
 	end)
 	RunService.RenderStepped:Connect(update)
 end

@@ -10,6 +10,7 @@
 -- bloqueia tiro, e ele fica fora do minimapa.
 
 local Build = require(script.Parent.Parent.Build)
+local Detalhe = require(script.Parent.Detalhe)
 local Theme = require(script.Parent.Parent.Parent.Config.Theme)
 
 local P = Theme.Maps.Praca
@@ -471,10 +472,13 @@ function Kit.ArvoreLowPoly(parent: Instance, origin: CFrame, options: SceneryOpt
 end
 
 -- Poste De Luz ---------------------------------------------------------------------------------
--- 0,7 × 9,8. Haste fina escura e luminária creme apagada (sem luz, sem brilho). O braço aponta
--- para o +Z local. Só a haste colide (caixa de 0,5), e não bloqueia tiro: não vira cobertura.
+-- 0,7 × 9,8. Haste fina escura e luminária creme (sem neon). O braço aponta para o +Z local. Só a
+-- haste colide (caixa de 0,5), e não bloqueia tiro: não vira cobertura. Com `luzReal` (passada de
+-- detalhe), a luminária leva uma luz branco-quente fraca, sem sombra, que apaga na versão leve.
+-- A luminária fica 1,2 à frente da haste.
+Kit.Poste_Alcance = 1.2
 
-function Kit.PosteDeLuz(parent: Instance, origin: CFrame, options: SceneryOptions?): Model
+function Kit.PosteDeLuz(parent: Instance, origin: CFrame, options: SceneryOptions?, luzReal: boolean?): Model
 	local scenery = options ~= nil and options.scenery == true
 	local metal = P.Metal
 	local model = Build.model("PosteDeLuz", parent)
@@ -492,7 +496,11 @@ function Kit.PosteDeLuz(parent: Instance, origin: CFrame, options: SceneryOption
 	Build.block("Ponta", v3(0.3, 0.5, 0.3), origin * CFrame.new(0, 9.55, 0), metal, model, DETAIL)
 	Build.block("Braco", v3(0.3, 0.3, 1.6), origin * CFrame.new(0, 9.15, 0.65), metal, model, DETAIL)
 	Build.block("Chapeu", v3(1.1, 0.3, 1.1), origin * CFrame.new(0, 8.85, 1.2), metal, model, DETAIL)
-	Build.block("Luminaria", v3(0.8, 0.8, 0.8), origin * CFrame.new(0, 8.3, 1.2), P.ToldoCreme, model, DETAIL)
+	local lamp =
+		Build.block("Luminaria", v3(0.8, 0.8, 0.8), origin * CFrame.new(0, 8.3, 1.2), P.ToldoCreme, model, DETAIL)
+	if luzReal then
+		Detalhe.luz(lamp, P.Detalhe)
+	end
 	return model
 end
 

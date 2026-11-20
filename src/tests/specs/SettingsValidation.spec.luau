@@ -69,12 +69,22 @@ return function(t: any)
 		end
 	end)
 
+	t.test("tamanho do minimapa: pequeno, médio ou grande", function()
+		for _, size in { "small", "medium", "large" } do
+			local r, err = SettingsValidation.applyPatch(base(), { minimapSize = size })
+			t.eq(err, nil, size)
+			t.eq((r :: any).minimapSize, size)
+		end
+	end)
+
 	t.test("opções fechadas", function()
 		local _, err = SettingsValidation.applyPatch(base(), { uiScale = 1.2 })
 		t.eq(err, "InvalidOption")
 		_, err = SettingsValidation.applyPatch(base(), { enemyOutlineColor = "blue" })
 		t.eq(err, "InvalidOption")
 		_, err = SettingsValidation.applyPatch(base(), { crosshair = { shape = "star" } })
+		t.eq(err, "InvalidOption")
+		_, err = SettingsValidation.applyPatch(base(), { minimapSize = "huge" })
 		t.eq(err, "InvalidOption")
 	end)
 

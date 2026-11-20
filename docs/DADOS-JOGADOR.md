@@ -103,6 +103,7 @@ export type Settings = {
 	aimAssist: boolean,                -- toque e controle
 	enemyOutlineColor: "red" | "yellow" | "magenta",
 	uiScale: number,                   -- 1.0, 1.15 ou 1.3
+	minimapSize: "small" | "medium" | "large",  -- tamanho do minimapa da partida (padrão "medium")
 	reduceEffects: boolean,
 	audio: { master: number, sfx: number, music: number, voice: number },  -- 0 a 1
 	mobileLayout: MobileButtonLayout?, -- nil = layout padrão
@@ -227,6 +228,7 @@ export type Profile = {
 		aimAssist = true,
 		enemyOutlineColor = "red",
 		uiScale = 1.0,
+		minimapSize = "medium",
 		reduceEffects = false,
 		audio = { master = 1, sfx = 1, music = 0.6, voice = 1 },
 		mobileLayout = nil,

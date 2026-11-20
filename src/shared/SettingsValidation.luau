@@ -48,6 +48,7 @@ end
 
 local CROSSHAIR_SHAPES = { dot = true, cross = true, circle = true, cross_dot = true }
 local OUTLINE_COLORS = { red = true, yellow = true, magenta = true }
+local MINIMAP_SIZES = { small = true, medium = true, large = true }
 
 local function isUiScaleOption(n: number): boolean
 	for _, option in Limits.UiScaleOptions do
@@ -102,6 +103,7 @@ local TOP_RULES: { [string]: FieldRule } = {
 	aimAssist = { kind = "boolean" },
 	enemyOutlineColor = { kind = "option", options = OUTLINE_COLORS },
 	uiScale = { kind = "uiScale" },
+	minimapSize = { kind = "option", options = MINIMAP_SIZES },
 	reduceEffects = { kind = "boolean" },
 	voicePromptSeen = { kind = "boolean" },
 }

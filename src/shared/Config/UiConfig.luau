@@ -60,6 +60,15 @@ local UiConfig = {
 		Padding = 0.08, -- margem em volta da ilha (fração do mapa)
 		EnemySeenSeconds = 1.5, -- inimigo continua no mapa por este tempo depois de sumir da vista
 		RefreshSeconds = 0.1,
+		-- Tamanho escolhido nas configurações (settings.minimapSize) [PROPOSTA]
+		SizeOrder = { "small", "medium", "large" },
+		SizeScale = { small = 0.8, medium = 1, large = 1.25 } :: { [string]: number },
+		-- Marcador "X" onde alguém foi derrubado (verde = aliado, cor de inimigo = inimigo) [PROPOSTA]
+		DeathMarkSeconds = 8, -- some aos poucos no fim
+		DeathMarkFadeSeconds = 2,
+		DeathMarkMax = 6, -- passou disso, o mais antigo sai
+		DeathMarkSize = 14,
+		AllyArrowSize = 12,
 	},
 
 	-- Editor de posição e tamanho dos botões do celular (GDD 13.1 [PROPOSTA])

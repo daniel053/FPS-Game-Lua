@@ -31,6 +31,9 @@ export type Shape = {
 
 local WeaponShapes = {}
 
+-- Atributo das peças do pente no modelo montado (o ViewModel anima na recarga).
+WeaponShapes.MagAttribute = "Mag"
+
 -- Bastão na mão: inclinado (como quem segura um taco); na vitrine, deitado como as outras armas.
 local MELEE_TILT = CFrame.Angles(math.rad(62), math.rad(-8), math.rad(-12))
 
@@ -175,6 +178,8 @@ local function fallback(category: Types.WeaponCategory, c: WeaponModels.Look): W
 	table.insert(parts, box(Vector3.new(0.3, 0.4, 1.6), Vector3.new(0, 0.12, -0.45), c.body))
 	table.insert(parts, box(Vector3.new(0.12, 0.12, 0.8), Vector3.new(0, 0.2, -1.6), c.dark))
 	table.insert(parts, box(Vector3.new(0.2, 0.5, 0.24), Vector3.new(0, -0.3, -0.5), c.dark))
+	parts[#parts].mag = true -- pente
+	parts[#parts].mag = true -- pente
 	table.insert(parts, box(Vector3.new(0.2, 0.42, 0.22), grip, c.dark, tilt))
 	return { parts = parts, muzzle = Vector3.new(0, 0.2, -2.0), leftHand = Vector3.new(0, -0.05, -1.0), grip = grip }
 end
@@ -255,6 +260,9 @@ function WeaponShapes.makePart(spec: PartSpec): BasePart
 	part.CanQuery = false
 	part.CanTouch = false
 	part.CastShadow = false
+	if spec.mag then
+		part:SetAttribute(WeaponShapes.MagAttribute, true)
+	end
 	return part
 end
 

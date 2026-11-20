@@ -19,6 +19,7 @@
 -- de 140 studs de área de duelo.
 
 local Build = require(script.Parent.Parent.Build)
+local Detalhe = require(script.Parent.Parent.Kits.Detalhe)
 local IslandCommon = require(script.Parent.Parent.IslandCommon)
 local Kit = require(script.Parent.Parent.Kits.Praca)
 local MapConfig = require(script.Parent.Parent.Parent.Config.MapConfig)
@@ -76,12 +77,13 @@ local SHIELD = v2(12, 28)
 
 -- Postes e bancos dentro da área de duelo, sempre encostados na mureta (não bloqueiam tiro).
 -- `yaw`: para onde aponta o braço do poste / a frente do banco (0 = +z, 90 = +x, 180 = -z).
-local POSTS = {
+-- `luz`: o poste leva uma das luzes reais da passada de detalhe (2 por metade, mais 2 na base).
+local POSTS: { { at: Vector2, yaw: number, luz: boolean? } } = {
 	{ at = v2(6, 52.25), yaw = 180 },
-	{ at = v2(22, 52.25), yaw = 180 },
+	{ at = v2(22, 52.25), yaw = 180, luz = true },
 	{ at = v2(42, 52.25), yaw = 180 },
 	{ at = v2(0.75, 20), yaw = 90 },
-	{ at = v2(0.75, 40), yaw = 90 },
+	{ at = v2(0.75, 40), yaw = 90, luz = true },
 	{ at = v2(69.25, -25), yaw = -90 },
 	{ at = v2(69.25, 25), yaw = -90 },
 }
@@ -284,6 +286,109 @@ local function scenery(frame: CFrame, folder: Instance)
 	tree(40.5, 72.5, streetY)
 end
 
+-- Passada de detalhe (depois da F10, Kits/Detalhe): só acabamento, nada colide nem muda a planta.
+-- Posições na metade do leste; a outra é a mesma girada 180°. ------------------------------------------
+
+-- Lajotas em outro tom { x0, z0 } (cada uma ocupa uma casa de 8 entre as juntas)
+local ODD_TILES = { { 8, 16 }, { 40, 0 }, { 56, -8 }, { 24, 40 } }
+-- Rachaduras { x, z, comprimento, giro } e manchas de sujeira { x, z, diâmetro }
+local CRACKS = { { 40, 30, 3, 20 }, { 56, 18, 3, -15 }, { 22, -4, 3, 30 } }
+local DIRT = { { 50, 10, 2.6 }, { 20, 40, 2.2 }, { 60, -15, 2 }, { 9, 19, 2 } }
+-- Tufos de mato { x, z, escala }: cruzamento das juntas, pé do muro, cantos das caixas e da base
+local PLANTS = {
+	{ 16, 8, 0.8 },
+	{ 24, 32, 0.9 },
+	{ 40, 40, 0.8 },
+	{ 56, -8, 0.7 },
+	{ 48, 16, 0.8 },
+	{ 30.2, 0.5, 1 },
+	{ 32.8, 14, 0.9 },
+	{ 34.8, 23.7, 0.9 },
+	{ 27.8, 45.3, 1 },
+	{ 68.4, 20.2, 1.1 },
+	{ 8, 24, 0.7 },
+}
+local BASE_WALL_FACE = WORLD.BodySize.X / 2 - BASE_WALL.Thickness / 2 - 0.1 -- com o rodapé
+local WALL_LAMP = { Y = 5.6, Z = 10 }
+
+local function dress(frame: CFrame, folder: Instance)
+	local cores = PALETTE.Detalhe
+	local function at(x: number, z: number, yaw: number?, y: number?): CFrame
+		return Build.pivot(frame, v2(x, z), yaw, y)
+	end
+
+	-- Chão: lajotas em outro tom, rachaduras e sujeira
+	local tile = TILE.Step - TILE.Joint
+	for _, cell in ODD_TILES do
+		Detalhe.Placa(folder, at(cell[1] + TILE.Step / 2, cell[2] + TILE.Step / 2), v2(tile, tile), cores.Placa)
+	end
+	for _, crack in CRACKS do
+		Detalhe.Rachadura(folder, at(crack[1], crack[2], crack[4]), crack[3], cores)
+	end
+	for _, dirt in DIRT do
+		Detalhe.Mancha(folder, at(dirt[1], dirt[2]), dirt[3], cores)
+	end
+
+	-- Sombra pintada: muro, caixas, bancos e parede da base
+	Detalhe.Sombra(folder, at(WALL.X, (WALL.FromZ + WALL.ToZ) / 2, 90), v2(WALL.ToZ - WALL.FromZ + 1.2, 3.2), cores)
+	for _, crate in { WALL_CRATE, EDGE_CRATE } do
+		Detalhe.Sombra(folder, at(crate.X, crate.Z), v2(crate.Size + 0.8, crate.Size + 0.8), cores)
+	end
+	for _, bench in BENCHES do
+		Detalhe.Sombra(folder, at(bench.at.X, bench.at.Y, bench.yaw), v2(5.8, 2.8), cores)
+	end
+	local baseHalf = WORLD.BaseSize.Y / 2
+	local door = WORLD.BaseDoorWidth / 2
+	for _, sign in { -1, 1 } do
+		Detalhe.Sombra(
+			folder,
+			at(BASE_WALL_FACE - 0.4, sign * (door + baseHalf) / 2, 90),
+			v2(baseHalf - door, 0.8),
+			cores
+		)
+	end
+
+	-- Marcas em pedra: faixa de pedestre na porta da base e anel em volta de onde se nasce
+	Detalhe.FaixaDePedestre(folder, at(63, 0), 5, 12, cores.Pintura)
+	Detalhe.MarcaDeBase(
+		folder,
+		at(WORLD.BodySize.X / 2 + WORLD.BaseSize.X / 2, 0),
+		WORLD.BaseSize.X,
+		WORLD.BaseSize.Y,
+		cores.Pintura,
+		false
+	)
+
+	-- Ambiente: mato, hera no muro e na base, floreiras na porta, lixeiras junto dos bancos
+	for _, plant in PLANTS do
+		Detalhe.Mato(folder, at(plant[1], plant[2], plant[1] * 37 % 360), plant[3], cores)
+	end
+	local wallFace = WALL.Thickness / 2 + 0.08 -- com as juntas do tijolo
+	Detalhe.Hera(folder, at(WALL.X + wallFace, 10, 90), 3.5, cores)
+	Detalhe.Hera(folder, at(WALL.X - wallFace, 0, -90), 3, cores)
+	Detalhe.Hera(folder, at(BASE_WALL_FACE, -16, -90), 5, cores)
+	for _, sign in { -1, 1 } do
+		Detalhe.Floreira(folder, at(BASE_WALL_FACE - 0.65, sign * WALL_LAMP.Z, 90), cores)
+	end
+	Detalhe.Lixeira(folder, at(18, 51.3), cores)
+	Detalhe.Lixeira(folder, at(34, 51.3), cores)
+	Detalhe.Lixeira(folder, at(1.3, 34.5), cores)
+
+	-- Luzes reais: dos dois lados da porta da base (os postes com `luz` são as outras duas da
+	-- metade) e as manchas de luz embaixo de cada uma
+	for _, sign in { -1, 1 } do
+		Detalhe.Luminaria(folder, at(BASE_WALL_FACE, sign * WALL_LAMP.Z, -90, WALL_LAMP.Y), cores, true)
+		Detalhe.ManchaDeLuz(folder, at(BASE_WALL_FACE - 3, sign * WALL_LAMP.Z), 6, cores)
+	end
+	for _, post in POSTS do
+		if post.luz then
+			local yaw = math.rad(post.yaw)
+			local reach = v2(math.sin(yaw), math.cos(yaw)) * Kit.Poste_Alcance
+			Detalhe.ManchaDeLuz(folder, at(post.at.X + reach.X, post.at.Y + reach.Y), 4, cores)
+		end
+	end
+end
+
 local function half(frame: CFrame, folder: Instance)
 	floor(frame, folder)
 	rock(frame, folder)
@@ -323,13 +428,14 @@ local function half(frame: CFrame, folder: Instance)
 	)
 
 	for _, post in POSTS do
-		Kit.PosteDeLuz(folder, Build.pivot(frame, post.at, post.yaw))
+		Kit.PosteDeLuz(folder, Build.pivot(frame, post.at, post.yaw), nil, post.luz)
 	end
 	for _, bench in BENCHES do
 		Kit.BancoDePraca(folder, Build.pivot(frame, bench.at, bench.yaw))
 	end
 
 	scenery(frame, folder)
+	dress(frame, folder)
 end
 
 -- Rosácea no chão do meio da ilha (só acabamento): marca o "Meio" para quem vê de cima.

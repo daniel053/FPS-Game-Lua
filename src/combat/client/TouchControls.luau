@@ -2,7 +2,8 @@
 -- Botões de toque do combate (GDD 7.2.6 e 13.1). Só aparecem no celular; no PC somem (ESTILO 3).
 --   ATIRAR: segura para atirar; arrastar o dedo nele também gira a câmera.
 --           Com o corpo a corpo: tocar = golpe leve, segurar = golpe forte.
---   MIRA / MODO: só aparece em armas com mira ou modo alternativo; toque liga e desliga.
+--   MIRA / MODO: aparece em toda arma de fogo (MODO nas de modo alternativo, MIRA nas outras); toque
+--   liga e desliga.
 --   1⇄2: toque alterna primária e pistola; segurar abre as 3 opções (1, 2, 3).
 --   RECARREGAR.
 -- Posição e tamanho: padrão do CombatConfig ou o que o jogador montou no editor de botões
@@ -90,11 +91,13 @@ local function refresh()
 	-- Sem armas (mirante, preparação) os botões de combate somem.
 	gui.Enabled = InputDevice.get() == "Touch" and player.Character ~= nil and WeaponController.getLoadout() ~= nil
 	local state = WeaponController.getCurrentGun()
-	local altMode = if state then state.def.altMode else nil
-	aimButton.Visible = altMode ~= nil
-	if state and altMode then
-		aimButton.Text = if WeaponConfig.hasScope(state.def) then Strings.Combat.AimButton else Strings.Combat.AltButton
-		setPressed(aimButton, state.alt)
+	-- Toda arma de fogo usa o botão: MIRA (luneta ou ADS) ou MODO (rajada, bagos concentrados).
+	aimButton.Visible = state ~= nil
+	if state then
+		local altMode = state.def.altMode
+		local isMode = altMode ~= nil and not WeaponConfig.hasScope(state.def)
+		aimButton.Text = if isMode then Strings.Combat.AltButton else Strings.Combat.AimButton
+		setPressed(aimButton, if isMode then state.alt else WeaponController.isAiming())
 	end
 	reloadButton.Visible = state ~= nil
 end

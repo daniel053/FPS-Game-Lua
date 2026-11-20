@@ -26,6 +26,11 @@ local CharacterConfig = {
 		FirstPersonZoomDistance = 0.5,
 		FieldOfView = 80, -- graus (guia da arma em primeira pessoa) [PROPOSTA]
 		MaxPitchDegrees = 80, -- quanto dá para olhar para cima e para baixo
+		ZoomSeconds = 0.15, -- transição do campo de visão ao abrir e fechar a mira (suavizada)
+		-- Mira (ADS) nas armas sem modo alternativo, segurando o botão direito / gatilho esquerdo (no
+		-- celular, o botão MIRA liga e desliga). Só visual: não muda dano nem espalhamento. [PROPOSTA]
+		AdsFieldOfView = 70, -- graus (padrão 80)
+		AdsSensitivityMultiplier = 0.8, -- giro da câmera mirando (× a sensibilidade do controle em uso)
 	},
 
 	-- Personagem (GDD 3.2) [DECIDIDO]: o avatar do Roblox de cada jogador, com o tamanho do corpo

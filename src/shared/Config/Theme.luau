@@ -175,6 +175,32 @@ local Theme = {
 			Metal = hex("#4A5368"), -- poste de luz e pés do banco
 			Terra = hex("#A08A6E"), -- rocha logo abaixo do chão
 			TerraEscura = hex("#7F6D58"), -- rocha mais funda
+			-- Passada de detalhe (depois da F10, Kits/Detalhe): chão, ambiente e luz
+			Detalhe = {
+				Pintura = hex("#B8AA90"), -- marcas em pedra mais escura (faixa de pedestre, base)
+				Aviso = hex("#F2C230"),
+				Placa = hex("#CFC4AF"),
+				Sombra = hex("#CABFAA"),
+				Mancha = hex("#C3B79F"), -- sujeira na lajota
+				Rachadura = hex("#B9AC94"),
+				Folhas = hex("#4F9A62"),
+				FolhasEscuras = hex("#3F7F50"),
+				Metal = hex("#4A5368"),
+				Vaso = hex("#C08A6A"), -- vaso de terracota
+				Terra = hex("#7F6D58"),
+				Extintor = hex("#C9622F"),
+				Caixa = hex("#3C8C8C"), -- lixeira verde-petróleo
+				CaixaEscura = hex("#2F7070"),
+				Cone = hex("#E07B39"),
+				Madeira = hex("#B98A5A"),
+				MadeiraClara = hex("#C99B6B"),
+				MadeiraEscura = hex("#8E6540"),
+				Pedra = hex("#B9B2A6"),
+				PedraEscura = hex("#948D82"),
+				LuzCreme = hex("#FFF1CF"),
+				LuzNoChao = hex("#E5DCC8"),
+				LuzQuente = hex("#FFD9A0"),
+			},
 		},
 		Porto = {
 			Chapa = hex("#6F8FA6"),
@@ -235,6 +261,32 @@ local Theme = {
 			TubosEscuro = hex("#B8632E"), -- flanges dos tubos laranja
 			PapelaoEscuro = hex("#A88352"), -- fita das caixas e frestas do pallet
 			PisoFaixa = hex("#AEB2B9"), -- juntas do piso do galpão
+			-- Passada de detalhe (depois da F10, Kits/Detalhe): chão, ambiente e luz
+			Detalhe = {
+				Pintura = hex("#E6E8EB"), -- linhas brancas, faixa de pedestre e marca da base
+				Aviso = hex("#F2C230"),
+				Placa = hex("#B9BCC2"), -- placas do piso em outro tom
+				Sombra = hex("#B2B5BB"),
+				Mancha = hex("#8F939B"), -- óleo
+				Rachadura = hex("#9EA2AA"),
+				Folhas = hex("#4F9A62"),
+				FolhasEscuras = hex("#3F7F50"),
+				Metal = hex("#4A5368"),
+				Vaso = hex("#9EA2AA"),
+				Terra = hex("#7A5A3E"),
+				Extintor = hex("#C9622F"), -- laranja queimado: nunca vermelho
+				Caixa = hex("#8FA3B8"), -- quadro elétrico (painel)
+				CaixaEscura = hex("#7589A0"),
+				Cone = hex("#E07B39"),
+				Madeira = hex("#B98A5A"),
+				MadeiraClara = hex("#C99B6B"),
+				MadeiraEscura = hex("#8E6540"),
+				Pedra = hex("#9EA2AA"),
+				PedraEscura = hex("#6B6F7E"),
+				LuzCreme = hex("#FFF1CF"),
+				LuzNoChao = hex("#D2D2CF"),
+				LuzQuente = hex("#FFD9A0"),
+			},
 		},
 		Torre = {
 			Pedra = hex("#A8A29A"),
@@ -252,6 +304,32 @@ local Theme = {
 			PedraSombra = hex("#696359"), -- juntas sobre a pedra escura
 			PedraClara = hex("#BDB7AE"), -- degraus alternados, lajes do caminho e topo dos merlões
 			MadeiraEscura = hex("#7A5334"), -- frestas das tábuas
+			-- Passada de detalhe (depois da F10, Kits/Detalhe): lajes, musgo, mato, hera e tochas acesas
+			Detalhe = {
+				Pintura = hex("#BDB7AE"), -- marca da base em pedra clara (sem tinta: é um castelo)
+				Aviso = hex("#F2C230"),
+				Placa = hex("#A8A29A"), -- lajes soltas no chão de terra
+				Sombra = hex("#A38B67"),
+				Mancha = hex("#7E8F5A"), -- musgo rente ao chão
+				Rachadura = hex("#9C845F"),
+				Folhas = hex("#5F8A4A"), -- mais apagado que o da Praça (castelo antigo)
+				FolhasEscuras = hex("#4D7339"),
+				Metal = hex("#4A5368"),
+				Vaso = hex("#7D776F"),
+				Terra = hex("#7A5A3E"),
+				Extintor = hex("#C9622F"),
+				Caixa = hex("#7D776F"),
+				CaixaEscura = hex("#696359"),
+				Cone = hex("#E07B39"),
+				Madeira = hex("#9A6B43"),
+				MadeiraClara = hex("#B08257"),
+				MadeiraEscura = hex("#7A5334"),
+				Pedra = hex("#A8A29A"),
+				PedraEscura = hex("#7D776F"),
+				LuzCreme = hex("#F2C230"),
+				LuzNoChao = hex("#C4AA80"), -- clarão quente no chão de terra, embaixo das tochas
+				LuzQuente = hex("#FFC98A"), -- luz das tochas (mais quente que a das luminárias)
+			},
 		},
 	},
 
@@ -489,6 +567,16 @@ local Theme = {
 		SelectTime = 0.1,
 		CardFlipTime = 0.5, -- GIRAR na tela de Cartas (F9): fecha e abre, metade cada
 	},
+
+	-- Tom de cada mapa (MapLighting, só no cliente): tinta quase branca no ColorCorrection, para dar
+	-- identidade sem mudar as cores de equipe nem a leitura do inimigo. Os números ficam em
+	-- LightingConfig. [PROPOSTA]
+	MapGrade = {
+		map_porto = hex("#F2F7FF"), -- mar: um pouco mais frio
+		map_fabrica = hex("#FFF6EC"), -- metal e tijolo: um pouco mais quente e fechado
+		map_praca = hex("#FFFAF0"), -- praça ensolarada
+		map_torre = hex("#F5F6FF"), -- altura: ar limpo e frio
+	} :: { [string]: Color3 },
 }
 
 return Theme

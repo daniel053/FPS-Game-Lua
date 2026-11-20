@@ -159,6 +159,28 @@ local CombatConfig = {
 		WallCheckDistance = 3, -- perto de parede, a arma abaixa
 		WallLowerAngle = 35, -- graus
 		ReloadDipAngle = 25,
+		ReloadRollAngle = 18, -- a arma gira de lado para mostrar o encaixe do pente
+		-- Recarga com pente (peças marcadas com `mag` nos modelos). Frações do tempo de recarga da arma:
+		-- o pente sai, some, o novo sobe e encaixa ANTES da munição ser liberada (fim da recarga, que
+		-- é quando o servidor devolve a munição). [PROPOSTA]
+		Reload = {
+			MagOutStart = 0.08,
+			MagOutEnd = 0.3,
+			MagInStart = 0.48,
+			MagInEnd = 0.7, -- pente encaixado; depois vem o ferrolho e a volta à posição
+			BoltAt = 0.84, -- tranco do ferrolho
+			BoltSeconds = 0.12,
+			MagDrop = 1.1, -- studs que o pente desce para fora da arma
+			BoltKick = 0.07, -- studs
+		},
+		-- Mira (ADS): a arma vai para o centro, logo abaixo da retícula. [PROPOSTA]
+		Ads = {
+			Seconds = 0.15, -- transição (igual à do campo de visão)
+			SightGap = 0.05, -- folga entre o topo da arma e a linha da retícula (studs)
+			Forward = -0.1, -- um pouco mais longe da câmera (negativo = para a frente)
+			CenterBand = 0.16, -- peças a menos disto do eixo do cano contam como a arma (para achar o topo)
+			BobScale = 0.3, -- balanço ao andar mirando (fração do normal)
+		},
 		-- Regras de enquadramento do guia (F10), numa tela de referência 16:9; posições de 0 a 1, da
 		-- esquerda e de cima. A arma que não cabe fica menor (ViewModelFit). [PROPOSTA]
 		Frame = {

@@ -28,6 +28,7 @@ local WorldLayout = require(Shared.Match.WorldLayout)
 local Captions = require(script.Parent.Parent.Combat.Captions)
 local Avatars = require(script.Parent.Parent.Common.Ui.Avatars)
 local MatchClient = require(script.Parent.MatchClient)
+local Minimap = require(script.Parent.Minimap)
 local SpectateCamera = require(script.Parent.SpectateCamera)
 
 local S = Strings.Match
@@ -353,10 +354,14 @@ local function build()
 	local function refit()
 		local camera = workspace.CurrentCamera
 		local width = if camera then camera.ViewportSize.X else 1000
-		local free = width - 2 * (Theme.ScreenMargin + Theme.Hud.MinimapSize + Theme.Space.Medium)
+		-- Usa o tamanho do minimapa escolhido nas configurações (o Grande ocupa mais).
+		local free = width - 2 * (Theme.ScreenMargin + Minimap.pixelSize() + Theme.Space.Medium)
 		fit.Scale = math.clamp(free / top.Size.X.Offset, 0.7, 1)
 	end
 	refit()
+	Minimap.onSizeChanged(function()
+		refit()
+	end)
 	local camera = workspace.CurrentCamera
 	if camera then
 		camera:GetPropertyChangedSignal("ViewportSize"):Connect(refit)

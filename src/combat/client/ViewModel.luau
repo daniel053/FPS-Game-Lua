@@ -5,6 +5,8 @@
 --   * luvas escuras e manga neutra (sem cor de equipe: aliado e inimigo pela marcação, GDD 7.6);
 --   * pistola com uma mão; as outras armas com duas;
 --   * balanço ao andar, recuo ao atirar, abaixa perto de parede, some com a mira de sniper aberta;
+--   * mirando (ADS ou luneta), desliza para o centro, logo abaixo da retícula;
+--   * recarga: o pente (peças `mag` dos modelos) sai, o novo entra e o ferrolho dá um tranco;
 --   * no celular, 10% menor e mais baixa;
 --   * cada arma se encaixa no quadro do guia (cano fora do centro, nada no centro livre nem fora da
 --     zona da arma): a que não cabe fica menor (ViewModelFit, F10). O Bastão fica de fora (é erguido).
@@ -42,6 +44,19 @@ local reloadUntil = 0
 local reloadDuration = 1
 local equipStartedAt = -math.huge
 local lowerAlpha = 0
+-- Mira (ADS e luneta sem esconder a arma): a arma desliza para o centro, logo abaixo da retícula.
+local aiming = false
+local aimAlpha = 0
+local gunTop = 0 -- topo da arma acima do pivô (studs, já na escala do modelo)
+-- Recarga com pente: peças marcadas `mag` nos modelos, com a posição de origem em relação ao pivô.
+type MagPiece = { part: BasePart, rel: CFrame, transparency: number }
+local mags: { MagPiece } = {}
+local magDirection = Vector3.new(0, -1, 0) -- para onde o pente sai (eixo do encaixe)
+local magsMoved = false
+local boltDone = true
+
+local RELOAD = VM.Reload
+local ADS = VM.Ads
 
 local wallParams = RaycastParams.new()
 wallParams.CollisionGroup = CombatNames.Groups.SightRay
@@ -91,6 +106,23 @@ local function build(kind: string, shape: Shape)
 	end
 	if scale ~= 1 then
 		newModel:ScaleTo(scale)
+	end
+	-- O pivô (Root) fica na origem: a posição de cada peça já é relativa a ele.
+	mags = {}
+	magsMoved = false
+	gunTop = 0
+	for _, child in newModel:GetChildren() do
+		if not child:IsA("BasePart") or child == root then
+			continue
+		end
+		if child:GetAttribute(WeaponShapes.MagAttribute) == true then
+			table.insert(mags, { part = child, rel = child.CFrame, transparency = child.Transparency })
+		elseif math.abs(child.Position.X) < ADS.CenterBand * scale then
+			gunTop = math.max(gunTop, child.Position.Y + child.Size.Y / 2)
+		end
+	end
+	if mags[1] then
+		magDirection = -mags[1].rel.UpVector
 	end
 	model = newModel
 	currentKind = kind
@@ -142,9 +174,49 @@ function ViewModel.swing(heavy: boolean)
 	swingHeavy = heavy
 end
 
+-- Mira aberta (ADS ou luneta): a arma vai para o centro, suavemente.
+function ViewModel.setAiming(on: boolean)
+	aiming = on
+end
+
+-- `seconds` = tempo de recarga da arma (o mesmo do WeaponState): o pente encaixa antes do fim.
 function ViewModel.setReloading(seconds: number)
 	reloadDuration = math.max(seconds, 0.1)
 	reloadUntil = os.clock() + seconds
+	boltDone = false
+end
+
+-- Recarga cancelada: o pente volta ao lugar (nunca fica solto no ar).
+function ViewModel.stopReload()
+	reloadUntil = 0
+	boltDone = true
+end
+
+-- Quanto o pente saiu (0 = encaixado, 1 = fora) e a transparência dele, no ponto `p` da recarga (0 a 1).
+local function magPose(p: number): (number, number)
+	if p < RELOAD.MagOutStart or p >= RELOAD.MagInEnd then
+		return 0, 0
+	elseif p < RELOAD.MagOutEnd then
+		-- Sai do encaixe e cai, acelerando; some no fim (sai da tela)
+		local t = (p - RELOAD.MagOutStart) / (RELOAD.MagOutEnd - RELOAD.MagOutStart)
+		return t * t, if t > 0.7 then (t - 0.7) / 0.3 else 0
+	elseif p < RELOAD.MagInStart then
+		return 1, 1 -- a mão busca o pente novo
+	end
+	-- O novo sobe de baixo e desacelera até travar
+	local t = (p - RELOAD.MagInStart) / (RELOAD.MagInEnd - RELOAD.MagInStart)
+	local eased = 1 - (1 - t) * (1 - t)
+	return 1 - eased, if t < 0.3 then 1 - t / 0.3 else 0
+end
+
+local function poseMags(pivot: CFrame, out: number, transparency: number, scale: number)
+	local shift = CFrame.new(magDirection * RELOAD.MagDrop * scale * out)
+	for _, piece in mags do
+		piece.part.CFrame = pivot * shift * piece.rel
+		piece.part.Transparency = if transparency > 0
+			then math.max(piece.transparency, transparency)
+			else piece.transparency
+	end
 end
 
 -- Ponta do cano no mundo (origem do rastro e do clarão).
@@ -181,10 +253,22 @@ local function update(dt: number)
 
 	local offset = offsetFor(currentKind or "Rifle", InputDevice.get() == "Touch")
 
-	-- Balanço ao andar
+	-- Mira: desliza para o centro (topo da arma logo abaixo da retícula), com suavização nas pontas
+	local aimTarget = if aiming then 1 else 0
+	local aimStep = dt / math.max(ADS.Seconds, 0.01)
+	aimAlpha = if aimAlpha < aimTarget
+		then math.min(aimTarget, aimAlpha + aimStep)
+		else math.max(aimTarget, aimAlpha - aimStep)
+	local aimEase = aimAlpha * aimAlpha * (3 - 2 * aimAlpha)
+	if aimEase > 0 then
+		local adsOffset = Vector3.new(0, -gunTop - ADS.SightGap, offset.Z + ADS.Forward)
+		offset = offset:Lerp(adsOffset, aimEase)
+	end
+
+	-- Balanço ao andar (menor mirando)
 	local speed = humanoid.MoveDirection.Magnitude
 	local bobPhase = now * VM.BobSpeed
-	local bobAmount = VM.BobAmount * speed * reduce
+	local bobAmount = VM.BobAmount * speed * reduce * (1 - (1 - ADS.BobScale) * aimEase)
 	local bob = CFrame.new(math.cos(bobPhase / 2) * bobAmount, math.abs(math.sin(bobPhase)) * bobAmount, 0)
 
 	-- Recuo visual
@@ -203,13 +287,19 @@ local function update(dt: number)
 	lowerAlpha += (targetLower - lowerAlpha) * math.min(1, dt * 10)
 	local lower = CFrame.new(0, -0.3 * lowerAlpha, 0) * CFrame.Angles(-math.rad(VM.WallLowerAngle * lowerAlpha), 0, 0)
 
-	-- Recarga: arma desce e gira um pouco
+	-- Recarga: arma desce e gira de lado; o pente sai, o novo entra e o ferrolho dá um tranco
 	local reloadAlpha = 0
+	local progress: number? = nil
 	if now < reloadUntil then
-		local progress = 1 - (reloadUntil - now) / reloadDuration
-		reloadAlpha = math.sin(progress * math.pi)
+		progress = 1 - (reloadUntil - now) / reloadDuration
+		reloadAlpha = math.sin((progress :: number) * math.pi)
+		if not boltDone and (progress :: number) >= RELOAD.BoltAt then
+			boltDone = true
+			kick = math.min(kick + RELOAD.BoltKick, VM.KickBack * 3)
+		end
 	end
-	local reload = CFrame.Angles(-math.rad(VM.ReloadDipAngle * reloadAlpha), 0, math.rad(12 * reloadAlpha))
+	local reload =
+		CFrame.Angles(-math.rad(VM.ReloadDipAngle * reloadAlpha), 0, math.rad(VM.ReloadRollAngle * reloadAlpha))
 
 	-- Golpe do corpo a corpo
 	local swingTime = if swingHeavy then 0.35 else 0.2
@@ -224,7 +314,21 @@ local function update(dt: number)
 	local equipAlpha = math.clamp((now - equipStartedAt) / 0.25, 0, 1)
 	local equip = CFrame.new(0, -0.8 * (1 - equipAlpha), 0)
 
-	m:PivotTo(camera.CFrame * CFrame.new(offset) * bob * equip * lower * reload * swing * kickCf)
+	local pivot = camera.CFrame * CFrame.new(offset) * bob * equip * lower * reload * swing * kickCf
+	m:PivotTo(pivot)
+
+	-- O PivotTo leva as peças junto, então o pente deslocado continua deslocado: reposiciona sempre
+	-- que a recarga mexe nele e uma última vez ao terminar (ou ao ser cancelada).
+	if #mags > 0 then
+		if progress then
+			local out, transparency = magPose(progress)
+			poseMags(pivot, out, transparency, m:GetScale())
+			magsMoved = true
+		elseif magsMoved then
+			poseMags(pivot, 0, 0, m:GetScale())
+			magsMoved = false
+		end
+	end
 end
 
 function ViewModel.Start()

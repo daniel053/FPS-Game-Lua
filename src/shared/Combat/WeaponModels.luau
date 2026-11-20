@@ -8,7 +8,15 @@
 -- do cano, a mão esquerda (nil = uma mão só) e a empunhadura (mão direita).
 -- Pentes curvos inclinam a base PARA A FRENTE (na direção do cano) e encaixam embaixo do encaixe.
 
-export type PartSpec = { size: Vector3, cframe: CFrame, color: Color3, cylinder: boolean?, wedge: boolean? }
+-- `mag` = peça do pente (sai e entra na animação de recarga em primeira pessoa).
+export type PartSpec = {
+	size: Vector3,
+	cframe: CFrame,
+	color: Color3,
+	cylinder: boolean?,
+	wedge: boolean?,
+	mag: boolean?,
+}
 
 export type Look = { body: Color3, dark: Color3, light: Color3, accent: Color3, metal: Color3, lens: Color3 }
 
@@ -69,6 +77,13 @@ end
 
 -- Conjuntos comuns ----------------------------------------------------------------------------------
 
+-- Marca como pente as peças acrescentadas desde `from` (índice em `p`).
+local function markMag(p: Parts, from: number)
+	for i = from, #p do
+		p[i].mag = true
+	end
+end
+
 -- Empunhadura de pistola (inclinada para trás), guarda-mato e gatilho. z = centro da empunhadura.
 local function pistolGrip(p: Parts, c: Look, z: number, y: number?, cap: Color3?)
 	local gy = y or -0.21
@@ -107,17 +122,21 @@ end
 
 -- Pente curvo: o topo encaixa em (yTop, z); a base curva para a frente.
 local function curvedMag(p: Parts, c: Look, z: number, yTop: number, tone: Color3?)
+	local first = #p + 1
 	local color = tone or c.dark
 	B(p, 0.15, 0.3, 0.2, 0, yTop - 0.14, z, color, 6)
 	B(p, 0.15, 0.24, 0.2, 0, yTop - 0.4, z - 0.06, color, 18)
 	B(p, 0.16, 0.035, 0.21, 0, yTop - 0.11, z, c.metal, 6) -- friso
 	B(p, 0.17, 0.04, 0.22, 0, yTop - 0.53, z - 0.1, c.metal, 18) -- base
+	markMag(p, first)
 end
 
 -- Pente reto (levemente inclinado para a frente).
 local function straightMag(p: Parts, c: Look, z: number, yTop: number, h: number, tone: Color3?)
+	local first = #p + 1
 	B(p, 0.14, h, 0.19, 0, yTop - h / 2, z - 0.02, tone or c.dark, 4)
 	B(p, 0.16, 0.04, 0.21, 0, yTop - h, z - 0.05, c.metal, 4)
+	markMag(p, first)
 end
 
 -- Luneta: tubo, objetiva e ocular com lentes, torres e suportes até o trilho.
@@ -185,11 +204,19 @@ local function pistolSlide(p: Parts, c: Look, length: number, color: Color3): Ve
 	return Vector3.new(0, 0.23, 0.13 - length)
 end
 
--- Empunhadura de pistola (uma mão), com guarda-mato e base do pente.
-local function pistolLower(p: Parts, c: Look, cap: Color3?)
+-- Empunhadura de pistola (uma mão), com guarda-mato e base do pente. `revolver` = sem pente (a base
+-- é só o fim do cabo).
+local function pistolLower(p: Parts, c: Look, cap: Color3?, revolver: boolean?)
 	B(p, 0.17, 0.42, 0.22, 0, -0.14, 0.08, c.dark, -15)
 	B(p, 0.175, 0.3, 0.14, 0, -0.12, 0.06, c.light, -15) -- textura
+	local first = #p + 1
+	if not revolver then
+		B(p, 0.13, 0.36, 0.16, 0, -0.17, 0.09, c.metal, -15) -- pente (escondido no cabo até sair)
+	end
 	B(p, 0.18, 0.05, 0.24, 0, -0.36, 0.14, cap or c.dark, -15) -- base do pente
+	if not revolver then
+		markMag(p, first)
+	end
 	B(p, 0.04, 0.03, 0.22, 0, -0.03, -0.12, c.dark) -- guarda-mato
 	B(p, 0.04, 0.1, 0.03, 0, 0.01, -0.23, c.dark)
 	B(p, 0.03, 0.08, 0.03, 0, 0.02, -0.08, c.metal) -- gatilho
@@ -230,8 +257,10 @@ local MODELS: { [string]: Builder } = {
 		B(p, 0.2, 0.17, 0.14, 0, 0.22, -0.72, c.dark) -- compensador
 		B(p, 0.205, 0.05, 0.03, 0, 0.27, -0.7, c.accent)
 		pistolLower(p, c)
+		local mag = #p + 1
 		B(p, 0.15, 0.32, 0.18, 0, -0.52, 0.19, c.dark, -15) -- pente estendido
 		B(p, 0.17, 0.05, 0.2, 0, -0.68, 0.23, c.accent, -15)
+		markMag(p, mag)
 		return Vector3.new(0, 0.22, -0.8), nil, PISTOL_GRIP
 	end,
 	-- Precisa: ferrolho longo cinza com linha ciano e silenciador.
@@ -257,7 +286,7 @@ local MODELS: { [string]: Builder } = {
 		B(p, 0.135, 0.03, 0.62, 0, 0.3, -0.56, c.accent) -- costela de cima
 		B(p, 0.04, 0.06, 0.05, 0, 0.33, -0.83, c.dark) -- massa
 		B(p, 0.05, 0.1, 0.07, 0, 0.3, 0.2, c.dark) -- cão
-		pistolLower(p, c, c.accent)
+		pistolLower(p, c, c.accent, true)
 		return Vector3.new(0, 0.24, -0.88), nil, PISTOL_GRIP
 	end,
 
@@ -297,6 +326,7 @@ local MODELS: { [string]: Builder } = {
 		B(p, 0.14, 0.16, 0.2, 0, -0.05, -0.36, c.body)
 		straightMag(p, c, -0.36, -0.12, 0.44, c.dark)
 		B(p, 0.16, 0.05, 0.21, 0, -0.38, -0.39, c.accent, 4) -- listra do pente
+		markMag(p, #p)
 		return Vector3.new(0, 0.16, -1.37), Vector3.new(0, -0.03, -0.72), Vector3.new(0, -0.16, 0.06)
 	end,
 
@@ -331,8 +361,10 @@ local MODELS: { [string]: Builder } = {
 		B(p, 0.22, 0.26, 0.45, 0, 0.1, 0.72, c.body) -- coronha
 		B(p, 0.24, 0.36, 0.07, 0, 0.06, 0.97, c.dark)
 		pistolGrip(p, c, 0.3, -0.17)
+		local mag = #p + 1
 		C(p, 0.22, 0.52, 0, -0.26, -0.2, c.dark, "X") -- carregador de tambor
 		C(p, 0.24, 0.22, 0, -0.26, -0.2, c.accent, "X")
+		markMag(p, mag)
 		B(p, 0.22, 0.2, 0.62, 0, 0.17, -0.7, c.dark) -- capa do cano
 		slots(p, { -0.55, -0.7, -0.85 }, 0.17, 0.22, 0.08, 0.08, c.metal)
 		B(p, 0.11, 0.24, 0.12, 0, -0.06, -0.72, c.dark, 8) -- empunhadura da frente
@@ -524,8 +556,10 @@ local MODELS: { [string]: Builder } = {
 		B(p, 0.12, 0.14, 0.06, 0, 0.46, 0.02, black)
 		B(p, 0.12, 0.14, 0.06, 0, 0.46, -0.42, black)
 		pistolGrip(p, c, 0.4, -0.13)
+		local mag = #p + 1
 		B(p, 0.42, 0.42, 0.42, 0, -0.26, -0.2, black) -- caixa de munição
 		B(p, 0.425, 0.06, 0.42, 0, -0.2, -0.2, c.accent)
+		markMag(p, mag)
 		B(p, 0.3, 0.12, 0.08, 0, -0.06, -0.03, c.metal) -- fita
 		C(p, 0.85, 0.22, 0, 0.18, -0.95, black) -- capa do cano
 		for _, z in { -0.7, -0.85, -1.0, -1.15 } do
@@ -549,8 +583,10 @@ local MODELS: { [string]: Builder } = {
 		B(p, 0.1, 0.14, 0.06, 0, 0.42, 0.14, black)
 		B(p, 0.1, 0.14, 0.06, 0, 0.42, 0.56, black)
 		pistolGrip(p, c, 0.45, -0.17)
+		local mag = #p + 1
 		B(p, 0.38, 0.36, 0.4, 0.3, -0.12, 0.2, black) -- caixa de munição
 		B(p, 0.385, 0.05, 0.4, 0.3, -0.04, 0.2, c.accent)
+		markMag(p, mag)
 		C(p, 0.35, 0.44, 0, 0.12, -0.15, silver) -- carcaça da frente
 		for i = 0, 5 do -- 6 canos
 			local a = i * math.pi / 3

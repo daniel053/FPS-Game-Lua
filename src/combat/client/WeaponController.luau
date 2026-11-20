@@ -9,6 +9,7 @@
 --   Celular: botões na tela (TouchControls). Tiro automático e assistência de mira conforme o perfil.
 
 local CollectionService = game:GetService("CollectionService")
+local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -16,6 +17,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage.Shared
 local AudioConfig = require(Shared.Config.AudioConfig)
+local CharacterConfig = require(Shared.Config.CharacterConfig)
 local CombatConfig = require(Shared.Config.CombatConfig)
 local CombatNames = require(Shared.Combat.CombatNames)
 local CombatTypes = require(Shared.Combat.CombatTypes)
@@ -28,6 +30,7 @@ local WeaponState = require(Shared.Combat.WeaponState)
 local AimCamera = require(script.Parent.Parent.Common.AimCamera)
 local InputDevice = require(script.Parent.Parent.Common.InputDevice)
 local PlayerDataClient = require(script.Parent.Parent.Common.PlayerDataClient)
+local SettingsController = require(script.Parent.Parent.Common.SettingsController)
 local CombatEffects = require(script.Parent.CombatEffects)
 local Smoke = require(script.Parent.Smoke)
 local ViewModel = require(script.Parent.ViewModel)
@@ -56,6 +59,7 @@ local triggerDownAt = 0
 local semiLatched = false -- semiautomática: já atirou neste toque do gatilho
 local meleeSwungThisPress = false
 local altHeld = false -- PC/controle: segurando a mira
+local adsOn = false -- mira (ADS) das armas sem modo alternativo: só visual, não vai ao servidor
 local spinSent = false
 local bloom = 0
 local lastShotAt = -math.huge
@@ -273,12 +277,44 @@ end
 
 -- Ações ------------------------------------------------------------------------------------------
 
+-- Armas sem modo alternativo nem luneta usam o botão de mira para a mira (ADS).
+local function usesAds(state: WeaponState.State?): boolean
+	return state ~= nil and state.def.altMode == nil
+end
+
+-- Câmera e arma conforme a mira: luneta (modo alternativo "Scope") ou ADS. Sem arma (nil), ou com uma
+-- arma que não usa ADS, a ADS desliga: nunca sobra campo de visão nem sensibilidade presos.
 local function applyScope(state: WeaponState.State?)
+	if not usesAds(state) then
+		adsOn = false
+	end
 	local scoped = state ~= nil and state.alt and WeaponConfig.hasScope(state.def)
 	AimCamera.setScoped(scoped)
-	AimCamera.setZoom(if scoped and state then state.def.scopeFieldOfView else nil)
+	AimCamera.setAds(adsOn)
+	local fov = if scoped and state
+		then state.def.scopeFieldOfView
+		elseif adsOn then CharacterConfig.Camera.AdsFieldOfView
+		else nil
+	AimCamera.setZoom(fov)
 	-- Sniper com a mira aberta: arma e mãos somem (guia, quadro 3).
 	ViewModel.setVisible(not (scoped and state ~= nil and state.def.category == "Sniper"))
+	ViewModel.setAiming(scoped or adsOn)
+end
+
+local function setAds(on: boolean)
+	local state = currentGun()
+	if on and (not usesAds(state) or aliveCharacter() == nil) then
+		return
+	end
+	if on and state and WeaponState.isReloading(state, now()) then
+		return
+	end
+	if adsOn == on then
+		return
+	end
+	adsOn = on
+	applyScope(state)
+	notifyChanged()
 end
 
 local function setAlt(on: boolean)
@@ -304,6 +340,7 @@ function WeaponController.reload()
 	if WeaponState.startReload(state, t) then
 		send("Reload", t, nil)
 		setAlt(false)
+		setAds(false)
 		ViewModel.setReloading(state.def.reloadTime)
 		CombatEffects.playSound(AudioConfig.Reload)
 		notifyChanged()
@@ -318,6 +355,7 @@ function WeaponController.equip(slot: Slot)
 		return
 	end
 	setAlt(false)
+	setAds(false)
 	local previous = currentGun()
 	if previous and spinSent then
 		WeaponState.setSpin(previous, false, now())
@@ -386,9 +424,17 @@ end
 
 function WeaponController.toggleAlt()
 	local state = currentGun()
-	if state then
+	if usesAds(state) then
+		setAds(not adsOn)
+	elseif state then
 		setAlt(not state.alt)
 	end
+end
+
+-- Mirando agora (ADS ou luneta aberta): botão MIRA do celular aceso.
+function WeaponController.isAiming(): boolean
+	local state = currentGun()
+	return adsOn or (state ~= nil and state.alt and WeaponConfig.hasScope(state.def))
 end
 
 function WeaponController.setAltHeld(on: boolean)
@@ -399,7 +445,19 @@ function WeaponController.setAltHeld(on: boolean)
 		end
 		return
 	end
-	setAlt(on)
+	if usesAds(currentGun()) then
+		setAds(on)
+	else
+		setAlt(on)
+	end
+end
+
+-- Menu aberto (Roblox, configurações) ou janela sem foco: solta a mira, como se soltasse o botão.
+local function releaseAim()
+	if altHeld then
+		WeaponController.setAltHeld(false)
+	end
+	setAds(false)
 end
 
 -- Arrastar o dedo no botão ATIRAR também gira a câmera (pixels da tela).
@@ -576,6 +634,14 @@ end
 
 local function step(dt: number)
 	local character = aliveCharacter()
+	if character == nil and loadout ~= nil and WeaponController.isAiming() then
+		-- Derrubado mirando: câmera volta ao normal na hora (o espectador não herda zoom nem sensibilidade).
+		adsOn = false
+		AimCamera.setZoom(nil)
+		AimCamera.setScoped(false)
+		AimCamera.setAds(false)
+		ViewModel.setAiming(false)
+	end
 	if character == nil or loadout == nil then
 		return
 	end
@@ -600,6 +666,16 @@ local function step(dt: number)
 	WeaponState.update(state, t)
 	if state.ammo <= 0 and state.reloadEndsAt == nil then
 		WeaponController.reload()
+	end
+	-- Recarga terminou com o botão de mira ainda seguro (PC/controle): volta a mirar.
+	if altHeld and not WeaponState.isReloading(state, t) then
+		if usesAds(state) then
+			if not adsOn then
+				setAds(true)
+			end
+		elseif not state.alt then
+			setAlt(true)
+		end
 	end
 
 	local autoFire, autoSpin = autoFireWants(state, t)
@@ -740,6 +816,11 @@ end
 local function onSync(data: CombatTypes.SyncData)
 	local state = guns[data.slot]
 	if state then
+		-- Recarga cancelada pelo servidor bem antes do fim: o pente volta ao lugar na hora.
+		local previousEnd = state.reloadEndsAt
+		if data.reloadEndsAt == nil and previousEnd and data.slot == equipped and now() < previousEnd - 0.2 then
+			ViewModel.stopReload()
+		end
 		state.ammo = data.ammo
 		state.reloadEndsAt = data.reloadEndsAt
 		notifyChanged()
@@ -817,9 +898,22 @@ function WeaponController.Start()
 	end)
 	updateFilters(player.Character)
 	player.CharacterRemoving:Connect(function()
+		altHeld = false
+		adsOn = false
 		ViewModel.clear()
+		ViewModel.setAiming(false)
 		AimCamera.setZoom(nil)
 		AimCamera.setScoped(false)
+		AimCamera.setAds(false)
+	end)
+
+	-- Menus soltam o mouse da primeira pessoa (Modal); a mira não pode ficar presa embaixo deles.
+	GuiService.MenuOpened:Connect(releaseAim)
+	UserInputService.WindowFocusReleased:Connect(releaseAim)
+	SettingsController.onToggled(function(open: boolean)
+		if open then
+			releaseAim()
+		end
 	end)
 
 	RunService:BindToRenderStep("WeaponController", Enum.RenderPriority.Camera.Value + 2, step)

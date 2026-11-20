@@ -140,12 +140,22 @@ local function accessibilityTab(): Panel
 	end).frame.LayoutOrder =
 		2
 
-	Widgets.toggle(content, S.ReduceEffects, s.reduceEffects, function(on: boolean)
-		PlayerDataClient.requestSettings({ reduceEffects = on })
+	-- Tamanho do minimapa: o minimapa acompanha o perfil (muda na hora em que o servidor confirma).
+	local minimapSizes = {}
+	for _, id in UiConfig.Minimap.SizeOrder do
+		table.insert(minimapSizes, { id = id, label = S.MinimapSizes[id] or id })
+	end
+	Widgets.choice(content, S.MinimapSize, minimapSizes, s.minimapSize, function(id: string)
+		PlayerDataClient.requestSettings({ minimapSize = id })
 	end).frame.LayoutOrder =
 		3
 
-	note(S.Graphics, 4)
+	Widgets.toggle(content, S.ReduceEffects, s.reduceEffects, function(on: boolean)
+		PlayerDataClient.requestSettings({ reduceEffects = on })
+	end).frame.LayoutOrder =
+		4
+
+	note(S.Graphics, 5)
 	return { commit = function() end, close = function() end }
 end
 

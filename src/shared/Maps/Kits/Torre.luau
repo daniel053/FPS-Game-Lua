@@ -5,7 +5,7 @@
 -- As peças que colidem são as da planta aprovada (blocos e rampas simples). O acabamento (juntas
 -- dos blocos de pedra, musgo, tábuas, correntes, folhas de porta) é `Build.Detail`: não colide,
 -- não bloqueia tiro e sai no máximo ~0,15 stud da peça que colide. Cores só de `Theme.Maps.Torre`;
--- material liso, sem neon, sem luz e sem texto.
+-- material liso, sem neon e sem texto (luz só nas tochas acesas da passada de detalhe).
 --
 -- Convenção de todos os componentes:
 --   * `origem` = quadro no centro da base do componente (use `Build.pivot`), no nível do piso;
@@ -14,6 +14,7 @@
 --     componente com o giro trocado de sinal (a Torre usa simetria espelhada).
 
 local Build = require(script.Parent.Parent.Build)
+local Detalhe = require(script.Parent.Detalhe)
 local Theme = require(script.Parent.Parent.Parent.Config.Theme)
 
 local COR = Theme.Maps.Torre
@@ -434,9 +435,12 @@ function Kit.Estandarte(parent: Instance, origem: CFrame): Model
 	return principal(model, pe)
 end
 
--- Tocha (sem brilho): suporte de 0,6 e chama de 1,1, de cor chapada. Sem luz, sem partícula, sem
--- neon. A origem é o ponto da parede onde ela é presa; o +Z local sai da parede. Tudo acabamento.
-function Kit.Tocha(parent: Instance, origem: CFrame): Model
+-- Tocha: suporte de 0,6 e chama de 1,1, de cor chapada. Sem partícula e sem neon. Com `luzReal`
+-- (passada de detalhe), a chama leva uma luz quente, fraca e sem sombra, que apaga na versão leve.
+-- A origem é o ponto da parede onde ela é presa; o +Z local sai da parede. Tudo acabamento.
+Kit.Tocha_Alcance = 0.6 -- a chama fica 0,6 à frente da parede
+
+function Kit.Tocha(parent: Instance, origem: CFrame, luzReal: boolean?): Model
 	local model = Build.model("Tocha", parent)
 	local suporte = Build.block(
 		"Suporte",
@@ -448,14 +452,17 @@ function Kit.Tocha(parent: Instance, origem: CFrame): Model
 	)
 	Build.block("Cabo", Vector3.new(0.3, 1.4, 0.3), origem * CFrame.new(0, 0.6, 0.6), COR.Madeira, model, Build.Detail)
 	local giro = CFrame.Angles(0, math.rad(45), 0)
-	Build.block(
+	local chama = Build.block(
 		"Chama",
 		Vector3.new(0.7, 0.7, 0.7),
-		origem * CFrame.new(0, 1.6, 0.6) * giro,
+		origem * CFrame.new(0, 1.6, Kit.Tocha_Alcance) * giro,
 		COR.Chama,
 		model,
 		Build.Detail
 	)
+	if luzReal then
+		Detalhe.luz(chama, COR.Detalhe)
+	end
 	Build.block(
 		"ChamaPonta",
 		Vector3.new(0.4, 0.5, 0.4),

@@ -20,8 +20,11 @@ local WorldLayout = require(Shared.Match.WorldLayout)
 
 local WORLD = MapConfig.World
 
--- Peças da passada de detalhe do Porto (KIT-MODULAR 2): nenhuma colide nem bloqueia tiro.
-local PORTO_DETAIL = {
+-- Peças da passada de detalhe (Porto em Kits/Porto; Fábrica, Praça e Torre em Kits/Detalhe):
+-- nenhuma colide nem bloqueia tiro.
+local DETAIL_MODELS = {
+	Lixeira = true,
+	Pedrinhas = true,
 	PlacaDoPiso = true,
 	SombraPintada = true,
 	ManchaDeOleo = true,
@@ -200,9 +203,15 @@ return function(t: any)
 		world:Destroy()
 	end)
 
-	t.test("luzes reais só no Porto: branco-quentes, sem sombra, marcadas e no limite", function()
+	t.test("luzes reais só nas ilhas: na cor do mapa, sem sombra, marcadas e no limite", function()
+		local lightColor = {
+			map_porto = Theme.Maps.Porto.LuzQuente,
+			map_fabrica = Theme.Maps.Fabrica.Detalhe.LuzQuente,
+			map_praca = Theme.Maps.Praca.Detalhe.LuzQuente,
+			map_torre = Theme.Maps.Torre.Detalhe.LuzQuente,
+		}
 		local world = WorldBuilder.build()
-		local porto = 0
+		local counts: { [number]: number } = {}
 		for _, item in world:GetDescendants() do
 			if item:IsA("Light") then
 				local island: number? = nil
@@ -211,46 +220,48 @@ return function(t: any)
 					island = island or tonumber(ancestor.Name:match("^Island(%d+)$"))
 					ancestor = ancestor.Parent
 				end
-				local isPorto = island ~= nil and WorldLayout.mapId(island) == "map_porto"
-				t.ok(isPorto, `{item:GetFullName()}: luz fora do Porto`)
+				t.ok(island ~= nil, `{item:GetFullName()}: luz fora das ilhas`)
 				t.ok(item:IsA("PointLight"), `{item:GetFullName()}: só PointLight`)
 				t.ok(
 					item:GetAttribute(Build.LightAttribute) == true,
 					`{item:GetFullName()}: marcada (apaga na versão leve)`
 				)
 				t.ok((item :: PointLight).Shadows == false, `{item:GetFullName()}: sem sombra`)
-				t.ok(item.Color == Theme.Maps.Porto.LuzQuente, `{item:GetFullName()}: branco-quente`)
-				if isPorto then
-					porto += 1
+				if island then
+					t.ok(
+						item.Color == lightColor[WorldLayout.mapId(island)],
+						`{item:GetFullName()}: cor da luz do mapa`
+					)
+					counts[island] = (counts[island] or 0) + 1
 				end
 			end
 		end
-		t.ok(porto > 0 and porto <= MapConfig.Porto.Lights.Max, `Porto: {porto} luzes`)
+		for i = 1, WorldLayout.islandCount() do
+			local id = WorldLayout.mapId(i)
+			local max = MapConfig.SceneLights.Max
+			local n = counts[i] or 0
+			t.ok(n > 0 and n <= max, `{id}: {n} luzes (máximo {max})`)
+		end
 		world:Destroy()
 	end)
 
-	t.test("detalhe do Porto: as peças da passada de detalhe são só acabamento", function()
+	t.test("passada de detalhe: as peças de detalhe de cada ilha são só acabamento", function()
 		local world = WorldBuilder.build()
-		local found = 0
 		for i = 1, WorldLayout.islandCount() do
-			if WorldLayout.mapId(i) == "map_porto" then
-				local folder = world:FindFirstChild(`Island{i}`) :: Instance
-				for _, model in folder:GetDescendants() do
-					if model:IsA("Model") and PORTO_DETAIL[model.Name] then
-						found += 1
-						for _, part in model:GetDescendants() do
-							if part:IsA("BasePart") then
-								t.ok(
-									part:GetAttribute(Build.DetailAttribute) == true,
-									`{part:GetFullName()} é acabamento`
-								)
-							end
+			local found = 0
+			local folder = world:FindFirstChild(`Island{i}`) :: Instance
+			for _, model in folder:GetDescendants() do
+				if model:IsA("Model") and DETAIL_MODELS[model.Name] then
+					found += 1
+					for _, part in model:GetDescendants() do
+						if part:IsA("BasePart") then
+							t.ok(part:GetAttribute(Build.DetailAttribute) == true, `{part:GetFullName()} é acabamento`)
 						end
 					end
 				end
 			end
+			t.ok(found > 0, `{WorldLayout.mapId(i)} com as peças de detalhe`)
 		end
-		t.ok(found > 0, "Porto com as peças de detalhe")
 		world:Destroy()
 	end)
 

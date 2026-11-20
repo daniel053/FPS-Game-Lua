@@ -15,7 +15,7 @@ local PracaKit = require(script.Parent.Praca)
 local Theme = require(script.Parent.Parent.Parent.Config.Theme)
 
 local PALETTE = Theme.Maps.Porto
-local LIGHTS = MapConfig.Porto.Lights
+local LIGHTS = MapConfig.SceneLights
 local DETAIL = Build.Detail
 local SIGNS = { -1, 1 }
 

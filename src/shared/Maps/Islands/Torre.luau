@@ -19,6 +19,7 @@
 -- Coordenadas (x, z) no quadro da ilha: x de base a base, z de um lado ao outro (+Z = mirante).
 
 local Build = require(script.Parent.Parent.Build)
+local Detalhe = require(script.Parent.Parent.Kits.Detalhe)
 local IslandCommon = require(script.Parent.Parent.IslandCommon)
 local Kit = require(script.Parent.Parent.Kits.Torre)
 local MapConfig = require(script.Parent.Parent.Parent.Config.MapConfig)
@@ -134,6 +135,117 @@ local ESCOMBROS: { Peca } = {
 -- Pontos de escudo no eixo do meio (mesma distância das duas bases): um no chão da passagem do
 -- lado +Z, embaixo da sacada; outro em cima da guarita (nível 1).
 local ESCUDO_Z = 27
+
+-- Passada de detalhe (depois da F10, Kits/Detalhe): só acabamento, nada colide nem muda a planta.
+-- Posições na metade +X; a outra é o espelho (x → -x). -------------------------------------------
+
+-- Lajes soltas { x, z, tamanho, giro }: da porta da base até o portão e até o Pátio
+local LAJES_SOLTAS = {
+	{ 66, -2, 2.6, 10 },
+	{ 62.2, -4.4, 2.2, -15 },
+	{ 58.4, -6.6, 2.6, 20 },
+	{ 54.6, -8.8, 2.2, 5 },
+	{ 50.8, -10.6, 2.6, -10 },
+	{ 64, 5.5, 2.4, -20 },
+	{ 60.2, 8.5, 2.2, 15 },
+	{ 56.4, 11.6, 2.6, -5 },
+	{ 52.6, 14.8, 2.2, 25 },
+}
+-- Mais musgo rente ao chão { x, z, diâmetro }
+local MUSGO_EXTRA = { { 36, -24, 2.4 }, { 58, 36, 2.6 }, { 26, 46, 2 }, { 62, -40, 2.2 } }
+-- Tufos de mato { x, z, escala }: pé dos muros, cantos de mureta, frestas
+local MATO = {
+	{ 58, -27, 1 },
+	{ 68.6, -30, 1 },
+	{ 47, -51, 0.9 },
+	{ 46.9, 2, 1 },
+	{ 43.2, -4, 0.9 },
+	{ 17.8, -18, 0.9 },
+	{ 12.2, 25, 1 },
+	{ 37.6, 23, 0.9 },
+	{ 68.4, 20.2, 1.1 },
+	{ 68.6, 51.3, 1 },
+	{ 8, 51.4, 0.9 },
+	{ 26, 36, 0.7 },
+	{ 54, 44, 0.8 },
+	{ 30, -36, 0.8 },
+}
+-- Pedrinhas soltas { x, z, giro }
+local PEDRINHAS = { { 33.5, -11.5, 0 }, { 48.5, -33, 40 }, { 52.5, 21.5, 80 }, { 22.5, 44.5, 20 }, { 47.4, -18.5, 60 } }
+local FACE_DA_BASE = WORLD.BodySize.X / 2 - 0.75
+local TOCHA_DA_BASE = { Y = 4.5, Z = 16 } -- longe dos estandartes (z = ±10)
+
+local function vestir(folder: Instance, em: (number, number, number?, number?) -> CFrame, lado: number)
+	local cores = COR.Detalhe
+
+	-- Chão: lajes soltas, musgo e pedrinhas
+	for i, laje in LAJES_SOLTAS do
+		local tom = if i % 2 == 0 then COR.PedraClara else COR.Pedra
+		Detalhe.Placa(folder, em(laje[1], laje[2], laje[4]), v2(laje[3], laje[3]), tom)
+	end
+	for _, mancha in MUSGO_EXTRA do
+		Detalhe.Mancha(folder, em(mancha[1], mancha[2]), mancha[3], cores)
+	end
+	for _, pedra in PEDRINHAS do
+		Detalhe.Pedrinhas(folder, em(pedra[1], pedra[2], pedra[3]), cores)
+	end
+
+	-- Sombra pintada no pé dos muros, tocos, portas e escombros
+	local portao = MURO_DO_PORTAO
+	local portaoDe = portao.PortaZ - Kit.Medidas.PortaLargura / 2
+	local portaoAte = portao.MuroZ + portao.MuroComprimento / 2
+	local espessura = Kit.Medidas.MuralhaEspessura + 1.2
+	Detalhe.Sombra(
+		folder,
+		em(portao.X, (portaoDe + portaoAte) / 2, 90),
+		v2(portaoAte - portaoDe + 1.2, espessura),
+		cores
+	)
+	Detalhe.Sombra(folder, em(TOCO_MURALHA.X, TOCO_MURALHA.Z, 90), v2(TOCO_MURALHA.Comprimento + 1.2, espessura), cores)
+	Detalhe.Sombra(folder, em(TOCO_PATIO.X, TOCO_PATIO.Z, 90), v2(TOCO_PATIO.Comprimento + 1.2, espessura), cores)
+	Detalhe.Sombra(folder, em(PORTA_PATIO.X, PORTA_PATIO.Z, 90), v2(Kit.Medidas.PortaLargura + 1.2, 3.2), cores)
+	Detalhe.Sombra(folder, em(MURETA_PATIO.X, MURETA_PATIO.Z, 0), v2(MURETA_PATIO.Comprimento + 1.2, espessura), cores)
+	for _, peca in ESCOMBROS do
+		Detalhe.Sombra(folder, em(peca.x, peca.z, peca.giro), v2(6, 4), cores)
+	end
+	local baseHalf = WORLD.BaseSize.Y / 2
+	local door = WORLD.BaseDoorWidth / 2
+	for _, sinal in LADOS do
+		Detalhe.Sombra(
+			folder,
+			em(FACE_DA_BASE - 0.4, sinal * (door + baseHalf) / 2, 90),
+			v2(baseHalf - door, 0.8),
+			cores
+		)
+	end
+
+	-- Base: anel de pedra clara em volta de onde se nasce (sem hachura: é um castelo)
+	Detalhe.MarcaDeBase(
+		folder,
+		em(WORLD.BodySize.X / 2 + WORLD.BaseSize.X / 2, 0, if lado == 1 then 0 else 180),
+		WORLD.BaseSize.X,
+		WORLD.BaseSize.Y,
+		cores.Pintura,
+		false
+	)
+
+	-- Ambiente: mato e hera nos muros
+	for _, mato in MATO do
+		Detalhe.Mato(folder, em(mato[1], mato[2], mato[1] * 37 % 360), mato[3], cores)
+	end
+	local meiaEspessura = Kit.Medidas.MuralhaEspessura / 2 + 0.08 -- com as juntas
+	Detalhe.Hera(folder, em(portao.X + meiaEspessura, 1, 90), 7, cores)
+	Detalhe.Hera(folder, em(portao.X - meiaEspessura, -3, -90), 5, cores)
+	Detalhe.Hera(folder, em(TOCO_PATIO.X + meiaEspessura, 27, 90), 6, cores)
+	Detalhe.Hera(folder, em(FACE_DA_BASE, -12, -90), 5, cores)
+
+	-- Luzes reais: as duas tochas do portão (montadas em `metade`) e duas na parede da base
+	for _, sinal in LADOS do
+		local z = sinal * TOCHA_DA_BASE.Z
+		Kit.Tocha(folder, em(FACE_DA_BASE, z, -90, TOCHA_DA_BASE.Y), true)
+		Detalhe.ManchaDeLuz(folder, em(FACE_DA_BASE - Kit.Tocha_Alcance - 1.5, z), 5, cores)
+	end
+end
 
 local function retangulo(lado: number, r: Rect): (Vector2, Vector2)
 	local xa, xb = lado * r.x0, lado * r.x1
@@ -344,12 +456,14 @@ local function metade(frame: CFrame, folder: Instance, lado: number)
 	local face = portao.X + Kit.Medidas.PortaEspessura / 2
 	local vao = Kit.Medidas.PortaVao.X / 2 + 1.5
 	for _, z in { portao.PortaZ - vao, portao.PortaZ + vao } do
-		Kit.Tocha(folder, em(face, z, 90, 5))
+		Kit.Tocha(folder, em(face, z, 90, 5), true) -- acesas (passada de detalhe)
+		Detalhe.ManchaDeLuz(folder, em(face + Kit.Tocha_Alcance + 1.5, z), 4, COR.Detalhe)
 	end
 	Kit.Tocha(folder, em(2, TOPO.SacadaAte, 0, 8))
 	for _, z in { -10, 10 } do
 		Kit.Estandarte(folder, em(67, z, 0))
 	end
+	vestir(folder, em, lado)
 
 	-- Zonas da metade (pings) -----------------------------------------------------------------------
 	local zonas: { { id: string, r: Rect } } = {

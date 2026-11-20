@@ -239,6 +239,12 @@ local Strings = {
 			["1.15"] = "115%",
 			["1.3"] = "130%",
 		} :: { [string]: string },
+		MinimapSize = "Tamanho do minimapa",
+		MinimapSizes = {
+			small = "Pequeno",
+			medium = "Médio",
+			large = "Grande",
+		} :: { [string]: string },
 		ReduceEffects = "Reduzir efeitos de tela (tremor e flashes)",
 		Graphics = "Qualidade gráfica: no menu do Roblox (ESC no PC).",
 		Buttons = {
